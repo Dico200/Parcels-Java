@@ -2,13 +2,15 @@ package com.redstoner.parcels.api;
 
 import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.generation.ParcelGenerator;
+import com.redstoner.utils.CastingMap;
+import com.redstoner.utils.DuoObject.BlockType;
 import com.redstoner.utils.MultiRunner;
 import com.redstoner.utils.Bool;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -18,16 +20,16 @@ import org.bukkit.configuration.ConfigurationSection;
 public class WorldManager {
 	
 	public static final String WORLD_SETTINGS_FILE = "worlds.yml";
-	public static final Map<String, Integer> DEFAULT_WORLD_SETTINGS = Collections.unmodifiableMap(new HashMap<String, Integer>() {
+	public static final CastingMap<String, Object> DEFAULT_WORLD_SETTINGS = new CastingMap<String, Object>() {
 
 		private static final long serialVersionUID = 1L;
 		
 		{
-			put("wall-type", 44);
-			put("floor-type", 155);
-			put("fill-type", 1);
-			put("path-main-type", 24);
-			put("path-edge-type", 152);
+			put("wall-type", BlockType.fromString("44"));
+			put("floor-type", BlockType.fromString("155"));
+			put("fill-type", BlockType.fromString("1"));
+			put("path-main-type", BlockType.fromString("24"));
+			put("path-edge-type", BlockType.fromString("152"));
 			put("parcel-size", 101);
 			put("path-size", 8);
 			put("floor-height", 63);
@@ -36,10 +38,11 @@ public class WorldManager {
 			put("parcel-axis-limit", 10);
 		}
 		
-	});
+	};
 	
 	public WorldManager(ParcelsPlugin plugin) {
 		this.plugin = plugin;
+		ParcelsPlugin.log("WorldManager initialized");
 		loadSettingsFromConfig();
 	}
 
@@ -47,7 +50,7 @@ public class WorldManager {
 		return exec(world, w -> w.resize(axisLimit));
 	}
 	
-	public Parcel getParcelAt(Location loc) {
+	public Optional<Parcel> getParcelAt(Location loc) {
 		return get(loc.getWorld().getName(), w -> w.getParcelAt(loc.getBlockX(), loc.getBlockZ()));
 	}
 	
@@ -103,17 +106,21 @@ public class WorldManager {
 			if (worlds.isConfigurationSection(world)) {
 				Map<String, Object> input = worlds.getConfigurationSection(world).getValues(false);
 				Bool.validate(input != null, "getValues() (input) null");
-				Map<String, Integer> settings = new HashMap<>();
+				CastingMap<String, Object> settings = new CastingMap<>();
 				
-				for (Entry<String, Integer> entry : DEFAULT_WORLD_SETTINGS.entrySet()) {
+				for (Entry<String, Object> entry : DEFAULT_WORLD_SETTINGS.entrySet()) {
 					String key = entry.getKey();
 					if (!input.containsKey(key)) {
 						printErrors.add(() -> ParcelsPlugin.log(String.format("  Option '%s' is missing from your settings. Aborting generator.", key)));
 						continue;
 					}
-					int value;
+					Object value;
 					try {
-						value = (int) input.get(key);
+						Object inputValue = input.get(key);
+						if (inputValue instanceof String)
+							value = BlockType.fromString((String) inputValue);
+						else
+							value = inputValue;
 					} catch (ClassCastException e) {
 						if (!useDefaultIfMissing) {
 							printErrors.add(() -> ParcelsPlugin.log(String.format("  Option '%s' must be an integer. Aborting generator.", key)));

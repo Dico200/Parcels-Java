@@ -1,5 +1,7 @@
 package com.redstoner.command;
 
+import java.util.Optional;
+
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
@@ -38,6 +40,12 @@ public class Validate {
 		if (!(sender instanceof ConsoleCommandSender)) {
 			throw new CommandException("That command can only be used by the console");
 		}
+	}
+	
+	public static <T> T returnIfPresent(Optional<T> maybe, String failMessage) {
+		if (!maybe.isPresent())
+			throw new CommandException(failMessage);
+		return maybe.get();
 	}
 	
 	private Validate() {

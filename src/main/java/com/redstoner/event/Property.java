@@ -1,9 +1,11 @@
 package com.redstoner.event;
 
+import java.util.Optional;
+
 
 public class Property<T> {
 	
-	private T value;
+	private Optional<T> value;
 	private Listeners<T> listeners;
 	private Object holder;
 	 
@@ -13,11 +15,11 @@ public class Property<T> {
 	
 	public Property(Object holder, T value) {
 		this.holder = holder;
-		this.value = value;
+		this.value = Optional.ofNullable(value);
 		this.listeners = new Listeners<T>();
 	}
 	
-	public T get() {
+	public Optional<T> get() {
 		return value;
 	}
 	
@@ -32,7 +34,7 @@ public class Property<T> {
 	private boolean execute(Event<T> event) {
 		listeners.execute(event);
 		if (!event.isCancelled()) {
-			this.value = event.newValue();
+			this.value = Optional.ofNullable(event.newValue());
 			return true;
 		}
 		return false;

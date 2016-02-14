@@ -7,8 +7,8 @@ public class DuoObject<T, U> {
 		this.v2 = v2;
 	}
 	
-	protected T v1;
-	protected U v2;
+	protected final T v1;
+	protected final U v2;
 	
 	public T v1() {
 		return v1;
@@ -65,6 +65,38 @@ public class DuoObject<T, U> {
 		}
 		
 		public V getValue() {
+			return v2;
+		}
+		
+	}
+	
+	public static class BlockType extends DuoObject<Short, Byte> {
+		
+		public static BlockType fromString(String s) throws NumberFormatException {
+			String[] both = s.split(":");
+			String id;
+			String data = "0";
+			switch (both.length) {
+			case 2:
+				data = both[1];
+			case 1:
+				id = both[0];
+				break;
+			default:
+				throw new NumberFormatException();	
+			}
+			return new BlockType(Short.parseShort(id), Byte.parseByte(data));
+		}
+
+		public BlockType(Short v1, Byte v2) {
+			super(v1, v2);
+		}
+		
+		public short getId() {
+			return v1;
+		}
+		
+		public byte getData() {
 			return v2;
 		}
 		

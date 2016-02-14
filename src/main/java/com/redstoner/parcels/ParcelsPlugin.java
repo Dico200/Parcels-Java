@@ -1,15 +1,20 @@
 package com.redstoner.parcels;
 
-import java.util.HashMap;
+import java.util.Optional;
 
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.WorldManager;
-import com.redstoner.utils.DuoObject.Entry;
-import com.redstoner.utils.Maps;
+import com.redstoner.parcels.command.ParcelCommands;
 
 public class ParcelsPlugin extends JavaPlugin {
+	
+	@SuppressWarnings("unused")
+	public static void main(String[] args) {
+		Optional<Parcel> maybe = Optional.of(new Parcel(0, 0));
+	}
 	
 	private static ParcelsPlugin plugin = null;
 	private static boolean debugging = true;
@@ -28,23 +33,6 @@ public class ParcelsPlugin extends JavaPlugin {
 		return plugin;
 	}
 	
-	public ParcelsPlugin() {
-		assert plugin == null;
-		plugin = this;
-		
-		boolean x = true;
-		assert x: "Message: x is true";
-		
-		getConfig().addDefaults(Maps.putAll(new HashMap<>(), new Entry<>("worlds", Maps.putAll(
-				new HashMap<>(), new Entry<>("example", WorldManager.DEFAULT_WORLD_SETTINGS)))));
-		
-		ParcelsPlugin.plugin.getConfig().getValues(true).forEach((key, value) -> {
-			ParcelsPlugin.debug(String.format("CONFIG: '%s' = %s", key, value));
-		});
-		
-		worldManager = new WorldManager(this);
-	}
-	
 	@Override
 	public ChunkGenerator getDefaultWorldGenerator(String world, String id) {
 		return worldManager.getGenerator(world);
@@ -52,7 +40,24 @@ public class ParcelsPlugin extends JavaPlugin {
 	
 	@Override
 	public void onEnable() {
-
+		plugin = this;
+		
+		getConfig().options().copyDefaults(true);
+		saveConfig();
+		
+		getConfig().getValues(true).forEach((key, value) -> {
+			ParcelsPlugin.debug(String.format("CONFIG: '%s' = %s", key, value));
+		});
+		
+		worldManager = new WorldManager(this);
+		
+		ParcelCommands.register(worldManager);
+		getServer().getPluginManager().registerEvents(new ParcelListener(), this);
+	}
+	
+	@Override
+	public void onDisable() {
+		saveConfig();
 	}
 	
 	private WorldManager worldManager;

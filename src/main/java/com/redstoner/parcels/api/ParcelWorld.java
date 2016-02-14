@@ -1,12 +1,13 @@
 package com.redstoner.parcels.api;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.generation.ParcelGenerator;
 import com.redstoner.utils.Bool;
 import com.redstoner.utils.Calc;
+import com.redstoner.utils.CastingMap;
 import com.redstoner.utils.DuoObject;
 import com.redstoner.utils.DuoObject.Coord;
 
@@ -17,8 +18,8 @@ public class ParcelWorld {
 	private ParcelWorldSettings settings;
 	private String world;
 	
-	public ParcelWorld(String world, Map<String, Integer> settings) {
-		this(world, new ParcelWorldSettings(settings), settings.get("parcel-axis-limit"));
+	public ParcelWorld(String world, CastingMap<String, Object> settings) {
+		this(world, new ParcelWorldSettings(settings), settings.getCasted("parcel-axis-limit"));
 	}
 	
 	public ParcelWorld(String world, ParcelWorldSettings settings, int axisLimit) {
@@ -56,17 +57,17 @@ public class ParcelWorld {
 		return world;
 	}
 	
-	public Parcel getParcelAt(int absX, int absZ) {
+	public Optional<Parcel> getParcelAt(int absX, int absZ) {
 		int sectionSize = settings.sectionSize;
 		int parcelSize = settings.parcelSize;
-		absX -= settings.xOffset;
-		absZ -= settings.zOffset;
+		absX += settings.xOffset + settings.pathOffset;
+		absZ += settings.zOffset + settings.pathOffset;
 		int modX = Calc.posModulo(absX, sectionSize);
 		int modZ = Calc.posModulo(absZ, sectionSize);
 		if (Bool.inRange(modX, 0, parcelSize) && Bool.inRange(modZ, 0, parcelSize)) {
-			return parcels.getParcelAt((absX - modX) / sectionSize, (absZ - modZ) / sectionSize);
+			return Optional.of(parcels.getParcelAt((absX - modX) / sectionSize, (absZ - modZ) / sectionSize));
 		}
-		return null;
+		return Optional.empty();
 	}
 
 }

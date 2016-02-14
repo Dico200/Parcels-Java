@@ -2,10 +2,11 @@ package com.redstoner.event;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class Field<T, U> {
 	
-	private volatile Map<U, T> values = new HashMap<U, T>();
+	private volatile Map<U, Optional<T>> values = new HashMap<U, Optional<T>>();
 	private Listeners<T> listeners;
 	private T defaultValue;
 	
@@ -18,8 +19,8 @@ public class Field<T, U> {
 		this.listeners = new Listeners<T>();
 	}
 	
-	public T get(U holder) {
-		return values.get(holder);
+	public Optional<T> get(U holder) {
+		return values.getOrDefault(holder, Optional.empty());
 	}
 	
 	public boolean set(U holder, T value) {
@@ -31,19 +32,21 @@ public class Field<T, U> {
 	}
 	
 	public void initialise(U holder) {
-		values.put(holder, defaultValue);
+		if (defaultValue != null) {
+			values.put(holder, Optional.of(defaultValue));
+		}
 	}
 	
 	private boolean execute(Event<T> event) {	
 		listeners.execute(event);
 		if (!event.isCancelled()) {
-			values.put(event.getHolder(), event.newValue());
+			values.replace(event.getHolder(), Optional.ofNullable(event.newValue()));
 			return true;
 		}
 		return false;
 	}
 	
-	public Map<U, T> values() {
+	public Map<U, Optional<T>> values() {
 		return values;
 	}
 	

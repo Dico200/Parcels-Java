@@ -1,17 +1,20 @@
 package com.redstoner.event;
 
+import java.util.Optional;
+
 import com.redstoner.command.ArgumentException;
 
 public class Event<T> {
 	
-	private T oldValue, newValue;
+	private Optional<T> oldValue;
+	private T newValue;
 	private boolean cancelled;
 	private Object holder, cause;
 	
-	protected Event(Object holder, T oldValue, T newValue, Object cause) {
+	protected Event(Object holder, Optional<T> optional, T newValue, Object cause) {
 		this.cancelled = false;
 		this.holder = holder;
-		this.oldValue = oldValue;
+		this.oldValue = optional;
 		this.newValue = newValue;
 		this.cause = cause;
 	}
@@ -26,7 +29,7 @@ public class Event<T> {
 	/**
 	 * @return The current value
 	 */
-	public T oldValue() {
+	public Optional<T> oldValue() {
 		return oldValue;
 	}
 	

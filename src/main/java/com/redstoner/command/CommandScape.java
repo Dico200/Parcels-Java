@@ -47,6 +47,13 @@ public class CommandScape {
 		}
 	}
 	
+	public CommandScape(CommandScape toCast) {
+		this.original = toCast.original;
+		this.parsed = toCast.parsed;
+		this.proposals = toCast.proposals;
+		this.overflow = toCast.overflow;
+	}
+	
 	public String[] original() {
 		return original;
 	}

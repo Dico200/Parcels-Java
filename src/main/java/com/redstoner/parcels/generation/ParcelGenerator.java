@@ -1,69 +1,123 @@
 package com.redstoner.parcels.generation;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
+import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
+import org.bukkit.Chunk;
 import org.bukkit.World;
+import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 
 import com.redstoner.parcels.api.ParcelWorldSettings;
 import com.redstoner.utils.Bool;
-import com.redstoner.utils.Calc;
 
 public class ParcelGenerator extends ChunkGenerator {
 	
-	public ParcelGenerator(ParcelWorldSettings pws) {
-		this.pws = pws;
+	public ParcelGenerator(ParcelWorldSettings pws) {	
+		this.floorId = pws.floor.getId();
+		this.wallId = pws.wall.getId();
+		this.pathMainId = pws.pathMain.getId();
+		this.pathEdgeId = pws.pathEdge.getId();
+		this.fillId = pws.fill.getId();
+		
+		this.floorData = pws.floor.getData();
+		this.wallData = pws.wall.getData();
+		this.pathMainData = pws.pathMain.getData();
+		this.pathEdgeData = pws.pathEdge.getData();
+		this.fillData = pws.fill.getData();
+		
+		this.parcelSize = pws.parcelSize;
+		this.floorHeight = pws.floorHeight;
+		this.xOffset = pws.xOffset;
+		this.zOffset = pws.zOffset;
+		this.sectionSize = pws.sectionSize;
+		this.pathOffset = pws.pathOffset;
 	}
 	
-	private ParcelWorldSettings pws;
+	private final short floorId, wallId, pathMainId, pathEdgeId, fillId;
+	private final byte floorData, wallData, pathMainData, pathEdgeData, fillData;
+	private final int parcelSize, floorHeight, xOffset, zOffset, sectionSize, pathOffset;
 	
 	@Override
 	public short[][] generateExtBlockSections(World world, Random random, int chunkX, int chunkZ, BiomeGrid biomeGrid) {
 		
-		assert pws.floorHeight <= world.getMaxHeight(): "The floor level may not be higher than the world's maximum height";
-		assert world.getMaxHeight() >> 4 == 0: "The world's max height must be a multiple of 16";
+		//Bool.validate(floorHeight <= world.getMaxHeight(), "The floor level may not be higher than the world's maximum height");
+		//Bool.validate(world.getMaxHeight() >> 4 == 0, "The world's max height must be a multiple of 16");
 		
-		short[][] chunk = IntStream.range(0, world.getMaxHeight() / 16)
-								   .mapToObj(i -> new short[4096])
-								   .toArray(size -> new short[size][]);
-
-		final int x0 = Calc.posModulo(16 * chunkX, pws.sectionSize);
-		final int z0 = Calc.posModulo(16 * chunkZ, pws.sectionSize);
-
-		for (int cX = 0; cX < 16; cX++) {
-			for (int cZ = 0; cZ < 16; cZ++) {
-				int x = (x0 + cX) % pws.sectionSize;
-				int z = (z0 + cZ) % pws.sectionSize;
-				int x2 = x - pws.xOffset;
-				int z2 = z - pws.zOffset;
-				int height = pws.floorHeight;
-				
-				short type;
-				if (Bool.inRange(x2, 0, pws.parcelSize) && Bool.inRange(z2, 0, pws.parcelSize)) {
-					type = pws.floor;
-				} else if (Bool.inRange(x2, -1, pws.parcelSize + 1) && Bool.inRange(z2, -1, pws.parcelSize + 1)) {
-					type = pws.wall;
-					height += 1;
-				} else if (Bool.inRange(x2, -2, pws.parcelSize + 2) && Bool.inRange(z2, -2, pws.parcelSize + 2)) {
-					type = pws.pathEdge;
- 				} else {
-					type = pws.pathMain;
-				}
-
-				setBlock(chunk, cX, height, cZ, type);
-				
-				for (int y = 0; y < height; y++) {
-					setBlock(chunk, cX, y, cZ, pws.fill);
-				}
-			}
-		}
+		short[][] chunk = IntStream.range(0, world.getMaxHeight() / 16).mapToObj(i -> new short[4096]).toArray(size -> new short[size][]);
+		
+		//[floor(y / 16)][y % 16 * 256 + z * 16 + x]
+		iterAll(chunkX, chunkZ, floorId, wallId, pathMainId, pathEdgeId, fillId, (c, type) -> {
+			chunk[c.y >> 4][((c.y & 0xF) << 8) | (c.z << 4) | c.x] = type;
+		});
 		
 		return chunk;
 	}
-	
-    private static void setBlock(short[][] result, int x, int y, int z, short id) {
-        result[y >> 4][((y & 0xF) << 8) | (z << 4) | x] = id;
+    
+    @Override
+    public List<BlockPopulator> getDefaultPopulators(World world) {
+    	return Arrays.asList(new BlockPopulator[]{new BlockPopulator() {
+
+			@SuppressWarnings("deprecation")
+			@Override
+			public void populate(World world, Random random, Chunk chunk) {
+				iterAll(chunk.getX(), chunk.getZ(), floorData, wallData, pathMainData, pathEdgeData, fillData, (c, type) -> {
+					chunk.getBlock(c.x, c.y, c.z).setData(type);
+				});
+			}
+    		
+    	}});
     }
+    
+    public <T> void iterAll(int chunkX, int chunkZ, T floor, T wall, T pathMain, T pathEdge, T fill, BiConsumer<Coord, T> forEach) {
+    	
+    	//northwest chunk corner, with offset applied -> x/z
+    	//The offset makes it believe it's generating for coordinates at offset back. Like nudging a graph: (x - offset)
+    	//modulo sectionSize with positive outcome
+    	//subtract pathOffset such that (xOffset, zOffset) is the center of a path intersection, the northwest part of it if pathwidth is even
+    	int x, z;
+		final int x0 = ((x = (((chunkX << 4) - xOffset) % sectionSize)) < 0)? x + sectionSize : x;
+		final int z0 = ((z = (((chunkZ << 4) - zOffset) % sectionSize)) < 0)? z + sectionSize : z;
+		
+		int cX, y, cZ, height;
+    	for (cX = 0; cX < 16; cX++) {
+			for (cZ = 0; cZ < 16; cZ++) {
+				x = (x0 + cX) % sectionSize - pathOffset;
+				z = (z0 + cZ) % sectionSize - pathOffset;
+				height = floorHeight;
+				
+				T type;
+				if (Bool.inRange(x, 0, parcelSize) && Bool.inRange(z, 0, parcelSize)) {
+					type = floor;
+				} else if (Bool.inRange(x, -1, parcelSize + 1) && Bool.inRange(z, -1, parcelSize + 1)) {
+					type = wall;
+					height += 1;
+				} else if (Bool.inRange(x, -2, parcelSize + 2) && Bool.inRange(z, -2, parcelSize + 2)) {
+					type = pathEdge;
+ 				} else {
+					type = pathMain;
+				}
+				
+				forEach.accept(new Coord(cX, height, cZ), type);
+				for (y = 0; y < height; y++) {
+					forEach.accept(new Coord(cX, y, cZ), fill);
+				}
+			}
+		}
+    }
+}
+
+class Coord {
+	
+	Coord(int x, int y, int z) {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+	}
+	
+	int x, y, z;
 
 }
