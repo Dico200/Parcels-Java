@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 public class InputHandler extends org.bukkit.command.Command {
@@ -34,9 +35,9 @@ public class InputHandler extends org.bukkit.command.Command {
 		
 		String message;
 		try {
-			message = handler.acceptCall(sender, args);
+			message = "&a" + handler.acceptCall(sender, args);
 		} catch (CommandException e) {
-			message = e.getMessage();
+			message = "&c" + e.getMessage();
 		} catch (ArgumentException e) {
 			Bukkit.getLogger().severe(String.format("Command '%s' threw ArgumentException: '%s'", parent.getId(), e.getMessage()));
 			e.printStackTrace();
@@ -44,7 +45,7 @@ public class InputHandler extends org.bukkit.command.Command {
 		}
 		
 		if (!(message == null || message.isEmpty())) {
-			sender.sendMessage(message);
+			sender.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
 		}
 		return true;
 	}

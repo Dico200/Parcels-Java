@@ -1,10 +1,10 @@
 package com.redstoner.command;
 
-import java.util.Optional;
-
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
+
+import com.redstoner.utils.Optional;
 
 public class Validate {
 	

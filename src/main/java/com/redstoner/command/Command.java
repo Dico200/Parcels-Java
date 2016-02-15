@@ -35,7 +35,7 @@ public abstract class Command extends Hierarchy<Command> {
 	}
 	
 	protected List<String> tabComplete(CommandSender sender, CommandScape scape) {
-		return new ArrayList<>();
+		return scape.proposals();
 	};
 	
 	private final void doSenderChecks(CommandSender sender) {

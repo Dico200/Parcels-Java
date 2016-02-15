@@ -6,11 +6,11 @@ import com.redstoner.utils.CastingMap;
 import com.redstoner.utils.DuoObject.BlockType;
 import com.redstoner.utils.MultiRunner;
 import com.redstoner.utils.Bool;
+import com.redstoner.utils.Optional;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -63,29 +63,21 @@ public class WorldManager {
 	}
 	
 	private <T> T get(String world, Function<ParcelWorld, T> function) {
-		ParcelWorld w = getWorld(world);
-		if (w == null) {
-			ParcelsPlugin.debug(String.format("World '%s' doesn't exist.", world));
-			worlds.forEach((key, value) -> {
-				ParcelsPlugin.debug(String.format("World '%s' does exist: %s", key, value));
-			});
-		}
-		return (w == null)? null : function.apply(w);
+		Optional<ParcelWorld> w = getWorld(world);
+		return w.isPresent()? function.apply(w.get()) : null;
 	}
 	
 	private boolean exec(String world, Consumer<ParcelWorld> function) {
-		ParcelWorld w = getWorld(world);
-		if (w == null)
-			return false;
-		function.accept(w);
-		return true;
+		Optional<ParcelWorld> w = getWorld(world);
+		w.ifPresent(function::accept);
+		return w.isPresent();
 	}
 	
 	private ParcelsPlugin plugin;
 	private HashMap<String, ParcelWorld> worlds = new HashMap<>();
 	
-	public ParcelWorld getWorld(String world) {
-		return this.worlds.get(world);
+	public Optional<ParcelWorld> getWorld(String world) {
+		return Optional.ofNullable(this.worlds.get(world));
 	}
 	
 	private void loadSettingsFromConfig() {

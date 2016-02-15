@@ -2,7 +2,6 @@ package com.redstoner.parcels.api;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -13,6 +12,7 @@ import com.redstoner.event.Order;
 import com.redstoner.event.Field;
 import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.utils.DuoObject.Coord;
+import com.redstoner.utils.Optional;
 
 public class Parcel {
 	
@@ -20,11 +20,12 @@ public class Parcel {
 	private List<OfflinePlayer> friends;
 	private int x, z;
 	
-	public Parcel(int x, int z) {
+	Parcel(int x, int z) {
 		owner.initialise(this);
-		this.x = 0;
-		this.z = 0;
+		this.x = x;
+		this.z = z;
 		friends = new ArrayList<>();
+		System.out.println("New " + toString());
 	}
 	
 	public String getId() {
@@ -44,7 +45,7 @@ public class Parcel {
 	}
 	
 	public boolean canBuild(Player user) {
-		return user.getUniqueId().equals(getOwner().map(OfflinePlayer::getUniqueId)) || friends.contains(user);
+		return user.getUniqueId().equals(getOwner().map(OfflinePlayer::getUniqueId).orElse(null)) || friends.contains(user);
 	}
 	
 	public int getX() {
@@ -60,11 +61,13 @@ public class Parcel {
 	}
 	
 	public boolean isClaimed() {
-		return getOwner().isPresent();
+		boolean pres = getOwner().isPresent();
+		//System.out.println(toString() + " claimed: " + pres);
+		return pres;
 	}
 	
 	public String toString() {
-		return String.format("parcel at (%s, %s)", x, z);
+		return String.format("parcel at (%s)", getId());
 	}
 	
 	static {
@@ -73,15 +76,42 @@ public class Parcel {
 			@Override
 			public void change(Event<OfflinePlayer> event) {
 				ParcelsPlugin.debug("Owner change event for " + event.<Parcel>getHolder().toString());
-				Player cause = Field.cast(Player.class, event.getCause(), true);
+				Player cause = event.getCause();
 				if (cause.hasPermission("parcels.command.parcel.setowner.any"))
 					return;
 				if (event.oldValue().map(OfflinePlayer::getUniqueId).map(uuid -> uuid.equals(cause.getUniqueId())).orElse(false))
 					return;
+				ParcelsPlugin.debug("Owner change event for " + event.<Parcel>getHolder().toString() + " failed");
 				event.setCancelled(true);
 			}
 			
 		});
+	}
+	
+	public boolean addFriend(OfflinePlayer friend) {
+		if (friends.contains(friend))
+			return false;
+		return friends.add(friend);
+	}
+	
+	public boolean removeFriend(OfflinePlayer friend) {
+		if (!friends.contains(friend))
+			return false;
+		return friends.remove(friend);
+	}
+	
+	public boolean isFriend(Player toCheck) {
+		return friends.contains(toCheck);
+	}
+	
+	public boolean isOwner(OfflinePlayer toCheck) {
+		return getOwner().map(OfflinePlayer::getUniqueId).map(uuid -> uuid.equals(toCheck.getUniqueId())).orElse(false);
+	}
+	
+	public String getInfo() {
+		return String.format("&4ID: (&e%s&4) Owner: &e%s&4\nHelpers: &e%s", 
+				getId(), getOwner().map(OfflinePlayer::getName).orElse(""), 
+				String.join(", ", (CharSequence[])friends.stream().map(OfflinePlayer::getName).toArray(size -> new String[size])));
 	}
 
 }

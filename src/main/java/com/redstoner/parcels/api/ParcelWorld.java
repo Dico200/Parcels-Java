@@ -1,7 +1,6 @@
 package com.redstoner.parcels.api;
 
 import java.util.List;
-import java.util.Optional;
 
 import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.generation.ParcelGenerator;
@@ -10,6 +9,7 @@ import com.redstoner.utils.Calc;
 import com.redstoner.utils.CastingMap;
 import com.redstoner.utils.DuoObject;
 import com.redstoner.utils.DuoObject.Coord;
+import com.redstoner.utils.Optional;
 
 public class ParcelWorld {
 	
@@ -60,14 +60,27 @@ public class ParcelWorld {
 	public Optional<Parcel> getParcelAt(int absX, int absZ) {
 		int sectionSize = settings.sectionSize;
 		int parcelSize = settings.parcelSize;
-		absX += settings.xOffset + settings.pathOffset;
-		absZ += settings.zOffset + settings.pathOffset;
+		absX -= settings.xOffset + settings.pathOffset;
+		absZ -= settings.zOffset + settings.pathOffset;
 		int modX = Calc.posModulo(absX, sectionSize);
 		int modZ = Calc.posModulo(absZ, sectionSize);
 		if (Bool.inRange(modX, 0, parcelSize) && Bool.inRange(modZ, 0, parcelSize)) {
-			return Optional.of(parcels.getParcelAt((absX - modX) / sectionSize, (absZ - modZ) / sectionSize));
+			int px = (absX - modX) / sectionSize;
+			int pz = (absZ - modZ) / sectionSize;
+			if (parcels.isWithinBoundaryAt(px, pz))
+				return Optional.of(parcels.getParcelAt(px, pz));
 		}
 		return Optional.empty();
+	}
+	
+	public boolean isInParcel(int absX, int absZ, int px, int pz) {
+		int sectionSize = settings.sectionSize;
+		int parcelSize = settings.parcelSize;
+		absX -= settings.xOffset + settings.pathOffset + px*sectionSize;
+		absZ -= settings.zOffset + settings.pathOffset + pz*sectionSize;
+		int modX = Calc.posModulo(absX, sectionSize);
+		int modZ = Calc.posModulo(absZ, sectionSize);
+		return Bool.inRange(modX, 0, parcelSize) && Bool.inRange(modZ, 0, parcelSize);
 	}
 
 }

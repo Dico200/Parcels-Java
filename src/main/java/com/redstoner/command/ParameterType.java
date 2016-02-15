@@ -138,7 +138,7 @@ public abstract class ParameterType<T> {
 			@Override
 			OfflinePlayer handle(String input) {
 				OfflinePlayer user = Bukkit.getOfflinePlayer(input);
-				Validate.isTrue(user.hasPlayedBefore(), exceptionMessage());
+				Validate.isTrue(user.hasPlayedBefore() || user.isOnline(), exceptionMessage());
 				return user;
 			}
 

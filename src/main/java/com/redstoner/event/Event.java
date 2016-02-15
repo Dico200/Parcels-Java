@@ -1,8 +1,7 @@
 package com.redstoner.event;
 
-import java.util.Optional;
-
 import com.redstoner.command.ArgumentException;
+import com.redstoner.utils.Optional;
 
 public class Event<T> {
 	
@@ -44,6 +43,7 @@ public class Event<T> {
 	 * @param cancelled The new canceled state
 	 */
 	public void setCancelled(boolean cancelled) {
+		System.out.println("Cancelled state set to: " + cancelled);
 		this.cancelled = cancelled;
 	}
 	

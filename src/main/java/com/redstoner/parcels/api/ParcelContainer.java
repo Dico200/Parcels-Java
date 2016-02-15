@@ -9,10 +9,11 @@ import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.utils.DuoObject;
 import com.redstoner.utils.DuoObject.Coord;
 
-class ParcelContainer {
+public class ParcelContainer {
 	
 	public void print() {
-		for (Parcel[] row : parcels) {
+		for (int i = parcels.length - 1; i >= 0; i--) {
+			Parcel[] row = parcels[i];
 			ParcelsPlugin.debug(String.join(" ", (CharSequence[])Arrays.stream(row)
 					.map(parcel -> parcel.isClaimed()? "D" : "x")
 					.toArray(size -> new String[size])));
@@ -36,13 +37,11 @@ class ParcelContainer {
 	
 	protected ParcelContainer(int axisLimit) {
 		count = axisLimit;
-		int total = 2*axisLimit + 1;
-		parcels = IntStream.range(0, total)
-				.mapToObj(x -> IntStream.range(0, total)
+		parcels = IntStream.rangeClosed(-axisLimit, axisLimit)
+				.mapToObj(x -> IntStream.rangeClosed(-axisLimit, axisLimit)
 						.mapToObj(z -> new Parcel(x, z))
 						.toArray(size -> new Parcel[size])
 				).toArray(size -> new Parcel[size][]);
-		ParcelsPlugin.debug("Parcelcontainer: ");
 		print();
 	}
 	
@@ -66,7 +65,7 @@ class ParcelContainer {
 	}
 	
 	protected Parcel getParcelAt(int x, int z) {
-		return atX(parcelsAtX(x), z);
+		return isWithinBoundaryAt(x, z)? atX(parcelsAtX(x), z) : null;
 	}
 	
 	protected void setParcelAt(int x, int z, Parcel parcel) {
@@ -74,7 +73,7 @@ class ParcelContainer {
 	}
 	
 	protected boolean isClaimedAt(int x, int z) {
-		return getParcelAt(x, z).isClaimed();
+		return isWithinBoundaryAt(x, z)? getParcelAt(x, z).isClaimed() : false;
 	}
 	
 	protected boolean isWithinBoundaryAt(int x, int z) {

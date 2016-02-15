@@ -1,7 +1,6 @@
 package com.redstoner.event;
 
-import java.util.Optional;
-
+import com.redstoner.utils.Optional;
 
 public class Property<T> {
 	

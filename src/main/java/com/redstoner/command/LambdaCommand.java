@@ -1,6 +1,5 @@
 package com.redstoner.command;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -14,7 +13,7 @@ public class LambdaCommand extends Command {
 	private BiFunction<CommandSender, CommandScape, List<String>> tabCompleter;
 	
 	public LambdaCommand(String command, BiFunction<CommandSender, CommandScape, String> executor) {
-		this(command, executor, (sender, scape) -> new ArrayList<String>());
+		this(command, executor, (sender, scape) -> scape.proposals());
 	}
 	
 	public LambdaCommand(String command, BiFunction<CommandSender, CommandScape, String> executor, 

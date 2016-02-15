@@ -2,7 +2,8 @@ package com.redstoner.event;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+
+import com.redstoner.utils.Optional;
 
 public class Field<T, U> {
 	
@@ -20,7 +21,7 @@ public class Field<T, U> {
 	}
 	
 	public Optional<T> get(U holder) {
-		return values.getOrDefault(holder, Optional.empty());
+		return values.get(holder);
 	}
 	
 	public boolean set(U holder, T value) {
@@ -32,15 +33,13 @@ public class Field<T, U> {
 	}
 	
 	public void initialise(U holder) {
-		if (defaultValue != null) {
-			values.put(holder, Optional.of(defaultValue));
-		}
+		values.put(holder, Optional.ofNullable(defaultValue));
 	}
 	
 	private boolean execute(Event<T> event) {	
 		listeners.execute(event);
 		if (!event.isCancelled()) {
-			values.replace(event.getHolder(), Optional.ofNullable(event.newValue()));
+			values.put(event.getHolder(), Optional.ofNullable(event.newValue()));
 			return true;
 		}
 		return false;

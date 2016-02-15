@@ -1,20 +1,12 @@
 package com.redstoner.parcels;
 
-import java.util.Optional;
-
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.WorldManager;
 import com.redstoner.parcels.command.ParcelCommands;
 
 public class ParcelsPlugin extends JavaPlugin {
-	
-	@SuppressWarnings("unused")
-	public static void main(String[] args) {
-		Optional<Parcel> maybe = Optional.of(new Parcel(0, 0));
-	}
 	
 	private static ParcelsPlugin plugin = null;
 	private static boolean debugging = true;
