@@ -7,6 +7,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
 import org.bukkit.Chunk;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
@@ -40,6 +41,12 @@ public class ParcelGenerator extends ChunkGenerator {
 	private final short floorId, wallId, pathMainId, pathEdgeId, fillId;
 	private final byte floorData, wallData, pathMainData, pathEdgeData, fillData;
 	private final int parcelSize, floorHeight, xOffset, zOffset, sectionSize, pathOffset;
+	
+	@Override
+	public Location getFixedSpawnLocation(World world, Random random) {
+		double fix = ((sectionSize - parcelSize) % 2 == 0)? 0.5 : 0;
+		return new Location(world, xOffset + fix, floorHeight + 1, zOffset + fix);
+	}
 	
 	@Override
 	public short[][] generateExtBlockSections(World world, Random random, int chunkX, int chunkZ, BiomeGrid biomeGrid) {

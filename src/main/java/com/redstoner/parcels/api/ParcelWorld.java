@@ -1,13 +1,13 @@
 package com.redstoner.parcels.api;
 
-import java.util.List;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 
-import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.generation.ParcelGenerator;
 import com.redstoner.utils.Bool;
 import com.redstoner.utils.Calc;
-import com.redstoner.utils.CastingMap;
-import com.redstoner.utils.DuoObject;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Optional;
 
@@ -18,27 +18,11 @@ public class ParcelWorld {
 	private ParcelWorldSettings settings;
 	private String world;
 	
-	public ParcelWorld(String world, CastingMap<String, Object> settings) {
-		this(world, new ParcelWorldSettings(settings), settings.getCasted("parcel-axis-limit"));
-	}
-	
-	public ParcelWorld(String world, ParcelWorldSettings settings, int axisLimit) {
-		this.parcels = new ParcelContainer(axisLimit);
+	public ParcelWorld(String world, ParcelWorldSettings settings) {
+		this.parcels = new ParcelContainer(settings.axisLimit);
 		this.generator = new ParcelGenerator(settings);
 		this.settings = settings;
-	}
-	
-	public void resize(int axisLimit) {
-		DuoObject<ParcelContainer, List<Parcel>> output = ParcelContainer.resize(parcels, axisLimit);
-		this.parcels = output.v1();
-		output.v2().stream().forEach(parcel -> {
-			Coord coord = parcels.nextUnclaimed();
-			if (coord == null) {
-				ParcelsPlugin.log("Error: resize made it impossible to fit all previous parcels! Parcel removed.");
-			} else {
-				parcels.setParcelAt(coord.getX(), coord.getZ(), parcel);
-			}
-		});
+		this.world = world;
 	}
 	
 	public ParcelWorldSettings getSettings() {
@@ -59,12 +43,11 @@ public class ParcelWorld {
 	
 	public Optional<Parcel> getParcelAt(int absX, int absZ) {
 		int sectionSize = settings.sectionSize;
-		int parcelSize = settings.parcelSize;
 		absX -= settings.xOffset + settings.pathOffset;
 		absZ -= settings.zOffset + settings.pathOffset;
 		int modX = Calc.posModulo(absX, sectionSize);
 		int modZ = Calc.posModulo(absZ, sectionSize);
-		if (Bool.inRange(modX, 0, parcelSize) && Bool.inRange(modZ, 0, parcelSize)) {
+		if (isOriginParcel(modX, modZ)) {
 			int px = (absX - modX) / sectionSize;
 			int pz = (absZ - modZ) / sectionSize;
 			if (parcels.isWithinBoundaryAt(px, pz))
@@ -73,14 +56,46 @@ public class ParcelWorld {
 		return Optional.empty();
 	}
 	
+	private boolean isOriginParcel(int x, int z) {
+		return Bool.inRange(x, 0, settings.parcelSize) && Bool.inRange(z, 0, settings.parcelSize);
+	}
+	
 	public boolean isInParcel(int absX, int absZ, int px, int pz) {
 		int sectionSize = settings.sectionSize;
-		int parcelSize = settings.parcelSize;
 		absX -= settings.xOffset + settings.pathOffset + px*sectionSize;
 		absZ -= settings.zOffset + settings.pathOffset + pz*sectionSize;
 		int modX = Calc.posModulo(absX, sectionSize);
 		int modZ = Calc.posModulo(absZ, sectionSize);
-		return Bool.inRange(modX, 0, parcelSize) && Bool.inRange(modZ, 0, parcelSize);
+		return isOriginParcel(modX, modZ);
+	}
+	
+	public void teleport(Player user, Parcel parcel) {
+		Coord home = toHomeCoord(parcel);
+		user.teleport(new Location(Bukkit.getWorld(world), home.getX(), settings.floorHeight + 1, home.getZ()));
+	}
+	
+	private Coord toHomeCoord(Parcel parcel) {
+		Coord NW = toNWCoord(parcel);
+		return Coord.of(NW.getX() - 2, NW.getZ() + (settings.parcelSize - 1) / 2);
+	}
+	
+	private Coord toNWCoord(Parcel parcel) {
+		return Coord.of(settings.sectionSize * parcel.getX() + settings.pathOffset + settings.xOffset,
+						settings.sectionSize * parcel.getZ() + settings.pathOffset + settings.zOffset);
+	}
+	
+	@SuppressWarnings("unused")
+	private Parcel fromNWCoord(Coord coord) {
+		return parcels.getParcelAt((coord.getX() - settings.pathOffset - settings.xOffset)/settings.sectionSize,
+								   (coord.getZ() - settings.pathOffset - settings.zOffset)/settings.sectionSize);
+	}
+	
+	public Parcel[] getOwned(OfflinePlayer user) {
+		return parcels.stream().filter(p -> p.isOwner(user)).toArray(size -> new Parcel[size]);
+	}
+	
+	public Optional<Parcel> getNextUnclaimed() {
+		return Optional.ofNullable(parcels.nextUnclaimed());
 	}
 
 }

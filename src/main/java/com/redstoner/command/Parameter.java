@@ -18,6 +18,10 @@ public class Parameter<T> {
 		this.index = 0;
 	}
 	
+	public Parameter(String name, ParameterType<T> type, String description) {
+		this(name, type, description, true);
+	}
+	
 	String getName() {
 		return name;
 	}
@@ -38,13 +42,11 @@ public class Parameter<T> {
 		this.index = index;
 	}
 	
-	public Parameter(String name, ParameterType<T> type, String description) {
-		this(name, type, description, true);
-	}
-	
 	public T accept(String input) {
-		if (required && (input == null || input.isEmpty())) {
-			throw new CommandException(String.format("Parameter '%s' is required", name));
+		if (input == null || input.isEmpty()) {
+			if (required)
+				throw new CommandException(String.format("Parameter '%s' is required", name));
+			return null;
 		}
 		try {
 			return type.handle(input);

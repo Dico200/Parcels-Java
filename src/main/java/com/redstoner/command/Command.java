@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 
 public abstract class Command extends Hierarchy<Command> {
@@ -202,6 +203,7 @@ public abstract class Command extends Hierarchy<Command> {
 			this.permission = permission.replace("$PARENT$.", "").replace(".$PARENT$", "");
 		}
 		this.permission = permission.replace("$PARENT$", inst.permission).replace("$COMMAND$", getId());
+		Bukkit.getLogger().info(String.format("Permission for command '%s' = '%s'", command, permission));
 	}	
 
 }

@@ -2,6 +2,7 @@ package com.redstoner.parcels;
 
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -13,51 +14,43 @@ import com.redstoner.parcels.api.WorldManager;
 
 public class ParcelListener implements Listener {
 	
-	private static final WorldManager MANAGER = ParcelsPlugin.getInstance().getWorldManager();
+	private static void checkBuildEvent(Cancellable event, Block b, Player user) {
+		if (user.hasPermission("parcels.admin.buildanywhere"))
+			return;
+		WorldManager.ifWorldPresent(b, (w, maybeP) -> {
+			if (!maybeP.isPresent() || maybeP.map(p -> !p.canBuild(user) || !w.isInParcel(b.getX(), b.getZ(), p.getX(), p.getZ())).orElse(false))
+				cancel(event);
+		});	
+	}
 	
-	@EventHandler
-	public void onMove(PlayerMoveEvent event) {
-		/*
-		IntStream.range(0, 19).forEach(i -> {
-			event.getPlayer().sendMessage(" ");
-		});
-		MANAGER.getParcelAt(event.getTo()).ifPresent(parcel -> {
-			event.getPlayer().sendMessage("You are on " + parcel.toString());
-		});
-		*/
+	private static void cancel(Cancellable event) {
+		ParcelsPlugin.log("event cancelled");
+		event.setCancelled(true);
 	}
 	
 	@EventHandler
-	public void onWorldInit(WorldInitEvent event) {
-		
+	public void onMove(PlayerMoveEvent event) {
+		if (event.getPlayer().hasPermission("parcels.admin.bypass"))
+			return;
+		WorldManager.getParcel(event.getTo()).filter(p -> p.getDenied().contains(event.getPlayer())).ifPresent(() -> cancel(event));
+		//TODO NOT WORKING
 	}
 	
 	@EventHandler
 	public void onBreak(BlockBreakEvent event) {
-		Player user = event.getPlayer();
-		if (user.hasPermission("parcels.admin.buildanywhere"))
-			return;
-		Block b = event.getBlock();
-		MANAGER.getWorld(b.getWorld().getName()).ifPresent(w -> {
-			w.getParcelAt(b.getX(), b.getZ())
-			.ifNotPresent(() -> event.setCancelled(true))
-			.filter(p -> !p.canBuild(user) || !w.isInParcel(b.getX(), b.getZ(), p.getX(), p.getZ()))
-			.ifPresent(p -> event.setCancelled(true));
-		});		
+		checkBuildEvent(event, event.getBlock(), event.getPlayer());
 	}
 	
 	@EventHandler
 	public void onPlace(BlockPlaceEvent event) {
-		Player user = event.getPlayer();
-		if (user.hasPermission("parcels.admin.buildanywhere"))
-			return;
-		Block b = event.getBlockPlaced();
-		MANAGER.getWorld(b.getWorld().getName()).ifPresent(w -> {
-			w.getParcelAt(b.getX(), b.getZ())
-			.ifNotPresent(() -> event.setCancelled(true))
-			.filter(p -> !p.canBuild(user) || !w.isInParcel(b.getX(), b.getZ(), p.getX(), p.getZ()))
-			.ifPresent(p -> event.setCancelled(true));
-		});		
+		checkBuildEvent(event, event.getBlockPlaced(), event.getPlayer());
+	}
+	
+	@EventHandler
+	public void onWorldInit(WorldInitEvent event) {
+		WorldManager.getWorld(event.getWorld()).ifPresent(w -> {
+			event.getWorld().getGenerator(); //TODO
+		});
 	}
 
 }

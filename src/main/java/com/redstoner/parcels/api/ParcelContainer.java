@@ -1,15 +1,13 @@
 package com.redstoner.parcels.api;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.Stream.Builder;
 
 import com.redstoner.parcels.ParcelsPlugin;
-import com.redstoner.utils.DuoObject;
-import com.redstoner.utils.DuoObject.Coord;
 
-public class ParcelContainer {
+class ParcelContainer {
 	
 	public void print() {
 		for (int i = parcels.length - 1; i >= 0; i--) {
@@ -20,21 +18,6 @@ public class ParcelContainer {
 		}
 	}
 	
-	protected static DuoObject<ParcelContainer, List<Parcel>> resize(ParcelContainer old, int axisLimit) {
-		ParcelContainer container = new ParcelContainer(axisLimit);
-		List<Parcel> notTransferred = new ArrayList<>();
-		Arrays.stream(old.getAll()).forEach(parcel -> {
-			int x = parcel.getX();
-			int z = parcel.getZ();
-			if (container.isWithinBoundaryAt(x, z)) {
-				container.setParcelAt(x, z, parcel);
-			} else {
-				notTransferred.add(parcel);
-			}
-		});
-		return new DuoObject<ParcelContainer, List<Parcel>>(container, notTransferred);
-	}
-	
 	protected ParcelContainer(int axisLimit) {
 		count = axisLimit;
 		parcels = IntStream.rangeClosed(-axisLimit, axisLimit)
@@ -42,7 +25,6 @@ public class ParcelContainer {
 						.mapToObj(z -> new Parcel(x, z))
 						.toArray(size -> new Parcel[size])
 				).toArray(size -> new Parcel[size][]);
-		print();
 	}
 	
 	private int count;
@@ -52,24 +34,12 @@ public class ParcelContainer {
 		return array[count + x];
 	}
 	
-	private <T> void insertX(T[] array, int x, T obj) {
-		array[count + x] = obj;
-	}
-	
-	private Parcel[] parcelsAtX(int x) {
-		return atX(parcels, x);
-	}
-	
 	private boolean isWithinBoundaryAt(int x) {
 		return ((x<0)?-x:x) <= count;
 	}
 	
 	protected Parcel getParcelAt(int x, int z) {
-		return isWithinBoundaryAt(x, z)? atX(parcelsAtX(x), z) : null;
-	}
-	
-	protected void setParcelAt(int x, int z, Parcel parcel) {
-		insertX(parcelsAtX(x), z, parcel);
+		return isWithinBoundaryAt(x, z)? atX(atX(parcels, x), z) : null;
 	}
 	
 	protected boolean isClaimedAt(int x, int z) {
@@ -81,20 +51,18 @@ public class ParcelContainer {
 	}
 	
 	protected Parcel[] getAll() {
-		List<Parcel> all = new ArrayList<>();
-		IntStream.rangeClosed(-count, count).forEach(x -> {
-			Parcel[] atX = parcelsAtX(x);
-			IntStream.rangeClosed(-count, count).forEach(z -> {
-				Parcel atXZ = atX(atX, z);
-				if (atXZ != null)
-					all.add(atXZ);
-			});
-		});
-		
-		return all.stream().toArray(size -> new Parcel[size]);
+		return stream().toArray(size -> new Parcel[size]);
 	}
 	
-	protected Coord nextUnclaimed() {
+	protected Stream<Parcel> stream() {
+		Builder<Parcel> builder = Stream.builder();
+		for (Parcel[] row : parcels)
+			for (Parcel parcel : row)
+				builder.accept(parcel);
+		return builder.build();
+	}
+	
+	protected Parcel nextUnclaimed() {
 		for (int distance = 0; distance <= count; distance++) {
 			int inner = distance - 1;
 			for (int x = -distance; x < distance + 1; x++) {
@@ -102,8 +70,9 @@ public class ParcelContainer {
 					if (((x<0)?-x:x) <= inner && ((z<0)?-z:z) <= inner) {
 						continue;
 					}
-					if (!isClaimedAt(x, z)) {
-						return new Coord(x, z);
+					Parcel p = getParcelAt(x, z);
+					if (!p.isClaimed()) {
+						return p;
 					}
 				}
 			}

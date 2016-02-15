@@ -23,8 +23,12 @@ public class DuoObject<T, U> {
 	}
 	
 	public static class Coord extends DuoObject<Integer, Integer> {
+		
+		public static Coord of(int x, int z) {
+			return new Coord(x, z);
+		}
 
-		public Coord(int v1, int v2) {
+		private Coord(int v1, int v2) {
 			super(v1, v2);
 		}
 		
@@ -73,6 +77,7 @@ public class DuoObject<T, U> {
 	public static class BlockType extends DuoObject<Short, Byte> {
 		
 		public static BlockType fromString(String s) throws NumberFormatException {
+			Bool.validate(s != null, "BlockType was passed null");
 			String[] both = s.split(":");
 			String id;
 			String data = "0";

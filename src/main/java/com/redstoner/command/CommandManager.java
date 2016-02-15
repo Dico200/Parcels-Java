@@ -13,7 +13,7 @@ public class CommandManager {
 	private static final CommandMap COMMAND_MAP;
 	private static final Command ROOT;
 	
-	static Command getROOT() {
+	static Command getRoot() {
 		return ROOT;
 	}
 	

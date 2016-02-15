@@ -6,10 +6,9 @@ import java.util.Map.Entry;
 import java.util.List;
 import java.util.function.BiPredicate;
 
+import com.redstoner.utils.Optional;
+
 public class CommandScape {
-	
-	private static final BiPredicate<Parameter<?>, Integer> EQUAL_INDEX = (param, index) -> param.getIndex() == index;
-	private static final BiPredicate<Parameter<?>, String> EQUAL_NAME = (param, name) -> param.getName().equals(name);
 	
 	private String[] original;
 	private List<String> proposals;
@@ -34,8 +33,7 @@ public class CommandScape {
 		
 		for (int i = 0; i < params.size(); i++) {
 			Parameter<?> param = params.get(i);
-			String input = toParse[i];
-			parsed.put(param, param.accept(input));
+			parsed.put(param, param.accept(toParse[i]));
 		}
 		
 		if (params.size() >= original.length) {
@@ -67,12 +65,26 @@ public class CommandScape {
 		assert proposals != null : new UnsupportedOperationException();
 		return proposals;
 	}
+	
+	// --------------- Retrieval ---------------
+	
+	private static final BiPredicate<Parameter<?>, Integer> EQUAL_INDEX = (param, index) -> param.getIndex() == index;
+	private static final BiPredicate<Parameter<?>, String> EQUAL_NAME = (param, name) -> param.getName().equals(name);
+	
 	public <T> T get(int index) {
 		return get(EQUAL_INDEX, index);
 	}
 	
 	public <T> T get(String name) {
 		return get(EQUAL_NAME, name);
+	}
+	
+	public <T> Optional<T> getOptional(int index) {
+		return Optional.ofNullable(get(index));
+	}
+	
+	public <T> Optional<T> getOptional(String name) {
+		return Optional.ofNullable(get(name));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -89,5 +101,4 @@ public class CommandScape {
 		}
 		throw new ArgumentException("Requested parameter does not exist: " + identifier);
 	}
-
 }

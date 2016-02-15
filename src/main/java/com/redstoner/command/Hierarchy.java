@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.redstoner.parcels.ParcelsPlugin;
-
 public class Hierarchy<T extends Hierarchy<T>> {
 	
 	private Hierarchy<T> parent = null;
@@ -24,7 +22,6 @@ public class Hierarchy<T extends Hierarchy<T>> {
 	}
 	
 	public Hierarchy(String path, Class<T> type) {
-		ParcelsPlugin.log("Path: " + path);
 		String[] split = path.toLowerCase().split(" ");
 		assert split.length != 0;
 		this.id = split[split.length - 1];
@@ -32,8 +29,6 @@ public class Hierarchy<T extends Hierarchy<T>> {
 		this.type = type;
 		this.layer = 0;
 		this.children = new ArrayList<>();
-		
-		ParcelsPlugin.log("Path: [" + String.join(" ", this.path) + "] ID: " + id);
 	}
 	
 	public T instanceAt(String[] path, boolean checkAliases) {
@@ -64,7 +59,6 @@ public class Hierarchy<T extends Hierarchy<T>> {
 	}
 	
 	protected boolean addChild(String id, Hierarchy<T> instance) {
-		ParcelsPlugin.log("Addchild called. Layer: " + layer);
 		Hierarchy<T> otherInstance = getChild(id, false);
 		if (otherInstance != null) {
 			if (otherInstance.isPlaceHolder()) {

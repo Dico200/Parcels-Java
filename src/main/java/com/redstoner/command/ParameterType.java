@@ -41,6 +41,7 @@ public abstract class ParameterType<T> {
 	}
 	
 	abstract T handle(String input);
+	
 	List<String> complete(String input) {
 		return new ArrayList<>();
 	}

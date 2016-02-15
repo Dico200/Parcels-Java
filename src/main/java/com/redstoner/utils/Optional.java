@@ -71,6 +71,11 @@ public class Optional<T> {
 		return this;
 	}
 	
+	public Optional<T> ifPresent(Runnable toRun) {
+		toRun.run();
+		return this;
+	}
+	
 	public Optional<T> ifPresentOrElse(Consumer<? super T> present, Runnable orElse) {
 		if (isPresent())
 			present.accept(value);

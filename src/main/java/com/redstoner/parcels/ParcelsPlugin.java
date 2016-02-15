@@ -41,9 +41,9 @@ public class ParcelsPlugin extends JavaPlugin {
 			ParcelsPlugin.debug(String.format("CONFIG: '%s' = %s", key, value));
 		});
 		
-		worldManager = new WorldManager(this);
+		worldManager = WorldManager.INSTANCE;
 		
-		ParcelCommands.register(worldManager);
+		ParcelCommands.register();
 		getServer().getPluginManager().registerEvents(new ParcelListener(), this);
 	}
 	
