@@ -24,16 +24,17 @@ public class ParcelListener implements Listener {
 	}
 	
 	private static void cancel(Cancellable event) {
-		ParcelsPlugin.log("event cancelled");
 		event.setCancelled(true);
 	}
 	
 	@EventHandler
 	public void onMove(PlayerMoveEvent event) {
+		/*
 		if (event.getPlayer().hasPermission("parcels.admin.bypass"))
 			return;
 		WorldManager.getParcel(event.getTo()).filter(p -> p.getDenied().contains(event.getPlayer())).ifPresent(() -> cancel(event));
 		//TODO NOT WORKING
+		 */
 	}
 	
 	@EventHandler

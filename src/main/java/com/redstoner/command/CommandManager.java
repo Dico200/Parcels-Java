@@ -12,13 +12,19 @@ public class CommandManager {
 	
 	private static final CommandMap COMMAND_MAP;
 	private static final Command ROOT;
+	private static String prefix;
 	
 	static Command getRoot() {
 		return ROOT;
 	}
 	
-	public static void register(Command handler) {
+	public static void register(String prefix, Command handler) {
+		CommandManager.prefix = prefix;
 		ROOT.addChild(handler);
+	}
+	
+	public static void register(Command handler) {
+		register(null, handler);
 	}
 	
 	private static void dispatchToMap(Command command) {
@@ -26,7 +32,7 @@ public class CommandManager {
 		assert command != null : new AssertionError("Dispatched command is null!");
 		Bukkit.getLogger().info("Registering command " + command.getId() + " to command map.");
 		
-		InputHandler handler = new InputHandler(command);
+		InputHandler handler = new InputHandler(command, prefix);
 		String id = command.getId();
 
 		handler.setOther(COMMAND_MAP.getCommand(id));

@@ -9,9 +9,10 @@ public enum CommandAction {
 		@Override
 		String execute(Command handler, CommandSender sender, String[] args) {
 			String message = handler.invokeExecutor(sender, args);
-			for (CommandAction action : values())
-				if (action != this && message.equals(action.messageId()))
-					return action.execute(handler, sender, args);
+			if (message != null)
+				for (CommandAction action : values())
+					if (action != this && message.equals(action.messageId()))
+						return action.execute(handler, sender, args);
 			return message;
 		}
 		
@@ -30,7 +31,7 @@ public enum CommandAction {
 
 		@Override
 		String execute(Command handler, CommandSender sender, String[] args) {
-			return "Syntax: " + handler.displaySyntax();
+			return "Syntax: " + handler.getSyntaxMessage();
 		}
 		
 	},
@@ -39,7 +40,7 @@ public enum CommandAction {
 
 		@Override
 		String execute(Command handler, CommandSender sender, String[] args) {
-			return handler.displayHelp(sender);
+			return handler.getHelpMessage(sender);
 		}
 		
 	};

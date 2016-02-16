@@ -21,12 +21,8 @@ public enum SenderType {
 		return type.isInstance(sender);
 	}
 	
-	protected String getMessage() {
-		return message;
-	}
-	
 	protected void check(CommandSender sender) {
-		Validate.isTrue(correct(sender), getMessage());
+		Validate.isTrue(correct(sender), message);
 	}
 
 }

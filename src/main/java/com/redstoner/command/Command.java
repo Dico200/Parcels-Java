@@ -37,7 +37,7 @@ public abstract class Command extends Hierarchy<Command> {
 	
 	protected List<String> tabComplete(CommandSender sender, CommandScape scape) {
 		return scape.proposals();
-	};
+	}
 	
 	private final void doSenderChecks(CommandSender sender) {
 		senderType.check(sender);
@@ -72,38 +72,20 @@ public abstract class Command extends Hierarchy<Command> {
 		setOnSyntaxRequest(CommandAction.DISPLAY_SYNTAX);
 	}
 	
-	private String command;
+	String command;
 	private String permission; 
 	private SenderType senderType;
 	private String description;
-	private String helpInformation;
+	private String[] helpInformation;
 	private List<String> aliases;
 	private Parameters params;
 	private CommandAction onHelpRequest;
 	private CommandAction onSyntaxRequest;
+	private Messaging.CommandWriter messager;
 	
 	@Override
-	public List<String> getAliases() {
+	public final List<String> getAliases() {
 		return aliases;
-	}
-	
-	protected final String displaySyntax() {
-		return String.format("/%s %s", command, params.syntax());
-	}
-	
-	protected final String displayHelp(CommandSender sender) {
-		String message = String.format("Command /%s\n", command);
-		message += helpInformation + "\n";
-		message += String.format("/%s...\n", command);
-		message += String.format("...%s\n", params.syntax());
-		message += String.join("\n", (CharSequence[])
-				getChildren().stream()
-				.filter(cmd -> cmd.accepts(sender))
-				.map(cmd -> String.format("...%s\n", cmd.smallInfo(getLayer())))
-				.toArray(size -> new String[size])
-		);
-		
-		return message;
 	}
 	
 	final String getDescription() {
@@ -119,9 +101,17 @@ public abstract class Command extends Hierarchy<Command> {
 		}
 	}
 	
-	protected final String smallInfo(int layerFrom) {
+	protected final String collectPath(int layerFrom) {
 		String[] prev = Arrays.copyOfRange(getPath(), layerFrom, getLayer() - 1);
-		return String.format("%s %s: %s", String.join(" ", prev), getId(), description);
+		return String.format("%s %s", String.join(" ", prev), getId());
+	}
+	
+	protected final String getSyntaxMessage() {
+		return messager.getSyntaxMessage();
+	}
+	
+	protected final String getHelpMessage(CommandSender sender) {
+		return messager.parseHelpMessage(sender);
 	}
 	
 	/**
@@ -159,7 +149,7 @@ public abstract class Command extends Hierarchy<Command> {
 	 * @default empty string[]
 	 */
 	protected final void setHelpInformation(String... lines) {
-		this.helpInformation = String.join("\n", lines);
+		this.helpInformation = lines;
 	}
 	
 	/**
@@ -204,6 +194,8 @@ public abstract class Command extends Hierarchy<Command> {
 		}
 		this.permission = permission.replace("$PARENT$", inst.permission).replace("$COMMAND$", getId());
 		Bukkit.getLogger().info(String.format("Permission for command '%s' = '%s'", command, permission));
+		
+		this.messager = new Messaging.CommandWriter(this, command, helpInformation, aliases, params.syntax());
 	}	
 
 }

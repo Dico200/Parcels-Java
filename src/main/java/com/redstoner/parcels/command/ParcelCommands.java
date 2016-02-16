@@ -2,13 +2,16 @@ package com.redstoner.parcels.command;
 
 import com.redstoner.utils.Optional;
 
+
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.command.CommandSender;
 
+
 import com.redstoner.command.CommandAction;
 import com.redstoner.command.CommandManager;
 import com.redstoner.command.LambdaCommand;
+import com.redstoner.command.Messaging;
 import com.redstoner.command.Parameter;
 import com.redstoner.command.ParameterType;
 import com.redstoner.command.SenderType;
@@ -21,11 +24,13 @@ import com.redstoner.parcels.api.ParcelWorld;
 @SuppressWarnings("unused")
 public class ParcelCommands {
 	
+	private static final String PREFIX = "Parcels";
+	
 	public static void register() {
 		
 		ParcelsPlugin.debug("Registering parcel commands");
 		
-		CommandManager.register(new LambdaCommand("parcel", (sender, scape) -> "EXEC:CommandAction.DISPLAY_HELP") {{
+		CommandManager.register(PREFIX, new LambdaCommand("parcel", (sender, scape) -> "EXEC:CommandAction.DISPLAY_HELP") {{
 			setPermission("parcels.command");
 			setDescription("manages your parcels");
 			setAliases("plot", "p");
@@ -37,6 +42,8 @@ public class ParcelCommands {
 				(sender, scape) -> {
 			return Validate.returnIfPresent(scape.getMaybeParcel().map(Parcel::getInfo), "You're not on a parcel");
 		}){{
+			setDescription("displays information about this parcel");
+			setHelpInformation("Displays general information", "about the parcel you're on");
 			setAliases("i");
 		}});
 		
@@ -78,22 +85,72 @@ public class ParcelCommands {
 			Validate.isTrue(p.isPresent(), "This world is full, please ask an admin to upsize it");
 			p.get().setOwner(sender);
 			w.teleport(sender, p.get());
-			return "Enjoy your new plot!";
+			return "Enjoy your new parcel!";
 		}){{
-			
+			setDescription("sets you up with a fresh, unclaimed parcel");
+			setHelpInformation("Finds the unclaimed parcel nearest to origin,", "and gives it to you");
 		}});
 		
 		CommandManager.register(new ParcelCommand("parcel home", ParcelRequirement.IN_WORLD, 
 				(sender, scape) -> {
-			int number = scape.<Integer>getOptional("number").orElse(0);
-			Parcel[] owned = scape.getWorld().getOwned(sender);
-			Validate.isTrue(number < owned.length, "That parcel id does not exist, you have " + owned.length + " parcels");
+			int number = scape.<Integer>getOptional("id").orElse(0);
+			OfflinePlayer owner = scape.<OfflinePlayer>getOptional("player").orElse(sender);
+			Validate.isTrue(owner == sender || sender.hasPermission("parcels.command.home.others"), "You do not have permission to teleport to other people's parcels");
+			Parcel[] owned = scape.getWorld().getOwned(owner);
+			Validate.isTrue(number < owned.length, "That parcel id does not exist, they have " + owned.length + " parcels");
 			scape.getWorld().teleport(sender, owned[number]);
-			return null;
+			return String.format("Teleported you to %s's parcel %s", owner.getName(), number);
 		}){{
-			setParameters(new Parameter<Integer>("id", ParameterType.INTEGER, "the id of your parcel", false));
+			setDescription("teleports you to parcels");
+			setHelpInformation("Teleports you to your parcels,", "unless another player was specified.", "You can specify an index number if you have", "more than one parcel");
+			setAliases("h");
+			setParameters(new Parameter<Integer>("id", ParameterType.INTEGER, "the id of your parcel", false),
+					new Parameter<OfflinePlayer>("player", ParameterType.OFFLINE_PLAYER, "the player whose parcels to teleport to", false));
 		}});
 		
+		CommandManager.register(new ParcelCommand("parcel dispose", ParcelRequirement.IN_OWNED, 
+				(sender, scape) -> {
+			scape.getParcel().setOwner(Optional.empty());
+			return "This parcel no longer has an owner";
+		}){{
+			setDescription("removes a parcel's owner");
+			setHelpInformation("removes a parcel's owner,", "such that it can be claimed by someone else");
+		}});
+		
+		CommandManager.register(new ParcelCommand("parcel claim", ParcelRequirement.IN_PARCEL,
+				(sender, scape) -> {
+			Parcel p = scape.getParcel();
+			Validate.isTrue(!p.isClaimed(), "This parcel is not available");		
+			ParcelWorld w = scape.getWorld();
+			Validate.isTrue(w.getOwned(sender).length < getPlotLimit(sender), "You have enough plots for now");
+			p.setOwner(sender);
+			return "Enjoy your new parcel!";
+		}){{
+			setDescription("claims this parcel");
+			setHelpInformation("Claims the parcel you're on,", "making you its owner, if available");
+		}});
+		
+		CommandManager.register(new ParcelCommand("parcel tp", ParcelRequirement.IN_WORLD, 
+				(sender, scape) -> {
+			ParcelWorld w = scape.getWorld();
+			int x = scape.get("x");
+			int z = scape.get("z");
+			Parcel p = Validate.returnIfPresent(w.getParcelAtID(x, z), "That ID is not within this world's boundaries");
+			Player target = scape.<Player>getOptional("target").orElse(sender);
+			w.teleport(target, p);
+			String format = "%s teleported %s to the " + p.toString();
+			if (target == sender)
+				return String.format(format, "you", "");
+			Messaging.send(target, PREFIX, Messaging.SUCCESS, String.format(format, sender.getName(), "you"));
+			return String.format(format, "you", target.getName());
+		}){{
+			setDescription("teleports to a parcel");
+			setHelpInformation("Teleports you or a target player", "to the parcel you specify by ID");
+			setAliases("teleport");
+			setParameters(new Parameter<Integer>("x", ParameterType.INTEGER, "the x of the parcel's ID"),
+					new Parameter<Integer>("z", ParameterType.INTEGER, "the z of the parcel's ID"),
+					new Parameter<Player>("target", ParameterType.PLAYER, "the player to teleport", false));
+		}});
 		/*
 		CommandManager.register(new ParcelCommand("parcel ", (sender, scape) -> {
 			return null;
@@ -105,7 +162,7 @@ public class ParcelCommands {
 	
 	private static int getPlotLimit(Player user) {
 		if (user.hasPermission("parcels.limit.*"))
-			return -1;
+			return Integer.MAX_VALUE;
 		for (int i = 0; i < 256; i++)
 			if (user.hasPermission("parcels.limit." + i))
 				return i;

@@ -29,10 +29,6 @@ public class ParcelWorld {
 		return settings;
 	}
 	
-	public ParcelContainer getParcels() {
-		return parcels;
-	}
-	
 	public ParcelGenerator getGenerator() {
 		return generator;
 	}
@@ -54,6 +50,10 @@ public class ParcelWorld {
 				return Optional.of(parcels.getParcelAt(px, pz));
 		}
 		return Optional.empty();
+	}
+	
+	public Optional<Parcel> getParcelAtID(int px, int pz) {
+		return parcels.isWithinBoundaryAt(px, pz)? Optional.of(parcels.getParcelAt(px, pz)) : Optional.empty();
 	}
 	
 	private boolean isOriginParcel(int x, int z) {

@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 public class InputHandler extends org.bukkit.command.Command {
@@ -12,12 +11,14 @@ public class InputHandler extends org.bukkit.command.Command {
 	private Command parent;
 	private org.bukkit.command.Command other;
 	private boolean takePriority;
+	private String prefix;
 	
-	protected InputHandler(Command parent) {
+	protected InputHandler(Command parent, String prefix) {
 		super(parent.getId(), parent.getDescription(), new String(), parent.getAliases());
 		this.parent = parent;
 		this.other = null;
 		this.takePriority = false;
+		this.prefix = prefix;
 	}
 	
 	public void setOther(org.bukkit.command.Command other) {
@@ -34,10 +35,13 @@ public class InputHandler extends org.bukkit.command.Command {
 		args = Arrays.copyOfRange(args, handler.getLayer() - 1, args.length);
 		
 		String message;
+		char color;
 		try {
-			message = "&a" + handler.acceptCall(sender, args);
+			message = handler.acceptCall(sender, args);
+			color = Messaging.SUCCESS;
 		} catch (CommandException e) {
-			message = "&c" + e.getMessage();
+			message = e.getMessage();
+			color = Messaging.EXCEPT;
 		} catch (ArgumentException e) {
 			Bukkit.getLogger().severe(String.format("Command '%s' threw ArgumentException: '%s'", parent.getId(), e.getMessage()));
 			e.printStackTrace();
@@ -45,7 +49,7 @@ public class InputHandler extends org.bukkit.command.Command {
 		}
 		
 		if (!(message == null || message.isEmpty())) {
-			sender.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+			Messaging.send(sender, prefix, color, message);
 		}
 		return true;
 	}
