@@ -3,7 +3,7 @@ package com.redstoner.parcels.api;
 import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.generation.ParcelGenerator;
 import com.redstoner.utils.MultiRunner;
-import com.redstoner.utils.Bool;
+import com.redstoner.utils.Values;
 import com.redstoner.utils.Optional;
 
 import java.util.HashMap;
@@ -89,8 +89,8 @@ public enum WorldManager {
 		});
 		
 		ConfigurationSection worlds = plugin.getConfig().getConfigurationSection("worlds");
-		Bool.validate(worlds != null, "worlds section null");
-		Bool.validate(worlds.getKeys(false) != null, "getKeys() null");
+		Values.validate(worlds != null, "worlds section null");
+		Values.validate(worlds.getKeys(false) != null, "getKeys() null");
 		
 		worlds.getKeys(false).forEach(world -> {
 			ParcelWorldSettings.parseSettings(worlds, world, printErrors).ifPresent(pws -> {

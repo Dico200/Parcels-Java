@@ -6,8 +6,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import com.redstoner.parcels.generation.ParcelGenerator;
-import com.redstoner.utils.Bool;
-import com.redstoner.utils.Calc;
+import com.redstoner.utils.Values;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Optional;
 
@@ -41,8 +40,8 @@ public class ParcelWorld {
 		int sectionSize = settings.sectionSize;
 		absX -= settings.xOffset + settings.pathOffset;
 		absZ -= settings.zOffset + settings.pathOffset;
-		int modX = Calc.posModulo(absX, sectionSize);
-		int modZ = Calc.posModulo(absZ, sectionSize);
+		int modX = Values.posModulo(absX, sectionSize);
+		int modZ = Values.posModulo(absZ, sectionSize);
 		if (isOriginParcel(modX, modZ)) {
 			int px = (absX - modX) / sectionSize;
 			int pz = (absZ - modZ) / sectionSize;
@@ -57,15 +56,15 @@ public class ParcelWorld {
 	}
 	
 	private boolean isOriginParcel(int x, int z) {
-		return Bool.inRange(x, 0, settings.parcelSize) && Bool.inRange(z, 0, settings.parcelSize);
+		return Values.inRange(x, 0, settings.parcelSize) && Values.inRange(z, 0, settings.parcelSize);
 	}
 	
 	public boolean isInParcel(int absX, int absZ, int px, int pz) {
 		int sectionSize = settings.sectionSize;
 		absX -= settings.xOffset + settings.pathOffset + px*sectionSize;
 		absZ -= settings.zOffset + settings.pathOffset + pz*sectionSize;
-		int modX = Calc.posModulo(absX, sectionSize);
-		int modZ = Calc.posModulo(absZ, sectionSize);
+		int modX = Values.posModulo(absX, sectionSize);
+		int modZ = Values.posModulo(absZ, sectionSize);
 		return isOriginParcel(modX, modZ);
 	}
 	

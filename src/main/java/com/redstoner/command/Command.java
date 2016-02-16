@@ -81,7 +81,7 @@ public abstract class Command extends Hierarchy<Command> {
 	private Parameters params;
 	private CommandAction onHelpRequest;
 	private CommandAction onSyntaxRequest;
-	private Messaging.CommandWriter messager;
+	private HelpWriter messager;
 	
 	@Override
 	public final List<String> getAliases() {
@@ -110,8 +110,8 @@ public abstract class Command extends Hierarchy<Command> {
 		return messager.getSyntaxMessage();
 	}
 	
-	protected final String getHelpMessage(CommandSender sender) {
-		return messager.parseHelpMessage(sender);
+	protected final String getHelpPage(CommandSender sender, int page) {
+		return messager.parseHelpMessage(sender, page);
 	}
 	
 	/**
@@ -195,7 +195,7 @@ public abstract class Command extends Hierarchy<Command> {
 		this.permission = permission.replace("$PARENT$", inst.permission).replace("$COMMAND$", getId());
 		Bukkit.getLogger().info(String.format("Permission for command '%s' = '%s'", command, permission));
 		
-		this.messager = new Messaging.CommandWriter(this, command, helpInformation, aliases, params.syntax());
+		this.messager = new HelpWriter(this, command, helpInformation, aliases, params.syntax());
 	}	
 
 }

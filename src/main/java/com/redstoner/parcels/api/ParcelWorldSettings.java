@@ -6,8 +6,8 @@ import java.util.Map.Entry;
 import org.bukkit.configuration.ConfigurationSection;
 
 import com.redstoner.parcels.ParcelsPlugin;
-import com.redstoner.utils.Bool;
-import com.redstoner.utils.CastingMap;
+import com.redstoner.utils.Values;
+import com.redstoner.utils.Maps.CastingMap;
 import com.redstoner.utils.DuoObject.BlockType;
 import com.redstoner.utils.MultiRunner;
 import com.redstoner.utils.Optional;
@@ -78,7 +78,7 @@ public class ParcelWorldSettings {
 		
 		if (worlds.isConfigurationSection(world)) {
 			Map<String, Object> input = worlds.getConfigurationSection(world).getValues(false);
-			Bool.validate(input != null, "getValues() (input) null");
+			Values.validate(input != null, "getValues() (input) null");
 			CastingMap<String, Object> settings = new CastingMap<>();
 			
 			for (Entry<String, Object> entry : DEFAULT_WORLD_SETTINGS.entrySet()) {

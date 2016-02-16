@@ -13,7 +13,7 @@ import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 
 import com.redstoner.parcels.api.ParcelWorldSettings;
-import com.redstoner.utils.Bool;
+import com.redstoner.utils.Values;
 
 public class ParcelGenerator extends ChunkGenerator {
 	
@@ -97,12 +97,12 @@ public class ParcelGenerator extends ChunkGenerator {
 				height = floorHeight;
 				
 				T type;
-				if (Bool.inRange(x, 0, parcelSize) && Bool.inRange(z, 0, parcelSize)) {
+				if (Values.inRange(x, 0, parcelSize) && Values.inRange(z, 0, parcelSize)) {
 					type = floor;
-				} else if (Bool.inRange(x, -1, parcelSize + 1) && Bool.inRange(z, -1, parcelSize + 1)) {
+				} else if (Values.inRange(x, -1, parcelSize + 1) && Values.inRange(z, -1, parcelSize + 1)) {
 					type = wall;
 					height += 1;
-				} else if (Bool.inRange(x, -2, parcelSize + 2) && Bool.inRange(z, -2, parcelSize + 2)) {
+				} else if (Values.inRange(x, -2, parcelSize + 2) && Values.inRange(z, -2, parcelSize + 2)) {
 					type = pathEdge;
  				} else {
 					type = pathMain;

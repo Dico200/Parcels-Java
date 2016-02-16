@@ -5,7 +5,7 @@ import java.util.function.BiFunction;
 
 import org.bukkit.command.CommandSender;
 
-import com.redstoner.utils.Bool;
+import com.redstoner.utils.Values;
 
 public class LambdaCommand extends Command {
 	
@@ -19,8 +19,8 @@ public class LambdaCommand extends Command {
 	public LambdaCommand(String command, BiFunction<CommandSender, CommandScape, String> executor, 
 			BiFunction<CommandSender, CommandScape, List<String>> tabCompleter) {
 		super(command);
-		Bool.validate(executor != null, "executor may not be null");
-		Bool.validate(tabCompleter != null, "tabCompleter may not be null");
+		Values.validate(executor != null, "executor may not be null");
+		Values.validate(tabCompleter != null, "tabCompleter may not be null");
 		this.executor = executor;
 		this.tabCompleter = tabCompleter;
 	}

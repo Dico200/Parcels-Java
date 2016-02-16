@@ -6,6 +6,8 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 
+import com.redstoner.utils.Formatting;
+
 public class InputHandler extends org.bukkit.command.Command {
 	
 	private Command parent;
@@ -35,7 +37,7 @@ public class InputHandler extends org.bukkit.command.Command {
 		args = Arrays.copyOfRange(args, handler.getLayer() - 1, args.length);
 		
 		String message;
-		char color;
+		Formatting color;
 		try {
 			message = handler.acceptCall(sender, args);
 			color = Messaging.SUCCESS;

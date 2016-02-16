@@ -6,7 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import com.redstoner.utils.Bool;
+import com.redstoner.utils.Values;
 
 public abstract class ParameterType<T> {
 	
@@ -32,7 +32,7 @@ public abstract class ParameterType<T> {
 	}
 	
 	protected String exceptionMessage() {
-		Bool.validate(this.message != null, new ArgumentException("No exception message can be thrown if there is no requirement"));
+		Values.validate(this.message != null, new ArgumentException("No exception message can be thrown if there is no requirement"));
 		return message;
 	}
 	

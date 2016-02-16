@@ -1,5 +1,8 @@
 package com.redstoner.utils;
 
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+
 public class DuoObject<T, U> {
 	
 	public DuoObject(T v1, U v2) {
@@ -77,7 +80,7 @@ public class DuoObject<T, U> {
 	public static class BlockType extends DuoObject<Short, Byte> {
 		
 		public static BlockType fromString(String s) throws NumberFormatException {
-			Bool.validate(s != null, "BlockType was passed null");
+			Values.validate(s != null, "BlockType was passed null");
 			String[] both = s.split(":");
 			String id;
 			String data = "0";
@@ -105,5 +108,42 @@ public class DuoObject<T, U> {
 			return v2;
 		}
 		
+	}
+	
+	public static class TriConsumer<T, U, V> implements BiConsumer<T, DuoObject<U, V>> {
+		
+		BiConsumer<T, DuoObject<U, V>> cons;
+		
+		public TriConsumer(BiConsumer<T, DuoObject<U, V>> cons) {
+			this.cons = cons;
+		}
+		
+		@Override
+		public void accept(T t, DuoObject<U, V> u) {
+			cons.accept(t, u);
+		}
+		
+		public void accept(T t, U u, V v) {
+			accept(t, new DuoObject<U, V>(u, v));
+		}
+		
+	}
+	
+	public static class TriFunction<T, U, V, R> implements BiFunction<T, DuoObject<U, V>, R>{
+		
+		private BiFunction<T, DuoObject<U, V>, R> func;
+		
+		public TriFunction(BiFunction<T, DuoObject<U, V>, R> func) {
+			this.func = func;
+		}
+
+		@Override
+		public R apply(T t, DuoObject<U, V> u) {
+			return func.apply(t, u);
+		}
+		
+		public R apply(T t, U u, V v) {
+			return apply(t, new DuoObject<U, V>(u, v));
+		}
 	}
 }

@@ -13,5 +13,13 @@ public class OneTimeRunner {
 	public void run() {
 		if (ran? false : (ran = true)) toRun.run();
 	}
+	
+	public boolean ran() {
+		return ran;
+	}
+	
+	public void reset() {
+		this.ran = false;
+	}
 
 }

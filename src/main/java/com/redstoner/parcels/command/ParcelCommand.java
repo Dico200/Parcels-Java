@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 import com.redstoner.command.CommandException;
 import com.redstoner.command.LambdaCommand;
 import com.redstoner.command.SenderType;
-import com.redstoner.utils.Bool;
+import com.redstoner.utils.Values;
 
 public class ParcelCommand extends LambdaCommand {
 
@@ -28,7 +28,7 @@ public class ParcelCommand extends LambdaCommand {
 				}
 			}
 		);
-		Bool.validate(executor != null && tabCompleter != null && requirement != null, "tabCompleter, executor and requirement may not be null");
+		Values.validate(executor != null && tabCompleter != null && requirement != null, "tabCompleter, executor and requirement may not be null");
 		setSenderType(SenderType.PLAYER);
 	}
 	

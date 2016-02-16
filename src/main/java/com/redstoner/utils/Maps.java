@@ -1,6 +1,7 @@
 package com.redstoner.utils;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.redstoner.utils.DuoObject.Entry;
@@ -27,6 +28,16 @@ public class Maps {
 		K[] karray = (K[]) map.keySet().toArray();
 		V[] varray = (V[]) map.values().toArray();
 		return new DuoObject<>(karray, varray);
+	}
+	
+	public static class CastingMap<K, V> extends HashMap<K, V> {
+		private static final long serialVersionUID = -2142136718375689729L;
+		
+		@SuppressWarnings("unchecked")
+		public <T extends V> T getCasted(Object key) {
+			return (T) super.get(key);
+		}
+		
 	}
 
 }

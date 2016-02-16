@@ -1,8 +1,8 @@
 package com.redstoner.utils;
 
-public class Bool {
+public class Values {
 	
-	private Bool() {}
+	private Values() {}
 	
 	public static void validate(boolean b, String s) {
 		validate(b, new RuntimeException(s));
@@ -22,6 +22,14 @@ public class Bool {
 	
 	public static boolean inRange(int x, int min, int max) {
 		return min <= x && x < max;
+	}
+	
+	public static int posModulo(int a, int b) {
+		return ((a %= b) < 0)? a + b : a;
+	}
+	
+	public static double posModulo(double a, double b) {
+		return ((a %= b) < 0)? a + b : a;
 	}
 
 }
