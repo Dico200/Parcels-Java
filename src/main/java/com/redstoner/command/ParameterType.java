@@ -1,6 +1,9 @@
 package com.redstoner.command;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -15,6 +18,7 @@ public abstract class ParameterType<T> {
 	public static final ParameterType<Float> FLOAT;
 	public static final ParameterType<Player> PLAYER;
 	public static final ParameterType<OfflinePlayer> OFFLINE_PLAYER;
+	public static final ParameterType<Boolean> BOOLEAN;
 	
 	private static final String EXC_MSG_FORMAT = "Argument '$ARG$' must be $DESC$, %s.";
 	
@@ -146,6 +150,29 @@ public abstract class ParameterType<T> {
 			@Override
 			List<String> complete(String input) {
 				return Arrays.asList(Bukkit.matchPlayer(input).stream().map(player -> player.getName()).toArray(size -> new String[size]));
+			}
+		};
+		
+		BOOLEAN = new ParameterType<Boolean>("Bool", "true/yes/false/no") {
+			
+			private final String[] inputs = {"true", "false", "yes", "no"};
+			private final boolean[] outputs = {true, false, true, false};
+
+			@Override
+			Boolean handle(String input) {
+				if (input == null)
+					return null;
+				input = input.toLowerCase();
+				for (int i = 0; i < inputs.length; i++)
+					if (input.equals(inputs[i]))
+						return outputs[i];
+				throw new CommandException(exceptionMessage());
+			}
+			
+			@Override
+			List<String> complete(String input) {
+				String starts = input.toLowerCase();
+				return Arrays.stream(inputs).filter(string -> string.startsWith(starts)).collect(Collectors.toList());
 			}
 		};
 	}

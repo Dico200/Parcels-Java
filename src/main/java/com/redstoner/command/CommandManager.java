@@ -30,7 +30,6 @@ public class CommandManager {
 	private static void dispatchToMap(Command command) {
 		assert COMMAND_MAP != null : new AssertionError("Command Map wasn't retrieved, unable to register commands!");
 		assert command != null : new AssertionError("Dispatched command is null!");
-		Bukkit.getLogger().info("Registering command " + command.getId() + " to command map.");
 		
 		InputHandler handler = new InputHandler(command, prefix);
 		String id = command.getId();
@@ -70,7 +69,6 @@ public class CommandManager {
 			@Override
 			protected boolean addChild(String key, Hierarchy<Command> child) {
 				if (super.addChild(key, child)) {
-					Bukkit.getLogger().info("Dispatching, layer: " + child.getLayer());
 					dispatchToMap(child.getInstance());
 					return true;
 				}

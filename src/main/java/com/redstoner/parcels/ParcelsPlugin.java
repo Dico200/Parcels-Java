@@ -1,8 +1,10 @@
 package com.redstoner.parcels;
 
+import org.bukkit.Bukkit;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.redstoner.parcels.api.StorageManager;
 import com.redstoner.parcels.api.WorldManager;
 import com.redstoner.parcels.command.ParcelCommands;
 
@@ -30,6 +32,7 @@ public class ParcelsPlugin extends JavaPlugin {
 		return worldManager.getGenerator(world);
 	}
 	
+	@SuppressWarnings("deprecation")
 	@Override
 	public void onEnable() {
 		plugin = this;
@@ -37,19 +40,35 @@ public class ParcelsPlugin extends JavaPlugin {
 		getConfig().options().copyDefaults(true);
 		saveConfig();
 		
-		getConfig().getValues(true).forEach((key, value) -> {
-			ParcelsPlugin.debug(String.format("CONFIG: '%s' = %s", key, value));
-		});
+		// This can be altered while running, and on disable it will store parcels accordingly.
+		newUseMySQL = true;//getConfig().getBoolean("MySQL.enabled");
+		ParcelsPlugin.log("Using MYSQL: " + newUseMySQL);
 		
+		
+		StorageManager.useMySQL = newUseMySQL;
 		worldManager = WorldManager.INSTANCE;
+		
+		StorageManager.initialise();
 		
 		ParcelCommands.register();
 		getServer().getPluginManager().registerEvents(new ParcelListener(), this);
+		
+		if (!StorageManager.useMySQL) {
+			int interval = getConfig().getInt("MySQL.save-interval-no-mysql");
+			if (interval < 10)
+				interval = 30;
+			Bukkit.getScheduler().scheduleAsyncRepeatingTask(this, () -> {
+				StorageManager.save();
+			}, 20 * interval, 20 * interval);
+		}
 	}
+	
+	public boolean newUseMySQL;
 	
 	@Override
 	public void onDisable() {
 		saveConfig();
+		StorageManager.save(newUseMySQL);
 	}
 	
 	private WorldManager worldManager;

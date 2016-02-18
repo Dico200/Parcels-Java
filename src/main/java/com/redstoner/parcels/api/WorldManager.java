@@ -20,6 +20,11 @@ public enum WorldManager {
 	
 	INSTANCE;
 	
+	
+	public static HashMap<String, ParcelWorld> getWorlds() {
+		return INSTANCE.worlds;
+	}
+	
 	public static Optional<ParcelWorld> getWorld(World w) {
 		return INSTANCE.getWorld(w.getName());
 	}
@@ -76,6 +81,7 @@ public enum WorldManager {
 	
 	private ParcelsPlugin plugin;
 	private HashMap<String, ParcelWorld> worlds = new HashMap<>();
+
 	
 	public Optional<ParcelWorld> getWorld(String world) {
 		return Optional.ofNullable(this.worlds.get(world));

@@ -9,6 +9,22 @@ import com.redstoner.parcels.ParcelsPlugin;
 
 class ParcelContainer {
 	
+	static ParcelContainer resize(ParcelContainer container, String world, int newLimit) {
+		
+		ParcelContainer result = new ParcelContainer(world, newLimit);
+		container.stream().forEach(parcel -> {
+			int x = parcel.getX();
+			int z = parcel.getZ();
+			if (result.isWithinBoundaryAt(x, z))
+					result.setParcelAt(x, z, parcel);
+			else
+				ParcelsPlugin.log( "WARN: " + parcel.toString() + " could not be fitted in the new size");
+		});
+		
+		return result;
+		
+	}
+	
 	public void print() {
 		for (int i = parcels.length - 1; i >= 0; i--) {
 			Parcel[] row = parcels[i];
@@ -18,16 +34,16 @@ class ParcelContainer {
 		}
 	}
 	
-	protected ParcelContainer(int axisLimit) {
+	protected ParcelContainer(String world, int axisLimit) {
 		count = axisLimit;
 		parcels = IntStream.rangeClosed(-axisLimit, axisLimit)
 				.mapToObj(x -> IntStream.rangeClosed(-axisLimit, axisLimit)
-						.mapToObj(z -> new Parcel(x, z))
+						.mapToObj(z -> new Parcel(world, x, z))
 						.toArray(size -> new Parcel[size])
 				).toArray(size -> new Parcel[size][]);
 	}
 	
-	private int count;
+	final private int count;
 	private Parcel[][] parcels;
 	
 	private <T> T atX(T[] array, int x) {
@@ -78,6 +94,14 @@ class ParcelContainer {
 			}
 		}
 		return null;
+	}
+	
+	protected int getAxisLimit() {
+		return count;
+	}
+	
+	private void setParcelAt(int x, int z, Parcel parcel) {
+		atX(parcels, x)[count + z] = parcel;
 	}
 	
 }

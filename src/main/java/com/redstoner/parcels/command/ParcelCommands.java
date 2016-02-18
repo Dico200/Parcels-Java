@@ -28,8 +28,6 @@ public class ParcelCommands {
 	
 	public static void register() {
 		
-		ParcelsPlugin.debug("Registering parcel commands");
-		
 		CommandManager.register(PREFIX, new LambdaCommand("parcel", (sender, scape) -> "EXEC:CommandAction.DISPLAY_HELP") {{
 			setPermission("parcels.command");
 			setDescription("manages your parcels");
@@ -77,6 +75,26 @@ public class ParcelCommands {
 			setParameters(new Parameter<OfflinePlayer>("friend", ParameterType.OFFLINE_PLAYER, "the friend to remove"));
 		}});
 		
+		CommandManager.register(new ParcelCommand("parcel deny", ParcelRequirement.IN_OWNED,
+				(sender, scape) -> {
+			Validate.isTrue(scape.getParcel().getDenied().add(scape.get("denied")), "That person is already denied on this parcel");
+			return "Denied that player from this parcel on your request";
+		}){{
+			setDescription("denies a player from this parcel");
+			setHelpInformation("Denied a player from this parcel,", "who will not be able to enter it");
+			setParameters(new Parameter<OfflinePlayer>("denied", ParameterType.OFFLINE_PLAYER, "the player to deny"));
+		}});
+		
+		CommandManager.register(new ParcelCommand("parcel undeny", ParcelRequirement.IN_OWNED, 
+				(sender, scape) -> {
+			Validate.isTrue(scape.getParcel().getDenied().remove(scape.get("undenied")), "That person was not a denied from this parcel");
+			return "Removed friend from this parcel on your request";
+		}){{
+			setDescription("undenies a player from this parcel");
+			setHelpInformation("Undenies a player from this parcel,", "they will be able to enter it again");
+			setParameters(new Parameter<OfflinePlayer>("undenied", ParameterType.OFFLINE_PLAYER, "the player to undeny"));
+		}});
+		
 		CommandManager.register(new ParcelCommand("parcel auto", ParcelRequirement.IN_WORLD,
 				(sender, scape) -> {
 			ParcelWorld w = scape.getWorld();
@@ -110,7 +128,7 @@ public class ParcelCommands {
 		
 		CommandManager.register(new ParcelCommand("parcel dispose", ParcelRequirement.IN_OWNED, 
 				(sender, scape) -> {
-			scape.getParcel().setOwner(Optional.empty());
+			scape.getParcel().setOwner(null);
 			return "This parcel no longer has an owner";
 		}){{
 			setDescription("removes a parcel's owner");
@@ -158,7 +176,23 @@ public class ParcelCommands {
 			
 		}});
 		*/
+		
+		/*
+		 * This one is for storage saving.
+		 */
+		
+		CommandManager.register(new LambdaCommand("parcel setusemysql", (sender, scape) -> {
+			boolean current = ParcelsPlugin.getInstance().newUseMySQL;
+			boolean newvalue = scape.get(0);
+			String enabled = newvalue? "enabled" : "disabled";
+			Validate.isTrue(current != newvalue, "Usage of MySQL is already " + enabled);
+			ParcelsPlugin.getInstance().newUseMySQL = newvalue;
+			return "MySQL will be " + enabled + " on shutdown, and Parcels will be saved accordingly";
+		}){{
+			setParameters(new Parameter<Boolean>("enabled", ParameterType.BOOLEAN, "a boolean value"));
+		}});
 	}
+	
 	
 	private static int getPlotLimit(Player user) {
 		if (user.hasPermission("parcels.limit.*"))

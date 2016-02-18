@@ -137,10 +137,12 @@ public class Optional<T> {
 		if (this == obj)
 			return true;
 		if (!(obj instanceof Optional))
-			return false;
+			return isPresent() ? get().equals(obj) : false;
 		Optional<?> other = (Optional<?>) obj;
-		if (isPresent() == other.isPresent())
-			return orElse(null).equals(other.orElse(null));
+		if (isPresent() && other.isPresent())
+			return get().equals(other.get());
+		if (!isPresent() && !other.isPresent())
+			return true;
 		return false;
 	}
 	

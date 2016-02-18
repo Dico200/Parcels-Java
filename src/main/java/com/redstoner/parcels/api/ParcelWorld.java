@@ -15,13 +15,13 @@ public class ParcelWorld {
 	private ParcelContainer parcels;
 	private ParcelGenerator generator;
 	private ParcelWorldSettings settings;
-	private String world;
+	private String name;
 	
-	public ParcelWorld(String world, ParcelWorldSettings settings) {
-		this.parcels = new ParcelContainer(settings.axisLimit);
+	public ParcelWorld(String name, ParcelWorldSettings settings) {
+		this.parcels = new ParcelContainer(name, settings.axisLimit);
 		this.generator = new ParcelGenerator(settings);
 		this.settings = settings;
-		this.world = world;
+		this.name = name;
 	}
 	
 	public ParcelWorldSettings getSettings() {
@@ -32,8 +32,8 @@ public class ParcelWorld {
 		return generator;
 	}
 	
-	public String getWorld() {
-		return world;
+	public String getName() {
+		return name;
 	}
 	
 	public Optional<Parcel> getParcelAt(int absX, int absZ) {
@@ -52,7 +52,11 @@ public class ParcelWorld {
 	}
 	
 	public Optional<Parcel> getParcelAtID(int px, int pz) {
-		return parcels.isWithinBoundaryAt(px, pz)? Optional.of(parcels.getParcelAt(px, pz)) : Optional.empty();
+		return parcels.isWithinBoundaryAt(px, pz)? Optional.of(getParcelByID(px, pz)) : Optional.empty();
+	}
+	
+	public Parcel getParcelByID(int px, int pz) {
+		return parcels.getParcelAt(px, pz);
 	}
 	
 	private boolean isOriginParcel(int x, int z) {
@@ -70,7 +74,7 @@ public class ParcelWorld {
 	
 	public void teleport(Player user, Parcel parcel) {
 		Coord home = toHomeCoord(parcel);
-		user.teleport(new Location(Bukkit.getWorld(world), home.getX(), settings.floorHeight + 1, home.getZ()));
+		user.teleport(new Location(Bukkit.getWorld(name), home.getX(), settings.floorHeight + 1, home.getZ()));
 	}
 	
 	private Coord toHomeCoord(Parcel parcel) {
@@ -95,6 +99,18 @@ public class ParcelWorld {
 	
 	public Optional<Parcel> getNextUnclaimed() {
 		return Optional.ofNullable(parcels.nextUnclaimed());
+	}
+	
+	ParcelContainer getParcels() {
+		return parcels;
+	}
+	
+	void setParcels(ParcelContainer parcels) {
+		if (this.parcels.getAxisLimit() != parcels.getAxisLimit()) {
+			this.parcels = ParcelContainer.resize(parcels, name, this.parcels.getAxisLimit());
+		} else {
+			this.parcels = parcels;
+		}
 	}
 
 }
