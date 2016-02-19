@@ -5,7 +5,9 @@ import java.io.Serializable;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import com.redstoner.parcels.ParcelsPlugin;
+import com.redstoner.parcels.api.list.PlayerMap;
+import com.redstoner.parcels.api.list.SerialPlayerMap;
+import com.redstoner.parcels.api.list.SqlPlayerMap;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Optional;
 
@@ -14,7 +16,9 @@ public class Parcel implements Serializable {
 	
 	private String world;
 	private Optional<OfflinePlayer> owner;
-	private PlayerList friends, denied;
+	
+	//Players added to the parcel. If true: they can build. If false: They are banned.
+	private PlayerMap<Boolean> added;
 	private int x, z;
 	
 	Parcel(String world, int x, int z) {
@@ -23,38 +27,26 @@ public class Parcel implements Serializable {
 		this.x = x;
 		this.z = z;
 		if (StorageManager.useMySQL) {
-			this.friends = new SqlPlayerList() {
-				private static final long serialVersionUID = -1687295408702329095L;
+			this.added = new SqlPlayerMap<Boolean>(true) {
 
 				@Override
-				protected void removeFromSQL(OfflinePlayer toRemove) {
-					SqlManager.removeFriend(SqlManager.getId(world, x, z), toRemove.getUniqueId().toString());
-				}
-	
-				@Override
-				protected void addToSQL(OfflinePlayer toAdd) {
-					SqlManager.addFriend(SqlManager.getId(world, x, z), toAdd.getUniqueId().toString());
-				}
-				
-			};
-			
-			this.denied = new SqlPlayerList() {
-				private static final long serialVersionUID = -2964963045410028830L;
-
-				@Override
-				protected void removeFromSQL(OfflinePlayer toRemove) {
-					SqlManager.removeDenied(SqlManager.getId(world, x, z), toRemove.getUniqueId().toString());
+				public void addToSQL(OfflinePlayer toAdd, Boolean value) {
+					SqlManager.addPlayer(world, x, z, toAdd, value);
 				}
 
 				@Override
-				protected void addToSQL(OfflinePlayer toAdd) {
-					SqlManager.addDenied(SqlManager.getId(world, x, z), toAdd.getUniqueId().toString());
+				public void removeFromSQL(OfflinePlayer toRemove) {
+					SqlManager.removePlayer(world, x, z, toRemove);
+				}
+
+				@Override
+				protected void clearSQL() {
+					SqlManager.removeAllPlayers(world, x, z);
 				}
 				
 			};
 		} else {
-			this.friends = new PlayerList();
-			this.denied = new PlayerList();
+			this.added = new SerialPlayerMap<Boolean>(true);
 		}
 	}
 	
@@ -77,21 +69,19 @@ public class Parcel implements Serializable {
 		boolean result = setOwnerIgnoreSQL(owner);
 		if (StorageManager.useMySQL)
 			this.owner.ifPresentOrElse(player -> {
-				ParcelsPlugin.debug("Setting owner");
-				SqlManager.setOwner(SqlManager.getId(world, x, z), player.getUniqueId().toString());
+				SqlManager.setOwner(world, x, z, player);
 			}, () -> {
-				ParcelsPlugin.debug("Removing owner");
-				SqlManager.delOwner(SqlManager.getId(world, x, z));
+				SqlManager.delOwner(world, x, z);
 			});
 		return result;
 	}
 	
 	public boolean isOwner(OfflinePlayer toCheck) {
-		return owner.isPresent()? owner.get().getUniqueId().equals(toCheck.getUniqueId()) : false;
+		return owner.filter(owner -> owner == toCheck).isPresent();
 	}
 	
 	public boolean canBuild(Player user) {
-		return user.getUniqueId().equals(getOwner().map(OfflinePlayer::getUniqueId).orElse(null)) || friends.contains(user);
+		return isOwner(user) || isAllowed(user);
 	}
 	
 	public int getX() {
@@ -110,12 +100,16 @@ public class Parcel implements Serializable {
 		return getOwner().isPresent();
 	}
 	
-	public PlayerList getFriends() {
-		return friends;
+	public boolean isAllowed(OfflinePlayer user) {
+		return added.is(user, true);
 	}
 	
-	public PlayerList getDenied() {
-		return denied;
+	public boolean isBanned(OfflinePlayer user) {
+		return added.is(user, false);
+	}
+	
+	public PlayerMap<Boolean> getAdded() {
+		return added;
 	}
 	
 	public String toString() {
@@ -123,10 +117,9 @@ public class Parcel implements Serializable {
 	}
 	
 	public String getInfo() {
-		return String.format("&bID: (&e%s&b) Owner: &e%s&b\nHelpers: &e%s&b\nDenied: &e%s", 
+		return String.format("&bID: (&e%s&b) Owner: &e%s&b\nAllowed: &e%s&b\nBanned: &e%s", 
 				getId(), getOwner().map(OfflinePlayer::getName).orElse(""), 
-				String.join("&b, &e", (CharSequence[])friends.stream().map(OfflinePlayer::getName).toArray(size -> new String[size])),
-				String.join("&b, &e", (CharSequence[])denied.stream().map(OfflinePlayer::getName).toArray(size -> new String[size])));
+				added.toString(true), added.toString(false));
 	}
 
 }

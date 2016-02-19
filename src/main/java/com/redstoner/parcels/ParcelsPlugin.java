@@ -32,16 +32,22 @@ public class ParcelsPlugin extends JavaPlugin {
 		return worldManager.getGenerator(world);
 	}
 	
+	public ParcelsPlugin() {
+		plugin = this;
+		
+		ParcelsPlugin.debug("INITIALISED PARCELS PLUGIN");
+		
+		getConfig().options().copyDefaults(true);
+		saveDefaultConfig();
+		
+		worldManager = WorldManager.INSTANCE;
+	}
+	
 	@SuppressWarnings("deprecation")
 	@Override
 	public void onEnable() {
-		plugin = this;
-		
-		getConfig().options().copyDefaults(true);
-		saveConfig();
-		
-		worldManager = WorldManager.INSTANCE;
-		
+		ParcelsPlugin.debug("ENABLED PARCELS PLUGIN");
+
 		this.newUseMySQL = true;
 		StorageManager.initialise();
 		
@@ -62,7 +68,6 @@ public class ParcelsPlugin extends JavaPlugin {
 	
 	@Override
 	public void onDisable() {
-		saveConfig();
 		StorageManager.save(newUseMySQL);
 	}
 	

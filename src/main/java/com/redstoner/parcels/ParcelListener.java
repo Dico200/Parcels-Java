@@ -75,11 +75,11 @@ public class ParcelListener implements Listener {
 			return;
 		Location to = event.getTo();
 		WorldManager.getWorld(to.getWorld()).ifPresent(world -> {
-			world.getParcelAt(to.getBlockX(), to.getBlockZ()).filter(parcel -> parcel.getDenied().contains(user)).ifPresent(() -> {
+			world.getParcelAt(to.getBlockX(), to.getBlockZ()).filter(parcel -> parcel.getAdded().is(user, false)).ifPresent(() -> {
 				Location from = event.getFrom();
 				world.getParcelAt(from.getBlockX(), from.getBlockZ()).ifPresentOrElse(parcel -> {
 					world.teleport(user, parcel);
-					Messaging.send(user, "Parcels", Formatting.YELLOW, "You are denied from this parcel");
+					Messaging.send(user, "Parcels", Formatting.YELLOW, "You are banned from this parcel");
 				}, () -> {
 					event.setTo(event.getFrom());
 				});

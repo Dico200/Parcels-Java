@@ -1,14 +1,12 @@
-package com.redstoner.parcels.api;
+package com.redstoner.parcels.api.list;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.bukkit.OfflinePlayer;
 
-public class PlayerList implements Serializable {
-	private static final long serialVersionUID = -3567385973538512196L;
+public class PlayerList {
 	
 	private List<OfflinePlayer> players;
 	private boolean hasStar;
@@ -67,6 +65,8 @@ public class PlayerList implements Serializable {
 		return players;
 	}
 	
-	
+	public void clear() {
+		players.clear();
+	}
 
 }

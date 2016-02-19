@@ -4,9 +4,12 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import com.redstoner.parcels.ParcelsPlugin;
 
 public class SqlConnector {
 	
@@ -23,6 +26,7 @@ public class SqlConnector {
 		this.connected = false;
 		
 		executeUpdate(String.format("CREATE DATABASE IF NOT EXISTS `%s`", database));
+
 	}
 	
 	public boolean open() {
@@ -30,6 +34,8 @@ public class SqlConnector {
 			try {
 				this.conn = DriverManager.getConnection("jdbc:mysql://" + host, username, password);
 				conn.createStatement().executeUpdate(String.format("USE `%s`", database));
+			} catch (SQLTimeoutException e) {
+				ParcelsPlugin.log("ERROR: Failed to connect to MySQL server.");
 			} catch (SQLException e) {
 				throw new RuntimeException(e);
 			}

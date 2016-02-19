@@ -4,15 +4,15 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
 import com.redstoner.parcels.ParcelsPlugin;
+import com.redstoner.parcels.api.list.SqlPlayerMap;
 import com.redstoner.utils.Optional;
 import com.redstoner.utils.SqlConnector;
 
@@ -21,91 +21,99 @@ public class SqlManager {
 	public static SqlConnector CONNECTOR = null;
 	
 	public static void initialise(SqlConnector connector) {
-		ParcelsPlugin.log("INITIALISING SQL MANAGER");
-		SqlManager.CONNECTOR = connector;
-		try {
-			Connection conn = CONNECTOR.getConnection();
-			Statement stm = conn.createStatement();
-			Statement pstm = conn.createStatement(); // for parcels result set
-			
-			createTables(stm);
-			
-			for (Entry<String, ParcelWorld> entry : WorldManager.getWorlds().entrySet()) {
-				String name = entry.getKey();
-				ParcelWorld world = entry.getValue();
-				ResultSet parcels = pstm.executeQuery("SELECT * FROM `parcels` WHERE `world` = '" + name + "'");
-				while (parcels.next()) {
-					ParcelsPlugin.debug("Found an SQL parcel in world " + name);
-					
-					int id = parcels.getInt("id");
-					int px = parcels.getInt("px");
-					int pz = parcels.getInt("pz");
-					String owner = parcels.getString("owner");
-					
-					Optional<Parcel> mParcel = world.getParcelAtID(px, pz);
-					if (!mParcel.isPresent()) {
-						parcels.deleteRow();
-						ParcelsPlugin.debug("Deleted parcel at " + px + "," + pz + " from database");
-						continue;
-					}
-					
-					Parcel p = mParcel.get();
-					
-					ParcelsPlugin.debug("Owner: " + owner);
-					if (owner != null)
-						p.setOwnerIgnoreSQL(toPlayer(owner));
-					
-					SqlPlayerList friends = (SqlPlayerList) p.getFriends();
-					for (ResultSet allowed = stm.executeQuery("SELECT `player` FROM `parcels_allowed` WHERE `id` = " + id); allowed.next();) {
-						friends.addIgnoreSQL(toPlayer(allowed.getString(1)));
-					}
-
-					SqlPlayerList enemies = (SqlPlayerList) p.getDenied();
-					for (ResultSet denied = stm.executeQuery("SELECT `player` FROM `parcels_denied` WHERE `id` = " + id); denied.next();) {
-						enemies.addIgnoreSQL(toPlayer(denied.getString(1)));
-					}
-				}
-				parcels.close();
+		runAsync(() -> {
+			try {
+				Thread.sleep(4000);
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-			ParcelsPlugin.debug("Closing stm");
-			pstm.close();
-			stm.close();
-			CONNECTOR.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+			ParcelsPlugin.debug("Retrieving SQL data");
+			SqlManager.CONNECTOR = connector;
+			try {
+				Connection conn = CONNECTOR.getConnection();
+				Statement stm = conn.createStatement();
+				Statement pstm = conn.createStatement(); // for parcels result set
+				
+				createTables(stm);
+				
+				for (Entry<String, ParcelWorld> entry : WorldManager.getWorlds().entrySet()) {
+					String name = entry.getKey();
+					ParcelWorld world = entry.getValue();
+					ResultSet parcels = pstm.executeQuery("SELECT `id`, `px`, `pz`, `owner` FROM `parcels` WHERE `world` = '" + name + "'");
+					while (parcels.next()) {
+						
+						int px = parcels.getInt(2);
+						int pz = parcels.getInt(3);
+						String owner = parcels.getString(4);
+						
+						Optional<Parcel> mParcel = world.getParcelAtID(px, pz);
+						if (!mParcel.isPresent()) {
+							parcels.deleteRow();
+							ParcelsPlugin.debug("Deleted parcel at " + px + "," + pz + " from database");
+							continue;
+						}
+						
+						Parcel p = mParcel.get();
+						
+						if (owner != null)
+							p.setOwnerIgnoreSQL(toPlayer(owner));
+						
+						int id = parcels.getInt(1);
+						SqlPlayerMap<Boolean> addedPlayers = (SqlPlayerMap<Boolean>) p.getAdded();
+						ResultSet added = stm.executeQuery(String.format("SELECT `player`, `allowed` FROM `parcels_added` WHERE `id` = %s;", id));
+						while (added.next()) {
+							addedPlayers.addIgnoreSQL(toPlayer(added.getString(1)), added.getInt(2) != 0);
+						}
+						added.close();
+					}
+					parcels.close();
+				}
+				pstm.close();
+				stm.close();
+				CONNECTOR.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
 	}
 	
 	private static OfflinePlayer toPlayer(String uuid) {
-		ParcelsPlugin.debug(uuid);
-		UUID result = UUID.fromString(uuid);
-		return result == null ? null : Bukkit.getOfflinePlayer(result);
+		return Bukkit.getOfflinePlayer(UUID.fromString(uuid));
 	}
 	
-	public static void setOwner(int id, String owner) {
-		ParcelsPlugin.debug(String.format("UPDATE `parcels` SET `owner` = '%s' WHERE `id` = %s;", owner, id));
-		CONNECTOR.executeUpdate(String.format("UPDATE `parcels` SET `owner` = '%s' WHERE `id` = %s;", owner, id));
+	public static void setOwner(String world, int px, int pz, OfflinePlayer owner) {
+		runAsync(() -> {
+			CONNECTOR.executeUpdate(String.format("UPDATE `parcels` SET `owner` = '%s' WHERE `id` = %s;", 
+					owner.getUniqueId().toString(), getId(world, px, pz)));
+		});
 	}
 	
-	public static void delOwner(int id) {
-		CONNECTOR.executeUpdate(String.format("UPDATE `parcels` SET `owner` = NULL WHERE `id` = %s;", id));
+	public static void delOwner(String world, int px, int pz) {
+		runAsync(() -> {
+			CONNECTOR.executeUpdate(String.format("UPDATE `parcels` SET `owner` = NULL WHERE `id` = %s;", 
+					getId(world, px, pz)));
+		});
 	}
 	
-	public static void addFriend(int id, String friend) {
-		ParcelsPlugin.debug("Adding friend " + String.format("INSERT INTO `parcels_allowed` (`id`, `player`) VALUES (%s, '%s');", id, friend));
-		CONNECTOR.executeUpdate(String.format("INSERT IGNORE `parcels_allowed` (`id`, `player`) VALUES (%s, '%s');", id, friend));
+	public static void addPlayer(String world, int px, int pz, OfflinePlayer player, boolean allowed) {
+		runAsync(() -> {
+			CONNECTOR.executeUpdate(String.format("REPLACE `parcels_added` (`id`, `player`, `allowed`) VALUES (%s, '%s', %s);", 
+					getId(world, px, pz), player.getUniqueId().toString(), allowed? 1:0));
+		});
 	}
 	
-	public static void addDenied(int id, String denied) {
-		CONNECTOR.executeUpdate(String.format("INSERT IGNORE `parcels_denied` (`id`, `player`) VALUES (%s, '%s');", id, denied));
+	public static void removePlayer(String world, int px, int pz, OfflinePlayer player) {
+		runAsync(() -> {
+			CONNECTOR.executeUpdate(String.format("DELETE FROM `parcels_added` WHERE `id` = %s AND `player` = '%s';", 
+					getId(world, px, pz), player.getUniqueId().toString()));
+		});
 	}
 	
-	public static void removeFriend(int id, String friend) {
-		CONNECTOR.executeUpdate(String.format("DELETE FROM `parcels_allowed` WHERE `id` = %s AND `player` = '%s';", id, friend));
-	}
-	
-	public static void removeDenied(int id, String denied) {
-		CONNECTOR.executeUpdate(String.format("DELETE FROM `parcels_denied` WHERE `id` = %s AND `player` = '%s';", id, denied));
+	public static void removeAllPlayers(String world, int px, int pz) {
+		runAsync(() -> {
+			CONNECTOR.executeUpdate(String.format("DELETE FROM `parcels_added` WHERE `id` = %s;",
+					getId(world, px, pz)));
+		});
 	}
 	
 	public static int getId(String world, int px, int pz) {
@@ -139,19 +147,12 @@ public class SqlManager {
 				+ ");"
 		);
 		
-		stm.executeUpdate("CREATE TABLE IF NOT EXISTS `parcels_allowed` ("
+		stm.executeUpdate("CREATE TABLE IF NOT EXISTS `parcels_added` ("
 				+ "`id` INTEGER NOT NULL,"
 				+ "`player` VARCHAR(36) NOT NULL,"
+				+ "`allowed` TINYINT(1) NOT NULL DEFAULT 1,"
 				+ "FOREIGN KEY (`id`) REFERENCES `parcels`(`id`) ON DELETE CASCADE,"
-				+ "UNIQUE KEY allowed(`id`, `player`)"
-				+ ");"
-		);
-		
-		stm.executeUpdate("CREATE TABLE IF NOT EXISTS `parcels_denied` ("
-				+ "`id` INTEGER NOT NULL,"
-				+ "`player` VARCHAR(36) NOT NULL,"
-				+ "FOREIGN KEY (`id`) REFERENCES `parcels`(`id`) ON DELETE CASCADE,"
-				+ "UNIQUE KEY denied(`id`, `player`)"
+				+ "UNIQUE KEY added(`id`, `player`)"
 				+ ");"
 		);
 	}
@@ -159,49 +160,51 @@ public class SqlManager {
 	private static void dropTables(Statement stm) throws SQLException {
 		stm.executeUpdate("DROP TABLE IF EXISTS `parcels_allowed`;");
 		stm.executeUpdate("DROP TABLE IF EXISTS `parcels_denied`;");
+		stm.executeUpdate("DROP TABLE IF EXISTS `parcels_added`;");
 		stm.executeUpdate("DROP TABLE IF EXISTS `parcels`;");
 	}
 	
 	static void saveAll(SqlConnector connector) {
-		try {
-			SqlManager.CONNECTOR = connector;
-			Connection conn = CONNECTOR.getConnection();
-			Statement stm = conn.createStatement();
-			dropTables(stm);
-			createTables(stm);
-			StringBuilder updateOwnersStatement = new StringBuilder("UPDATE `parcels` SET `owner` = CASE `id` ");
-			StringBuilder insertAllowedStatement = new StringBuilder("INSERT");
-			StringBuilder insertDeniedStatement = new StringBuilder("INSERT");
-			for (Entry<String, ParcelWorld> entry : WorldManager.getWorlds().entrySet()) {
-				String name = entry.getKey();
-				ParcelWorld world = entry.getValue();
-				for (Parcel parcel : world.getParcels().getAll()) {
-					Optional<OfflinePlayer> owner = parcel.getOwner();
-					List<String> friends = parcel.getFriends().stream().map(player -> player.getUniqueId().toString()).collect(Collectors.toList());
-					List<String> denied = parcel.getDenied().stream().map(player -> player.getUniqueId().toString()).collect(Collectors.toList());
-					if (owner.isPresent() || friends.size() > 0 || denied.size() > 0) {
-						int id = getId(name, parcel.getX(), parcel.getZ());
-						updateOwnersStatement.append(String.format("WHEN %s THEN '%s' ", id, owner.get().getUniqueId().toString()));
-						for (String uuid : friends)
-							insertAllowedStatement.append(String.format(" INTO `parcels_allowed` (`id`, `player`) VALUES (%s, '%s')", id, uuid));
-						for (String uuid : denied)
-							insertDeniedStatement.append(String.format(" INTO `parcels_denied` (`id`, `player`) VALUES (%s, '%s')", id, uuid));
+		runAsync(() -> {
+			try {
+				SqlManager.CONNECTOR = connector;
+				Connection conn = CONNECTOR.getConnection();
+				Statement stm = conn.createStatement();
+				dropTables(stm);
+				createTables(stm);
+				StringBuilder updateOwnersStatement = new StringBuilder("UPDATE `parcels` SET `owner` = CASE `id` ");
+				StringBuilder insertAddedStatement = new StringBuilder("INSERT");
+				for (Entry<String, ParcelWorld> entry : WorldManager.getWorlds().entrySet()) {
+					String name = entry.getKey();
+					ParcelWorld world = entry.getValue();
+					for (Parcel parcel : world.getParcels().getAll()) {
+						Optional<OfflinePlayer> owner = parcel.getOwner();
+						Map<OfflinePlayer, Boolean> added = parcel.getAdded().getMap();
+						if (owner.isPresent() || added.size() > 0) {
+							int id = getId(name, parcel.getX(), parcel.getZ());
+							updateOwnersStatement.append(String.format("WHEN %s THEN '%s' ", id, owner.get().getUniqueId().toString()));
+							added.forEach((player, banned) -> {
+								String uuid = player.getUniqueId().toString();
+								insertAddedStatement.append(String.format(" INTO `parcels_added` (`id`, `player`, `allowed`) VALUES (%s, '%s', %s)", id, uuid, banned));
+							});
+						}
+						
 					}
-					
 				}
+				updateOwnersStatement.append("END;");
+				insertAddedStatement.append(";");
+				ParcelsPlugin.debug("INSERTING OWNERS: " + updateOwnersStatement.toString());
+				ParcelsPlugin.debug("INSERTING ADDED PLAYERS: " + insertAddedStatement.toString());
+				stm.executeUpdate(updateOwnersStatement.toString());
+				stm.executeUpdate(insertAddedStatement.toString());
+				CONNECTOR.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
 			}
-			updateOwnersStatement.append("END;");
-			insertAllowedStatement.append(";");
-			insertDeniedStatement.append(";");
-			ParcelsPlugin.debug("INSERTING OWNERS: " + updateOwnersStatement.toString());
-			ParcelsPlugin.debug("INSERTING FRIENDS: " + insertAllowedStatement.toString());
-			ParcelsPlugin.debug("INSERTING DENIED: " + insertDeniedStatement.toString());
-			stm.executeUpdate(updateOwnersStatement.toString());
-			stm.executeUpdate(insertAllowedStatement.toString());
-			stm.executeUpdate(insertDeniedStatement.toString());
-			CONNECTOR.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+		});
+	}
+	
+	private static void runAsync(Runnable toRun) {
+		new Thread(toRun).start();
 	}
 }

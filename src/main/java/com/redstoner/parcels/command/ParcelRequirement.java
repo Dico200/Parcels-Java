@@ -29,13 +29,9 @@ public enum ParcelRequirement {
 		this.message = message;
 	}
 	
-	private void performTest(Player user, Loc loc) {
-		Validate.isTrue(tester.test(loc, user), message);
-	}
-	
 	public void check(Player user, Loc loc) {
 		checkOther.ifPresent(req -> req.check(user, loc));
-		performTest(user, loc);
+		Validate.isTrue(tester.test(loc, user), message);
 	}
 	
 	public void check(Player user, Optional<ParcelWorld> world, Optional<Parcel> parcel) {

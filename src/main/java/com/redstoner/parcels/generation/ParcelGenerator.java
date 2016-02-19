@@ -9,6 +9,8 @@ import java.util.stream.IntStream;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
+import org.bukkit.block.Block;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 
@@ -68,35 +70,41 @@ public class ParcelGenerator extends ChunkGenerator {
 		
 		return chunk;
 	}
-    
-    @Override
-    public List<BlockPopulator> getDefaultPopulators(World world) {
-    	return Arrays.asList(new BlockPopulator[]{new BlockPopulator() {
-
+	
+	@Override
+	public List<BlockPopulator> getDefaultPopulators(World world) {
+		return Arrays.asList(new BlockPopulator[]{new BlockPopulator() {
+	
 			@SuppressWarnings("deprecation")
 			@Override
 			public void populate(World world, Random random, Chunk chunk) {
 				iterAll(chunk.getX(), chunk.getZ(), floorData, wallData, pathMainData, pathEdgeData, fillData, (c, type) -> {
-					if (type != 0)
-						chunk.getBlock(c.x, c.y, c.z).setData(type);
+					if (type != 0) {
+						Block b = chunk.getBlock(c.x, c.y, c.z);
+						b.setData(type);
+						if (c.y == 1)
+							b.setBiome(Biome.JUNGLE);
+					} else if (c.y == 1) {
+						chunk.getBlock(c.x, c.y, c.z).setBiome(Biome.JUNGLE);
+					}
 				});
 			}
-    		
-    	}});
-    }
-    
-    public <T> void iterAll(int chunkX, int chunkZ, T floor, T wall, T pathMain, T pathEdge, T fill, BiConsumer<Coord, T> forEach) {
-    	
-    	//northwest chunk corner, with offset applied -> x/z
-    	//The offset makes it believe it's generating for coordinates at offset back. Like nudging a graph: (x - offset)
-    	//modulo sectionSize with positive outcome
-    	//subtract pathOffset such that (xOffset, zOffset) is the center of a path intersection, the northwest part of it if pathwidth is even
-    	int x, z;
+			
+		}});
+	}
+	
+	public <T> void iterAll(int chunkX, int chunkZ, T floor, T wall, T pathMain, T pathEdge, T fill, BiConsumer<Coord, T> forEach) {
+		
+		//northwest chunk corner, with offset applied -> x/z
+		//The offset makes it believe it's generating for coordinates at offset back. Like nudging a graph: (x - offset)
+		//modulo sectionSize with positive outcome
+		//subtract pathOffset such that (xOffset, zOffset) is the center of a path intersection, the northwest part of it if pathwidth is even
+		int x, z;
 		final int x0 = ((x = (((chunkX << 4) - xOffset) % sectionSize)) < 0)? x + sectionSize : x;
 		final int z0 = ((z = (((chunkZ << 4) - zOffset) % sectionSize)) < 0)? z + sectionSize : z;
 		
 		int cX, y, cZ, height;
-    	for (cX = 0; cX < 16; cX++) {
+		for (cX = 0; cX < 16; cX++) {
 			for (cZ = 0; cZ < 16; cZ++) {
 				x = (x0 + cX) % sectionSize - pathOffset;
 				z = (z0 + cZ) % sectionSize - pathOffset;
@@ -110,7 +118,7 @@ public class ParcelGenerator extends ChunkGenerator {
 					height += 1;
 				} else if (Values.inRange(x, -2, parcelSize + 2) && Values.inRange(z, -2, parcelSize + 2) && makePathEdge) {
 					type = pathEdge;
- 				} else if (makePathMain) {
+				} else if (makePathMain) {
 					type = pathMain;
 				} else {
 					type = wall;
@@ -122,7 +130,7 @@ public class ParcelGenerator extends ChunkGenerator {
 				}
 			}
 		}
-    }
+	}
 }
 
 class Coord {
