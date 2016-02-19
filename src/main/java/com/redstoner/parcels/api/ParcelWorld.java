@@ -74,7 +74,7 @@ public class ParcelWorld {
 	
 	public void teleport(Player user, Parcel parcel) {
 		Coord home = toHomeCoord(parcel);
-		user.teleport(new Location(Bukkit.getWorld(name), home.getX(), settings.floorHeight + 1, home.getZ()));
+		user.teleport(new Location(Bukkit.getWorld(name), home.getX(), settings.floorHeight + 1, home.getZ(), -90, 0));
 	}
 	
 	private Coord toHomeCoord(Parcel parcel) {

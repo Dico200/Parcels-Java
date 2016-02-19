@@ -40,18 +40,13 @@ public class ParcelsPlugin extends JavaPlugin {
 		getConfig().options().copyDefaults(true);
 		saveConfig();
 		
-		// This can be altered while running, and on disable it will store parcels accordingly.
-		newUseMySQL = true;//getConfig().getBoolean("MySQL.enabled");
-		ParcelsPlugin.log("Using MYSQL: " + newUseMySQL);
-		
-		
-		StorageManager.useMySQL = newUseMySQL;
 		worldManager = WorldManager.INSTANCE;
 		
+		this.newUseMySQL = true;
 		StorageManager.initialise();
 		
 		ParcelCommands.register();
-		getServer().getPluginManager().registerEvents(new ParcelListener(), this);
+		ParcelListener.register();
 		
 		if (!StorageManager.useMySQL) {
 			int interval = getConfig().getInt("MySQL.save-interval-no-mysql");

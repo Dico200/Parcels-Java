@@ -1,5 +1,6 @@
 package com.redstoner.parcels.api;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -7,8 +8,9 @@ import java.util.stream.Stream.Builder;
 
 import com.redstoner.parcels.ParcelsPlugin;
 
-class ParcelContainer {
-	
+class ParcelContainer implements Serializable {
+	private static final long serialVersionUID = -2960464067977890792L;
+
 	static ParcelContainer resize(ParcelContainer container, String world, int newLimit) {
 		
 		ParcelContainer result = new ParcelContainer(world, newLimit);

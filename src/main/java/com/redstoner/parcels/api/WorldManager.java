@@ -49,6 +49,14 @@ public enum WorldManager {
 		ifWorldPresent(loc.getWorld().getBlockAt(loc), present);
 	}
 	
+	public static void ifParcelPresent(Block b, BiConsumer<ParcelWorld, Parcel> present) {
+		ifWorldPresent(b, (world, mParcel) -> mParcel.ifPresent(parcel -> present.accept(world, parcel)));
+	}
+	
+	public static void ifParcelPresent(Location loc, BiConsumer<ParcelWorld, Parcel> present) {
+		ifWorldPresent(loc, (world, mParcel) -> mParcel.ifPresent(parcel -> present.accept(world, parcel)));
+	}
+	
 	WorldManager() {
 		this.plugin = ParcelsPlugin.getInstance();
 		ParcelsPlugin.log("WorldManager initialized");

@@ -1,18 +1,21 @@
 package com.redstoner.parcels.api;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.bukkit.OfflinePlayer;
 
-public class PlayerList {
+public class PlayerList implements Serializable {
+	private static final long serialVersionUID = -3567385973538512196L;
 	
 	private List<OfflinePlayer> players;
 	private boolean hasStar;
 	
 	public PlayerList() {
 		this.players = new ArrayList<>();
+		this.hasStar = false;
 	}
 	
 	public boolean setHasStar(boolean hasStar) {

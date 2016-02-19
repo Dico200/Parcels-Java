@@ -1,5 +1,7 @@
 package com.redstoner.parcels.api;
 
+import java.io.Serializable;
+
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -7,7 +9,8 @@ import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Optional;
 
-public class Parcel {
+public class Parcel implements Serializable {
+	private static final long serialVersionUID = -7252413358120772747L;
 	
 	private String world;
 	private Optional<OfflinePlayer> owner;
@@ -21,7 +24,8 @@ public class Parcel {
 		this.z = z;
 		if (StorageManager.useMySQL) {
 			this.friends = new SqlPlayerList() {
-	
+				private static final long serialVersionUID = -1687295408702329095L;
+
 				@Override
 				protected void removeFromSQL(OfflinePlayer toRemove) {
 					SqlManager.removeFriend(SqlManager.getId(world, x, z), toRemove.getUniqueId().toString());
@@ -35,6 +39,7 @@ public class Parcel {
 			};
 			
 			this.denied = new SqlPlayerList() {
+				private static final long serialVersionUID = -2964963045410028830L;
 
 				@Override
 				protected void removeFromSQL(OfflinePlayer toRemove) {
@@ -70,13 +75,14 @@ public class Parcel {
 	
 	public boolean setOwner(OfflinePlayer owner) {
 		boolean result = setOwnerIgnoreSQL(owner);
-		this.owner.ifPresentOrElse(player -> {
-			ParcelsPlugin.debug("Setting owner");
-			SqlManager.setOwner(SqlManager.getId(world, x, z), player.getUniqueId().toString());
-		}, () -> {
-			ParcelsPlugin.debug("Removing owner");
-			SqlManager.delOwner(SqlManager.getId(world, x, z));
-		});
+		if (StorageManager.useMySQL)
+			this.owner.ifPresentOrElse(player -> {
+				ParcelsPlugin.debug("Setting owner");
+				SqlManager.setOwner(SqlManager.getId(world, x, z), player.getUniqueId().toString());
+			}, () -> {
+				ParcelsPlugin.debug("Removing owner");
+				SqlManager.delOwner(SqlManager.getId(world, x, z));
+			});
 		return result;
 	}
 	
@@ -117,10 +123,10 @@ public class Parcel {
 	}
 	
 	public String getInfo() {
-		return String.format("&4ID: (&e%s&4) Owner: &e%s&4\nHelpers: &e%s&4\nDenied: &e%s", 
+		return String.format("&bID: (&e%s&b) Owner: &e%s&b\nHelpers: &e%s&b\nDenied: &e%s", 
 				getId(), getOwner().map(OfflinePlayer::getName).orElse(""), 
-				String.join("&4, &e", (CharSequence[])friends.stream().map(OfflinePlayer::getName).toArray(size -> new String[size])),
-				String.join("&4, &e", (CharSequence[])denied.stream().map(OfflinePlayer::getName).toArray(size -> new String[size])));
+				String.join("&b, &e", (CharSequence[])friends.stream().map(OfflinePlayer::getName).toArray(size -> new String[size])),
+				String.join("&b, &e", (CharSequence[])denied.stream().map(OfflinePlayer::getName).toArray(size -> new String[size])));
 	}
 
 }

@@ -30,16 +30,18 @@ public class ParcelWorldSettings {
 			put("offset-x", 0);
 			put("offset-z", 0);
 			put("parcel-axis-limit", 10);
+			put("disable-explosions", true);
 		}
 		
 	};
 	
-	public BlockType wall, floor, fill, pathMain, pathEdge;
-	public int parcelSize, floorHeight, xOffset, zOffset, sectionSize, pathOffset;
-	public int axisLimit;
+	public final BlockType wall, floor, fill, pathMain, pathEdge;
+	public final int parcelSize, floorHeight, xOffset, zOffset, sectionSize, pathOffset;
+	public final int axisLimit;
+	public final boolean disableExplosions;
 	
 	public ParcelWorldSettings(BlockType wall, BlockType floor, BlockType fill, BlockType pathMain, BlockType pathEdge, 
-			int parcelSize, int pathSize, int floorHeight, int offsetX, int offsetZ, int axisLimit) {	
+			int parcelSize, int pathSize, int floorHeight, int offsetX, int offsetZ, int axisLimit, boolean disableExplosions) {	
 		this.wall = wall;
 		this.floor = floor;
 		this.fill = fill;
@@ -55,6 +57,8 @@ public class ParcelWorldSettings {
 		this.pathOffset = ((pathSize % 2 == 0)? pathSize + 2 : pathSize + 1) / 2;
 		
 		this.axisLimit = axisLimit;
+		
+		this.disableExplosions = disableExplosions;
 	}
 	
 	public ParcelWorldSettings(CastingMap<String, Object> settings) {
@@ -69,7 +73,8 @@ public class ParcelWorldSettings {
 			settings.getCasted("floor-height"),
 			settings.getCasted("offset-x"),
 			settings.getCasted("offset-z"),
-			settings.getCasted("parcel-axis-limit")
+			settings.getCasted("parcel-axis-limit"),
+			settings.getCasted("disable-explosions")
 		);
 		 
 	}

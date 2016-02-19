@@ -13,7 +13,7 @@ import com.redstoner.utils.SqlConnector;
 
 public class StorageManager {
 	
-	public static boolean useMySQL;
+	public static boolean useMySQL = true;
 	
 	public static void initialise() {
 		

@@ -3,6 +3,7 @@ package com.redstoner.parcels.api;
 import org.bukkit.OfflinePlayer;
 
 public abstract class SqlPlayerList extends PlayerList {
+	private static final long serialVersionUID = 5258340707312744320L;
 	
 	@Override
 	public boolean remove(OfflinePlayer toRemove) {
@@ -22,8 +23,8 @@ public abstract class SqlPlayerList extends PlayerList {
 		return false;
 	}
 	
-	boolean addIgnoreSQL(OfflinePlayer toAdd) {
-		return super.add(toAdd);
+	void addIgnoreSQL(OfflinePlayer toAdd) {
+		super.add(toAdd);
 	}
 	
 	protected abstract void removeFromSQL(OfflinePlayer toRemove);

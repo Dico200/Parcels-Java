@@ -23,15 +23,17 @@
   */
 package com.redstoner.utils;
 
+import java.io.Serializable;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class Optional<T> {
+public class Optional<T> implements Serializable {
+	private static final long serialVersionUID = -6967900704910277798L;
 	
 	//Slight differences with java.util.Optional: ifPresentOrElse and ifNotPresent.
-	
+
 	private static final Optional<?> EMPTY = new Optional<>(null);
 	
 	@SuppressWarnings("unchecked")
@@ -72,7 +74,8 @@ public class Optional<T> {
 	}
 	
 	public Optional<T> ifPresent(Runnable toRun) {
-		toRun.run();
+		if (isPresent())
+			toRun.run();
 		return this;
 	}
 	

@@ -36,11 +36,16 @@ public class ParcelGenerator extends ChunkGenerator {
 		this.zOffset = pws.zOffset;
 		this.sectionSize = pws.sectionSize;
 		this.pathOffset = pws.pathOffset;
+		
+		int pathWidth = sectionSize - parcelSize;
+		this.makePathEdge = pathWidth > 4;
+		this.makePathMain = pathWidth > 2;
 	}
 	
 	private final short floorId, wallId, pathMainId, pathEdgeId, fillId;
 	private final byte floorData, wallData, pathMainData, pathEdgeData, fillData;
 	private final int parcelSize, floorHeight, xOffset, zOffset, sectionSize, pathOffset;
+	private final boolean makePathMain, makePathEdge;
 	
 	@Override
 	public Location getFixedSpawnLocation(World world, Random random) {
@@ -72,7 +77,8 @@ public class ParcelGenerator extends ChunkGenerator {
 			@Override
 			public void populate(World world, Random random, Chunk chunk) {
 				iterAll(chunk.getX(), chunk.getZ(), floorData, wallData, pathMainData, pathEdgeData, fillData, (c, type) -> {
-					chunk.getBlock(c.x, c.y, c.z).setData(type);
+					if (type != 0)
+						chunk.getBlock(c.x, c.y, c.z).setData(type);
 				});
 			}
     		
@@ -102,10 +108,12 @@ public class ParcelGenerator extends ChunkGenerator {
 				} else if (Values.inRange(x, -1, parcelSize + 1) && Values.inRange(z, -1, parcelSize + 1)) {
 					type = wall;
 					height += 1;
-				} else if (Values.inRange(x, -2, parcelSize + 2) && Values.inRange(z, -2, parcelSize + 2)) {
+				} else if (Values.inRange(x, -2, parcelSize + 2) && Values.inRange(z, -2, parcelSize + 2) && makePathEdge) {
 					type = pathEdge;
- 				} else {
+ 				} else if (makePathMain) {
 					type = pathMain;
+				} else {
+					type = wall;
 				}
 				
 				forEach.accept(new Coord(cX, height, cZ), type);

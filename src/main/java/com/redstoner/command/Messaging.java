@@ -24,8 +24,8 @@ public class Messaging {
 		return (prefix == null || prefix.isEmpty())? "" : String.format(PREFIX_FORMAT, prefix);
 	}
 
-	public static void send(CommandSender sender, String prefix, Formatting format, String message) {
-		sender.sendMessage(String.format(MESSAGE_FORMAT, formatPrefix(prefix), format, Formatting.translateChars('&', message)));
+	public static void send(CommandSender recipient, String prefix, Formatting format, String message) {
+		recipient.sendMessage(String.format(MESSAGE_FORMAT, formatPrefix(prefix), format, Formatting.translateChars('&', message)));
 	}
 	
 	public static void send(CommandSender recipient, Formatting format, String message) {
