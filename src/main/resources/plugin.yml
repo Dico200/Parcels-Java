@@ -1,0 +1,5 @@
+load: STARTUP
+name: Parcels
+author: Dico
+version: 0.1
+main: com.redstoner.parcels.ParcelsPlugin

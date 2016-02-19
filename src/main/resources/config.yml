@@ -1,0 +1,36 @@
+MySQL:
+  # Currently forced enabled
+  enabled: 'true'
+  hostname: 'localhost:3306'
+  database: 'example_db_name'
+  username: 'username'
+  password: 'password'
+  
+  # seconds (disabled)
+  save-interval-no-mysql: 120
+
+worlds:
+  Parcels:
+  
+    # Type ID first, Data value second. Data values can be excluded.
+    wall-type: '44:6'
+    floor-type: '35:8'
+    fill-type: '35:7'
+    path-main-type: '35:6'
+    path-edge-type: '35:14'
+    
+    # The size of a parcel, both dimensions are the same.
+    parcel-size: 101
+    
+    # The width of the path, including the wall blocks. 
+    path-size: 8
+    
+    # The level the floor's at.
+    floor-height: 63
+    
+    # Offset the world if you want to for whatever reason.
+    offset-x: 0
+    offset-z: 0
+    
+    # The amount of (active) parcels in each direction counting from the parcel with ID (0:0).
+    parcel-axis-limit: 10
