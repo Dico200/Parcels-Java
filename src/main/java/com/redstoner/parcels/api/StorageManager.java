@@ -9,7 +9,7 @@ import java.io.ObjectOutputStream;
 import org.bukkit.configuration.ConfigurationSection;
 
 import com.redstoner.parcels.ParcelsPlugin;
-import com.redstoner.utils.SqlConnector;
+import com.redstoner.utils.mysql.SqlConnector;
 
 public class StorageManager {
 	

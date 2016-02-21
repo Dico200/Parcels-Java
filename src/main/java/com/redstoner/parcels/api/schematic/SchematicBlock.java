@@ -25,20 +25,35 @@ class SchematicBlock {
 		this.converter = SpecialType.getConverter(block.getState());
 	}
 	
+	public int getX() {
+		return x;
+	}
+
+	public int getY() {
+		return y;
+	}
+
+	public int getZ() {
+		return z;
+	}
+
 	@SuppressWarnings("deprecation")
 	public void paste(World world, int relativeX, int relativeY, int relativeZ) {
 	    Block block = world.getBlockAt(x + relativeX, y + relativeY, z + relativeZ);
 		block.setTypeIdAndData(typeId, data, false);
 		if (converter != null) {
     		try {
-    		    ParcelsPlugin.debug("Type: " + typeId);
     		    BlockState state = block.getState();
         		converter.accept(state);
         		state.update();
     		} catch (ClassCastException e) {
-    		    ParcelsPlugin.debug("Couldn't cast");
+    		    ParcelsPlugin.debug("Failed to update a block properly in swap");
     		}
 		}
+	}
+	
+	public String toString() {
+		return String.format("SchematicBlock{typeId:%s|data:%s}", typeId, data);
 	}
 	
 }

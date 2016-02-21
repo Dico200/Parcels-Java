@@ -37,23 +37,25 @@ class ParcelContainer implements Serializable {
 	}
 	
 	protected ParcelContainer(String world, int axisLimit) {
-		count = axisLimit;
+		//this.world = world;
+		this.axisLimit = axisLimit;
 		parcels = IntStream.rangeClosed(-axisLimit, axisLimit)
 				.mapToObj(x -> IntStream.rangeClosed(-axisLimit, axisLimit)
-						.mapToObj(z -> new Parcel(world, x, z))
+						.mapToObj(z -> new Parcel(world, x, z)) // Change this if we change the way SQL is loaded
 						.toArray(size -> new Parcel[size])
 				).toArray(size -> new Parcel[size][]);
 	}
 	
-	final private int count;
-	private Parcel[][] parcels;
+	//private final String world;
+	private final int axisLimit;
+	private final Parcel[][] parcels;
 	
 	private <T> T atX(T[] array, int x) {
-		return array[count + x];
+		return array[axisLimit + x];
 	}
 	
 	private boolean isWithinBoundaryAt(int x) {
-		return ((x<0)?-x:x) <= count;
+		return ((x<0)?-x:x) <= axisLimit;
 	}
 	
 	protected Parcel getParcelAt(int x, int z) {
@@ -81,7 +83,7 @@ class ParcelContainer implements Serializable {
 	}
 	
 	protected Parcel nextUnclaimed() {
-		for (int distance = 0; distance <= count; distance++) {
+		for (int distance = 0; distance <= axisLimit; distance++) {
 			int inner = distance - 1;
 			for (int x = -distance; x < distance + 1; x++) {
 				for (int z = -distance; z < distance + 1; z++) {
@@ -99,11 +101,12 @@ class ParcelContainer implements Serializable {
 	}
 	
 	protected int getAxisLimit() {
-		return count;
+		return axisLimit;
 	}
 	
-	private void setParcelAt(int x, int z, Parcel parcel) {
-		atX(parcels, x)[count + z] = parcel;
+	void setParcelAt(int x, int z, Parcel parcel) {
+		ParcelsPlugin.log("Setting parcel");
+		atX(parcels, x)[axisLimit + z] = parcel;
 	}
 	
 }

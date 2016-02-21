@@ -1,4 +1,4 @@
-package com.redstoner.utils.mysql;
+package com.redstoner.utils.mysql.future;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

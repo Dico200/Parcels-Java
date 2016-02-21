@@ -20,8 +20,9 @@ public class HelpWriter {
 	 	SUBCOMMAND_HEADER 		= Formatting.translateChars('&', "&aFollow-ups:"),
 	 	SUBCOMMAND_FORMAT		= Formatting.translateChars('&', "&3/%s%s\n  &a%s"),
 		FOOTER_FORMAT			= Formatting.translateChars('&', "\n&6Use &3/%s help %s &6for the next page");
+		//NOT_A_PAGE				= Formatting.translateChars()
 	
-	private final String[] helpMessage;
+	private String[] helpMessage;
 	private final String command, syntaxMessage;
 	private final Command handler;
 	
@@ -37,9 +38,6 @@ public class HelpWriter {
 		
 		if (syntax != null && !syntax.isEmpty())
 			lines.add(syntaxMessage);
-		
-		if (handler.getChildren().size() > 0)
-			lines.add(SUBCOMMAND_HEADER); //TODO called before children are added
 
 		this.helpMessage = lines.toArray(new String[lines.size()]);
 		this.command = command;
@@ -63,6 +61,9 @@ public class HelpWriter {
 		String[] cmdsToDisplay = Arrays.stream(Arrays.copyOfRange(cmds, Math.min(cmdsDisplayed, cmds.length), Math.min(cmdsDisplayed + onThisPage, cmds.length)))
 				.map(c -> String.format(SUBCOMMAND_FORMAT, command, c.collectPath(layer), c.getDescription())).toArray(size -> new String[size]);
 		
+		//if (helpToDisplay.length == 0 && cmdsToDisplay.length == 0)
+			
+		
 		for (String s : helpToDisplay)
 			message.append('\n' + s);
 		for (String s : cmdsToDisplay)
@@ -80,5 +81,10 @@ public class HelpWriter {
 	
 	public String getSyntaxMessage() {
 		return syntaxMessage;
+	}
+	
+	void addSubcommandHeader() {
+		helpMessage = Arrays.copyOfRange(helpMessage, 0, helpMessage.length + 1);
+		helpMessage[helpMessage.length - 1] = SUBCOMMAND_HEADER;
 	}
 }

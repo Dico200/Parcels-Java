@@ -3,12 +3,13 @@ package com.redstoner.parcels.api.list;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.UUID;
 
-import org.bukkit.OfflinePlayer;
+import org.bukkit.Bukkit;
 
 public class PlayerList {
 	
-	private List<OfflinePlayer> players;
+	private List<UUID> players;
 	private boolean hasStar;
 	
 	public PlayerList() {
@@ -27,36 +28,36 @@ public class PlayerList {
 		return hasStar;
 	}
 	
-	public boolean add(OfflinePlayer toAdd) {
+	public boolean add(UUID toAdd) {
 		if (players.contains(toAdd))
 			return false;
 		return players.add(toAdd);
 	}
 	
-	public boolean remove(OfflinePlayer toRemove) {
+	public boolean remove(UUID toRemove) {
 		if (!players.contains(toRemove))
 			return false;
 		return players.remove(toRemove);
 	}
 	
-	public boolean contains(OfflinePlayer toCheck) {
+	public boolean contains(UUID toCheck) {
 		return hasStar || players.contains(toCheck);
 	}
 	
-	public boolean isPresent(OfflinePlayer toCheck) {
+	public boolean isPresent(UUID toCheck) {
 		return players.contains(toCheck);
 	}
 	
-	public Stream<OfflinePlayer> stream() {
+	public Stream<UUID> stream() {
 		return players.stream();
 	}
 	
-	public List<OfflinePlayer> getAll() {
+	public List<UUID> getAll() {
 		return players;
 	}
 	
 	public String toString() {
-		String players = String.join(", ", (CharSequence[]) stream().map(p -> p.getName()).toArray(size -> new String[size]));
+		String players = String.join(", ", (CharSequence[]) stream().map(p -> Bukkit.getOfflinePlayer(p).getName()).toArray(size -> new String[size]));
 		if (hasStar)
 			if (players.isEmpty())
 				players = "*";

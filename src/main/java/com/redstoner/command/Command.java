@@ -31,7 +31,7 @@ public abstract class Command extends Hierarchy<Command> {
 	protected abstract String execute(CommandSender sender, CommandScape scape);
 	
 	final List<String> acceptTabComplete(CommandSender sender, String[] args) {
-		return accepts(sender) ? tabComplete(sender, params.toScape(args, params.complete(args))) : new ArrayList<>();
+		return accepts(sender) ? tabComplete(sender, params.toScape(args, complete(args))) : new ArrayList<>();
 	}
 	
 	protected List<String> tabComplete(CommandSender sender, CommandScape scape) {
@@ -44,6 +44,23 @@ public abstract class Command extends Hierarchy<Command> {
 		if (permission != null && !permission.isEmpty()) {
 			Validate.isAuthorized(sender, permission);
 		}
+	}
+	
+	private List<String> complete(String[] args) {
+		List<String> result = new ArrayList<>();
+		if (args.length > 0) {
+			String last = args[args.length - 1].toLowerCase();
+			for (Command child : getChildren()) {
+				if (child.getId().startsWith(last)) {
+					result.add(child.getId());
+				}
+			}
+		}
+		
+		for (String s : params.complete(args)) {
+			result.add(s);
+		}
+		return result;
 	}
 	
 	protected Command() {
@@ -193,6 +210,17 @@ public abstract class Command extends Hierarchy<Command> {
 		}
 		this.permission = permission.replace("$PARENT$", inst.permission).replace("$COMMAND$", getId());
 		this.messager = new HelpWriter(this, command, helpInformation, aliases, params.syntax());
-	}	
+	}
+	
+	/*
+	@Override
+	protected boolean addChild(String id, Hierarchy<Command> instance) {
+		if (super.addChild(id, instance)) {
+			messager.addSubcommandHeader();
+			return true;
+		}
+		return false;
+	}
+	*/
 
 }

@@ -1,10 +1,10 @@
 package com.redstoner.parcels.api.list;
 
-import org.bukkit.OfflinePlayer;
+import java.util.UUID;
 
 public abstract class SqlPlayerList extends PlayerList {
 	@Override
-	public boolean remove(OfflinePlayer toRemove) {
+	public boolean remove(UUID toRemove) {
 		if (super.remove(toRemove)) {
 			removeFromSQL(toRemove);
 			return true;
@@ -13,7 +13,7 @@ public abstract class SqlPlayerList extends PlayerList {
 	}
 	
 	@Override
-	public boolean add(OfflinePlayer toAdd) {
+	public boolean add(UUID toAdd) {
 		if (super.add(toAdd)) {
 			addToSQL(toAdd);
 			return true;
@@ -27,12 +27,12 @@ public abstract class SqlPlayerList extends PlayerList {
 		clearSQL();
 	}
 	
-	public void addIgnoreSQL(OfflinePlayer toAdd) {
+	public void addIgnoreSQL(UUID toAdd) {
 		super.add(toAdd);
 	}
 	
-	protected abstract void removeFromSQL(OfflinePlayer toRemove);
-	protected abstract void addToSQL(OfflinePlayer toAdd);
+	protected abstract void removeFromSQL(UUID toRemove);
+	protected abstract void addToSQL(UUID toAdd);
 	protected abstract void clearSQL();
 
 }
