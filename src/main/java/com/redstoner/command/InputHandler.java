@@ -1,11 +1,13 @@
 package com.redstoner.command;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 
+import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.utils.Formatting;
 
 public class InputHandler extends org.bukkit.command.Command {
@@ -16,7 +18,7 @@ public class InputHandler extends org.bukkit.command.Command {
 	private String prefix;
 	
 	protected InputHandler(Command parent, String prefix) {
-		super(parent.getId(), parent.getDescription(), new String(), parent.getAliases());
+		super(parent.getId(), parent.getDescription(), new String(), new ArrayList<>());
 		this.parent = parent;
 		this.other = null;
 		this.takePriority = false;
@@ -58,6 +60,7 @@ public class InputHandler extends org.bukkit.command.Command {
 	
 	@Override
 	public List<String> tabComplete(CommandSender sender, String[] args) {
+		ParcelsPlugin.debug("Tab complete requested for " + String.join(" ", args));
 		Command handler = parent.instanceAt(args, true);
 		args = Arrays.copyOfRange(args, handler.getLayer(), args.length);
 		return handler.acceptTabComplete(sender, args);

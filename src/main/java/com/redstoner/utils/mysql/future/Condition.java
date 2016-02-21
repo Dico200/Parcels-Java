@@ -1,4 +1,4 @@
-package com.redstoner.utils.mysql;
+package com.redstoner.utils.mysql.future;
 
 public class Condition {
 	

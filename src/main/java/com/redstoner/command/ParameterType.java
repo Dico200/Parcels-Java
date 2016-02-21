@@ -58,11 +58,6 @@ public abstract class ParameterType<T> {
 			String handle(String input) {
 				return input;
 			}
-
-			@Override
-			List<String> complete(String input) {
-				return new ArrayList<>();
-			}
 		};
 		
 		INTEGER = new ParameterType<Integer>("Number", "a round number") {

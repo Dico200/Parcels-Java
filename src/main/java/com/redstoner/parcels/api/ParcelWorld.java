@@ -1,6 +1,8 @@
 package com.redstoner.parcels.api;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
 
@@ -9,12 +11,13 @@ import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
+import com.redstoner.parcels.api.list.PlayerMap;
 import com.redstoner.parcels.api.schematic.ParcelSchematic;
+import com.redstoner.parcels.api.schematic.Schematic;
 import com.redstoner.parcels.generation.ParcelGenerator;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Optional;
@@ -63,7 +66,7 @@ public class ParcelWorld {
 			int px = (absX - modX) / sectionSize;
 			int pz = (absZ - modZ) / sectionSize;
 			if (parcels.isWithinBoundaryAt(px, pz))
-				return Optional.of(parcels.getParcelAt(px, pz));
+				return Optional.ofNullable(parcels.getParcelAt(px, pz));
 		}
 		return Optional.empty();
 	}
@@ -183,52 +186,31 @@ public class ParcelWorld {
 	}
 	
 	public void swap(Parcel parcel1, Parcel parcel2) {
-		ParcelSchematic schem1 = new ParcelSchematic(this, parcel1);
-		ParcelSchematic schem2 = new ParcelSchematic(this, parcel2);
-		schem1.pasteAt(this, parcel2);
-		schem2.pasteAt(this, parcel1);
-	}
-	
-	/*
-	public PyGenerator<Block> getBlocksGenerator(Parcel parcel) {
+		ParcelSchematic.load(this, parcel1).swapWith(ParcelSchematic.load(this, parcel2));
 		
-		return new PyGenerator<Block>() {
-
-			@Override
-			protected void run() throws InterruptedException {
-				World world = Bukkit.getWorld(name);
-				if (world == null)
-					return;
-				
-				Coord NW = getNWCoord(parcel);
-				int x0 = NW.getX();
-				int z0 = NW.getZ();
-				
-				int x, z, y;
-				for (x = x0; x < x0 + settings.parcelSize; x++) {
-					for (z = z0; z < z0 + settings.parcelSize; z++) {
-						for (y = 0; y < 256; y++) {
-							yield(world.getBlockAt(x, y, z));
-						}
-					}
-				}
-			}
-		};
+		UUID owner1 = parcel1.getOwner().orElse(null);
+		parcel1.setOwner(parcel2.getOwner().orElse(null));
+		parcel2.setOwner(owner1);
+		
+		PlayerMap<Boolean> added1 = parcel1.getAdded();
+		PlayerMap<Boolean> added2 = parcel2.getAdded();
+		Map<UUID, Boolean> map1 = new HashMap<>(added1.getMap());
+		added1.clear();
+		added2.getMap().forEach((player, value) -> added1.add(player, value));
+		added2.clear();
+		map1.forEach((player, value) -> added2.add(player, value));
+		
 	}
-	*/
 	
-	public List<Entity> getEntities(Parcel parcel) {
+	private Stream<Entity> getEntities(Parcel parcel) {
 		World world = getWorld();
 		Coord NW = getBottomCoord(parcel);
-		int halfParcel = settings.parcelSize / 2; //floored	
-		ArmorStand stand = (ArmorStand) world.spawnEntity(new Location(world, NW.getX() + halfParcel, 128, NW.getZ() + halfParcel), EntityType.ARMOR_STAND);
-		List<Entity> entities = stand.getNearbyEntities(halfParcel, 128, halfParcel);
-		stand.remove();
-		return entities;
+		int parcelDistance = settings.parcelSize - 1;
+		return Schematic.getContainedEntities(world, NW.getX(), 0, NW.getZ(), NW.getX() + parcelDistance, 255, NW.getZ() + parcelDistance);
 	}
 	
 	public void removeEntities(Parcel parcel) {
-		getEntities(parcel).stream().filter(entity -> entity.getType() != EntityType.PLAYER).forEach(Entity::remove);
+		getEntities(parcel).filter(entity -> entity.getType() != EntityType.PLAYER).forEach(Entity::remove);
 	}
 
 }

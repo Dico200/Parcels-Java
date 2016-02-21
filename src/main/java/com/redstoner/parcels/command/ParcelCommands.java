@@ -12,7 +12,7 @@ import com.redstoner.command.ParameterType;
 import com.redstoner.command.Validate;
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
-import com.redstoner.parcels.api.schematic.ParcelSchematic;
+import com.redstoner.parcels.api.Permissions;
 import com.redstoner.utils.Formatting;
 import com.redstoner.utils.Optional;
 
@@ -52,7 +52,7 @@ public class ParcelCommands {
 		CommandManager.register(new ParcelCommand("parcel allow", ParcelRequirement.IN_OWNED,
 				(sender, scape) -> {
 					OfflinePlayer allowed = scape.get("player");
-					Validate.isTrue(scape.getParcel().getAdded().add(allowed, true), "That player is already allowed to build on this parcel");
+					Validate.isTrue(scape.getParcel().getAdded().add(allowed.getUniqueId(), true), "That player is already allowed to build on this parcel");
 					return allowed.getName() + " is now allowed to build on this parcel";
 				}){{
 			setDescription("allows a player to build");
@@ -63,7 +63,7 @@ public class ParcelCommands {
 		CommandManager.register(new ParcelCommand("parcel forbid", ParcelRequirement.IN_OWNED, 
 				(sender, scape) -> {
 					OfflinePlayer forbidden = scape.get("player");
-					Validate.isTrue(scape.getParcel().getAdded().remove(forbidden, true), "That player wasn't allowed to build on this parcel");
+					Validate.isTrue(scape.getParcel().getAdded().remove(forbidden.getUniqueId(), true), "That player wasn't allowed to build on this parcel");
 					return forbidden.getName() + " is no longer allowed to build on this parcel";
 				}){{
 			setDescription("forbids a player to build");
@@ -85,21 +85,21 @@ public class ParcelCommands {
 		CommandManager.register(new ParcelCommand("parcel unban", ParcelRequirement.IN_OWNED, 
 				(sender, scape) -> {
 					OfflinePlayer unbanned = scape.get("player");
-					Validate.isTrue(scape.getParcel().getAdded().remove(unbanned, false), "That player wasn't banned from this parcel");
+					Validate.isTrue(scape.getParcel().getAdded().remove(unbanned.getUniqueId(), false), "That player wasn't banned from this parcel");
 					return unbanned.getName() + " is no longer banned from this parcel";
 				}){{
 			setDescription("undenies a player from this parcel");
 			setHelpInformation("Undenies a player from this parcel,", "they will be able to enter it again");
-			setParameters(new Parameter<OfflinePlayer>("undenied", ParameterType.OFFLINE_PLAYER, "the player to undeny"));
+			setParameters(new Parameter<OfflinePlayer>("player", ParameterType.OFFLINE_PLAYER, "the player to undeny"));
 		}});
 		
 		CommandManager.register(new ParcelCommand("parcel auto", ParcelRequirement.IN_WORLD,
 				(sender, scape) -> {
 					ParcelWorld w = scape.getWorld();
-					Validate.isTrue(w.getOwned(sender).length < getPlotLimit(sender), "You have enough plots for now");
+					Validate.isTrue(w.getOwned(sender).length < Permissions.getParcelLimit(sender), "You have enough plots for now");
 					Optional<Parcel> p = scape.getWorld().getNextUnclaimed();
 					Validate.isTrue(p.isPresent(), "This world is full, please ask an admin to upsize it");
-					p.get().setOwner(sender);
+					p.get().setOwner(sender.getUniqueId());
 					w.teleport(sender, p.get());
 					return "Enjoy your new parcel!";
 				}){{
@@ -111,7 +111,7 @@ public class ParcelCommands {
 				(sender, scape) -> {
 					int number = scape.<Integer>getOptional("id").orElse(0);
 					OfflinePlayer owner = scape.<OfflinePlayer>getOptional("player").orElse(sender);
-					Validate.isTrue(owner == sender || sender.hasPermission("parcels.command.home.others"), "You do not have permission to teleport to other people's parcels");
+					Validate.isTrue(owner == sender || sender.hasPermission(Permissions.PARCEL_HOME_OTHERS), "You do not have permission to teleport to other people's parcels");
 					Parcel[] owned = scape.getWorld().getOwned(owner);
 					Validate.isTrue(number < owned.length, "That parcel id does not exist, they have " + owned.length + " parcels");
 					scape.getWorld().teleport(sender, owned[number]);
@@ -131,7 +131,8 @@ public class ParcelCommands {
 					return "This parcel no longer has any data";
 				}){{
 			setDescription("removes any data about this parcel");
-			setHelpInformation("removes any data about this parcel, it will be", "unowned, and noone will be allowed or banned");
+			setHelpInformation("removes any data about this parcel, it will be", "unowned, and noone will be allowed or banned.",
+					"This command will not clear this parcel");
 		}});
 		
 		CommandManager.register(new ParcelCommand("parcel reset", ParcelRequirement.IN_OWNED,
@@ -149,12 +150,12 @@ public class ParcelCommands {
 					Parcel p = scape.getParcel();
 					Validate.isTrue(!p.isClaimed(), "This parcel is not available");		
 					ParcelWorld w = scape.getWorld();
-					Validate.isTrue(w.getOwned(sender).length < getPlotLimit(sender), "You have enough plots for now");
-					p.setOwner(sender);
+					Validate.isTrue(w.getOwned(sender).length < Permissions.getParcelLimit(sender), "You have enough plots for now");
+					p.setOwner(sender.getUniqueId());
 					return "Enjoy your new parcel!";
 				}){{
 			setDescription("claims this parcel");
-			setHelpInformation("Claims the parcel you're on,", "making you its owner, if available");
+			setHelpInformation("If this parcel is unowned, makes you the owner");
 		}});
 		
 		CommandManager.register(new ParcelCommand("parcel tp", ParcelRequirement.IN_WORLD, 
@@ -187,10 +188,10 @@ public class ParcelCommands {
 					return "This parcel was cleared successfully";
 				}){{
 			setDescription("clears this parcel");
-			setHelpInformation("Clear this parcel, resetting all of its blocks", "and removing all entities inside");
+			setHelpInformation("Clears this parcel, resetting all of its blocks", "and removing all entities inside");
 		}});
 		
-		CommandManager.register(new ParcelCommand("parcel swap", ParcelRequirement.IS_ADMIN, 
+		CommandManager.register(new ParcelCommand("parcel swap", ParcelRequirement.IN_PARCEL, 
 				(sender, scape) -> {
 					ParcelWorld world = scape.getWorld();
 					Parcel parcel1 = scape.getParcel();
@@ -199,22 +200,11 @@ public class ParcelCommands {
 					world.swap(parcel1, parcel2);
 					return "These parcels were swapped successfully";
 				}){{
+			setDescription("swaps this parcel and its blocks with another");
+			setHelpInformation("Swaps this parcel's data and any other contents,", "such as blocks and their data, with the target parcel");
 			setParameters(new Parameter<Integer>("x", ParameterType.INTEGER, "the x of the other parcel's ID"),
 					new Parameter<Integer>("z", ParameterType.INTEGER, "the z of the other parcel's ID"));
 		}});
-		
-		CommandManager.register(new ParcelCommand("parcel move", ParcelRequirement.IS_ADMIN, 
-                (sender, scape) -> {
-                    ParcelWorld world = scape.getWorld();
-                    Parcel parcel1 = scape.getParcel();
-                    Parcel parcel2 = Validate.returnIfPresent(world.getParcelAtID(scape.get(0), scape.get(1)), "The target parcel does not exist");
-                    Messaging.send(sender, "Parcels", Formatting.BLUE, "Swapping these parcels, hang tight...");
-                    new ParcelSchematic(world, parcel1).pasteAt(world, parcel2);
-                    return "These parcels were swapped successfully";
-                }){{
-            setParameters(new Parameter<Integer>("x", ParameterType.INTEGER, "the x of the other parcel's ID"),
-                    new Parameter<Integer>("z", ParameterType.INTEGER, "the z of the other parcel's ID"));
-        }});
 		/*
 		CommandManager.register(new ParcelCommand("parcel ", ParcelRequirement.NONE, 
 				(sender, scape) -> {
@@ -241,17 +231,53 @@ public class ParcelCommands {
 			setParameters(new Parameter<Boolean>("enabled", ParameterType.BOOLEAN, "a boolean value"));
 		}});
 		*/
+		/*
+		CommandManager.register(new ParcelCommand("parcel schemtest", ParcelRequirement.IN_WORLD, 
+				(sender, scape) -> {
+					World w = scape.getWorld().getWorld();
+					Block b1 = w.getBlockAt(0, 65, 0);
+					Block b2 = w.getBlockAt(0, 65, 5);
+					SchematicBlock sb1 = new SchematicBlock(b1);
+					SchematicBlock sb2 = new SchematicBlock(b2);
+					ParcelsPlugin.debug("Block2: " + sb2);
+					sb1.paste(w, 0, 0, 5);
+					ParcelsPlugin.debug("Block2: " + sb2);
+					sb2.paste(w, 0, 0, -5);
+					return "tested";
+				}){{
+			
+		}});
 		
-	}
-	
-	
-	private static int getPlotLimit(Player user) {
-		if (user.hasPermission("parcels.limit.*"))
-			return Integer.MAX_VALUE;
-		for (int i = 0; i < 256; i++)
-			if (user.hasPermission("parcels.limit." + i))
-				return i;
-		return 0;
+		CommandManager.register(new ParcelCommand("parcel swapschem", ParcelRequirement.IN_WORLD,
+				(sender, scape) -> {
+					World w = scape.getWorld().getWorld();
+					int xs = scape.get(0);
+					int ys = scape.get(1);
+					int zs = scape.get(2);
+					int x0 = scape.get(3);
+					int y0 = scape.get(4);
+					int z0 = scape.get(5);
+					int x1 = scape.get(6);
+					int y1 = scape.get(7);
+					int z1 = scape.get(8);
+					Schematic s1 = new Schematic(w, x0, y0, z0, x0 + xs, y0 + ys, z0 + zs);
+					Schematic s2 = new Schematic(w, x1, y1, z1, x1 + xs, y1 + ys, z1 + zs);
+					s1.pasteAt(x1, y1, z1, s2.entitiesInOrigin(), true);
+					s2.pasteAt(x0, y0, z0, null, true);
+					return "Schematics pasted";
+				}){{
+			setParameters(new Parameter<Integer>("xsize", ParameterType.INTEGER, "xsize"),
+					new Parameter<Integer>("ysize", ParameterType.INTEGER, "ysize"),
+					new Parameter<Integer>("zsize", ParameterType.INTEGER, "zsize"),
+					new Parameter<Integer>("x0", ParameterType.INTEGER, "x0"),
+					new Parameter<Integer>("y0", ParameterType.INTEGER, "y0"),
+					new Parameter<Integer>("z0", ParameterType.INTEGER, "z0"),
+					new Parameter<Integer>("x1", ParameterType.INTEGER, "x1"),
+					new Parameter<Integer>("y1", ParameterType.INTEGER, "y1"),
+					new Parameter<Integer>("z1", ParameterType.INTEGER, "z1"));
+		}});
+		*/
+		
 	}
 	
 	private ParcelCommands() {}

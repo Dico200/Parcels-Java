@@ -1,9 +1,10 @@
 package com.redstoner.parcels.api;
 
 import java.io.Serializable;
+import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
 
 import com.redstoner.parcels.api.list.PlayerMap;
 import com.redstoner.parcels.api.list.SerialPlayerMap;
@@ -14,14 +15,14 @@ import com.redstoner.utils.Optional;
 public class Parcel implements Serializable {
 	private static final long serialVersionUID = -7252413358120772747L;
 	
-	private String world;
-	private Optional<OfflinePlayer> owner;
+	private final String world;
+	private Optional<UUID> owner;
 	
 	//Players added to the parcel. If true: they can build. If false: They are banned.
-	private PlayerMap<Boolean> added;
-	private int x, z;
+	private final PlayerMap<Boolean> added;
+	private final int x, z;
 	
-	Parcel(String world, int x, int z) {
+	public Parcel(String world, int x, int z) {
 		this.world = world;
 		this.owner = Optional.empty();
 		this.x = x;
@@ -30,12 +31,12 @@ public class Parcel implements Serializable {
 			this.added = new SqlPlayerMap<Boolean>(true) {
 
 				@Override
-				public void addToSQL(OfflinePlayer toAdd, Boolean value) {
+				public void addToSQL(UUID toAdd, Boolean value) {
 					SqlManager.addPlayer(world, x, z, toAdd, value);
 				}
 
 				@Override
-				public void removeFromSQL(OfflinePlayer toRemove) {
+				public void removeFromSQL(UUID toRemove) {
 					SqlManager.removePlayer(world, x, z, toRemove);
 				}
 
@@ -54,33 +55,32 @@ public class Parcel implements Serializable {
 		return String.format("%d:%d", x, z);
 	}
 	
-	public Optional<OfflinePlayer> getOwner() {
+	public Optional<UUID> getOwner() {
 		return owner;
 	}
 	
-	boolean setOwnerIgnoreSQL(OfflinePlayer owner) {
+	boolean setOwnerIgnoreSQL(UUID owner) {
 		if (this.owner.equals(owner))
 			return false;
 		this.owner = Optional.ofNullable(owner);
 		return true;
 	}
 	
-	public boolean setOwner(OfflinePlayer owner) {
-		boolean result = setOwnerIgnoreSQL(owner);
-		if (StorageManager.useMySQL)
-			this.owner.ifPresentOrElse(player -> {
-				SqlManager.setOwner(world, x, z, player);
-			}, () -> {
-				SqlManager.delOwner(world, x, z);
-			});
-		return result;
+	public boolean setOwner(UUID owner) {
+		if (setOwnerIgnoreSQL(owner)) {
+			if (StorageManager.useMySQL) {
+				SqlManager.setOwner(world, x, z, owner);
+			}
+			return true;
+		}
+		return false;
 	}
 	
 	public boolean isOwner(OfflinePlayer toCheck) {
-		return owner.filter(owner -> owner == toCheck).isPresent();
+		return owner.filter(owner -> owner.equals(toCheck.getUniqueId())).isPresent();
 	}
 	
-	public boolean canBuild(Player user) {
+	public boolean canBuild(OfflinePlayer user) {
 		return isOwner(user) || isAllowed(user);
 	}
 	
@@ -101,11 +101,15 @@ public class Parcel implements Serializable {
 	}
 	
 	public boolean isAllowed(OfflinePlayer user) {
-		return added.is(user, true);
+		return added.is(user.getUniqueId(), true);
 	}
 	
 	public boolean isBanned(OfflinePlayer user) {
-		return added.is(user, false);
+		return added.is(user.getUniqueId(), false);
+	}
+	
+	public boolean allowLeverInteractionByOutsiders() {
+		return false; //TODO
 	}
 	
 	public PlayerMap<Boolean> getAdded() {
@@ -118,7 +122,7 @@ public class Parcel implements Serializable {
 	
 	public String getInfo() {
 		return String.format("&bID: (&e%s&b) Owner: &e%s&b\nAllowed: &e%s&b\nBanned: &e%s", 
-				getId(), getOwner().map(OfflinePlayer::getName).orElse(""), 
+				getId(), getOwner().map(player -> Bukkit.getOfflinePlayer(player).getName()).orElse(""), 
 				added.toString(true), added.toString(false));
 	}
 

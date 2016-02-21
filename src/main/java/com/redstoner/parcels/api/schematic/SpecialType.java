@@ -1,5 +1,7 @@
 package com.redstoner.parcels.api.schematic;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -31,7 +33,7 @@ abstract class SpecialType<T> {
 	
 	private static final SpecialType<?>[] SPECIAL;
 	
-	protected Class<T> type;
+	private Class<T> type;
 	
 	private SpecialType(Class<T> type) {
 		this.type = type;
@@ -52,10 +54,14 @@ abstract class SpecialType<T> {
 		SPECIAL = new SpecialType[]{
 				
 				new SpecialType<InventoryHolder>(InventoryHolder.class) {
+					
+					private ItemStack copyStack(ItemStack stack) {
+						return stack == null ? null : new ItemStack(stack);
+					}
 
 					@Override
 					Consumer<BlockState> createConverter(InventoryHolder origin) {
-						ItemStack[] contents = origin.getInventory().getContents();
+						ItemStack[] contents = Arrays.stream(origin.getInventory().getContents()).map(this::copyStack).toArray(size -> new ItemStack[size]);
 						return state -> ((InventoryHolder)state).getInventory().setContents(contents);
 					}
 
@@ -109,7 +115,7 @@ abstract class SpecialType<T> {
 
 					@Override
 					Consumer<BlockState> createConverter(Banner origin) {
-						List<Pattern> patterns = origin.getPatterns();
+						List<Pattern> patterns = new ArrayList<>(origin.getPatterns());
 						return state -> ((Banner)state).setPatterns(patterns);
 					}
 

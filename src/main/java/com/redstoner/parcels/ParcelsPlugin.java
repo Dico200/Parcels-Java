@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.redstoner.parcels.api.ParcelWorldSettings;
 import com.redstoner.parcels.api.StorageManager;
 import com.redstoner.parcels.api.WorldManager;
 import com.redstoner.parcels.command.ParcelCommands;
@@ -35,7 +36,7 @@ public class ParcelsPlugin extends JavaPlugin {
 	public ParcelsPlugin() {
 		plugin = this;
 		
-		ParcelsPlugin.debug("INITIALISED PARCELS PLUGIN");
+		getConfig().set("worlds.Parcels.items-blocked", ParcelWorldSettings.DEFAULT_WORLD_SETTINGS.get("items-blocked"));
 		
 		getConfig().options().copyDefaults(true);
 		saveDefaultConfig();
@@ -46,7 +47,6 @@ public class ParcelsPlugin extends JavaPlugin {
 	@SuppressWarnings("deprecation")
 	@Override
 	public void onEnable() {
-		ParcelsPlugin.debug("ENABLED PARCELS PLUGIN");
 
 		this.newUseMySQL = true;
 		StorageManager.initialise();
