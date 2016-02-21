@@ -1,9 +1,11 @@
 apply plugin: 'java'
 
 repositories {
-  mavenCentral()
   maven {
+    // spigot
     url "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
+    // spigot dependencies
+    url "https://hub.spigotmc.org/nexus/content/repositories/public/"
   }
 }
 
