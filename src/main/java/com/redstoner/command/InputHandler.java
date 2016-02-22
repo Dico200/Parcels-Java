@@ -1,6 +1,5 @@
 package com.redstoner.command;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -18,7 +17,7 @@ public class InputHandler extends org.bukkit.command.Command {
 	private String prefix;
 	
 	protected InputHandler(Command parent, String prefix) {
-		super(parent.getId(), parent.getDescription(), new String(), new ArrayList<>());
+		super(parent.getId(), parent.getDescription(), new String(), parent.getAliases());
 		this.parent = parent;
 		this.other = null;
 		this.takePriority = false;

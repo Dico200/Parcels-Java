@@ -74,7 +74,7 @@ public class ParcelCommands {
 		CommandManager.register(new ParcelCommand("parcel ban", ParcelRequirement.IN_OWNED,
 				(sender, scape) -> {
 					OfflinePlayer banned = scape.get("player");
-					Validate.isTrue(scape.getParcel().getAdded().add(scape.get("player"), false), "That player is already banned from this parcel");
+					Validate.isTrue(scape.getParcel().getAdded().add(banned.getUniqueId(), false), "That player is already banned from this parcel");
 					return banned.getName() + " is now banned from this parcel";
 				}){{
 			setDescription("bans a player from this parcel");
@@ -205,6 +205,48 @@ public class ParcelCommands {
 			setParameters(new Parameter<Integer>("x", ParameterType.INTEGER, "the x of the other parcel's ID"),
 					new Parameter<Integer>("z", ParameterType.INTEGER, "the z of the other parcel's ID"));
 		}});
+		
+		CommandManager.register(new ParcelCommand("parcel option", ParcelRequirement.IN_PARCEL, (sender, scape) -> "EXEC:CommandAction.DISPLAY_HELP"){{
+			setDescription("changes interaction options for this parcel");
+			setHelpInformation("Sets whether players who are not allowed to", "build here can interact with certain things.");
+		}});
+		
+		CommandManager.register(new ParcelCommand("parcel option lever", ParcelRequirement.IN_PARCEL, 
+				(sender, scape) -> {
+					Boolean enabled = scape.get("enabled");
+					Parcel p = scape.getParcel();
+					if (enabled == null) {
+						String word = p.getSettings().allowsInteractInventory()? "" : "not ";
+						return "This parcel does " + word + "allow interaction with levers, buttons, etc.";
+					}
+					Validate.isTrue(sender.hasPermission(Permissions.ADMIN_MANAGE) || p.isOwner(sender), "You must own this parcel to change its options");
+					String word = enabled? "enabled" : "disabled";
+					Validate.isTrue(scape.getParcel().getSettings().setAllowsInteractInventory(enabled), "That option was already " + word);
+					return "That option is now " + word;
+				}){{
+			setDescription("allows editing levers");
+			setHelpInformation("Sets whether players who are not allowed to", "build here can interact with levers, buttons," + "pressure plates, tripwire or redstone ore");
+			setParameters(new Parameter<Boolean>("enabled", ParameterType.BOOLEAN, "whether the option is enabled", false));
+		}});
+		
+		CommandManager.register(new ParcelCommand("parcel option inventory", ParcelRequirement.IN_PARCEL, 
+				(sender, scape) -> {
+					Boolean enabled = scape.get("enabled");
+					Parcel p = scape.getParcel();
+					if (enabled == null) {
+						String word = p.getSettings().allowsInteractInventory()? "" : "not ";
+						return "This parcel does " + word + "allow interaction with inventories";
+					}
+					Validate.isTrue(sender.hasPermission(Permissions.ADMIN_MANAGE) || p.isOwner(sender), "You must own this parcel to change its options");
+					String word = enabled? "enabled" : "disabled";
+					Validate.isTrue(scape.getParcel().getSettings().setAllowsInteractInventory(enabled), "That option was already " + word);
+					return "That option is now " + word;
+				}){{
+			setDescription("allows editing inventories");
+			setHelpInformation("Sets whether players who are not allowed to", "build here can interact with inventories");
+			setParameters(new Parameter<Boolean>("enabled", ParameterType.BOOLEAN, "whether the option is enabled", false));
+		}});
+		
 		/*
 		CommandManager.register(new ParcelCommand("parcel ", ParcelRequirement.NONE, 
 				(sender, scape) -> {
@@ -229,52 +271,6 @@ public class ParcelCommands {
 			return "MySQL will be " + enabled + " on shutdown, and Parcels will be saved accordingly";
 		}){{
 			setParameters(new Parameter<Boolean>("enabled", ParameterType.BOOLEAN, "a boolean value"));
-		}});
-		*/
-		/*
-		CommandManager.register(new ParcelCommand("parcel schemtest", ParcelRequirement.IN_WORLD, 
-				(sender, scape) -> {
-					World w = scape.getWorld().getWorld();
-					Block b1 = w.getBlockAt(0, 65, 0);
-					Block b2 = w.getBlockAt(0, 65, 5);
-					SchematicBlock sb1 = new SchematicBlock(b1);
-					SchematicBlock sb2 = new SchematicBlock(b2);
-					ParcelsPlugin.debug("Block2: " + sb2);
-					sb1.paste(w, 0, 0, 5);
-					ParcelsPlugin.debug("Block2: " + sb2);
-					sb2.paste(w, 0, 0, -5);
-					return "tested";
-				}){{
-			
-		}});
-		
-		CommandManager.register(new ParcelCommand("parcel swapschem", ParcelRequirement.IN_WORLD,
-				(sender, scape) -> {
-					World w = scape.getWorld().getWorld();
-					int xs = scape.get(0);
-					int ys = scape.get(1);
-					int zs = scape.get(2);
-					int x0 = scape.get(3);
-					int y0 = scape.get(4);
-					int z0 = scape.get(5);
-					int x1 = scape.get(6);
-					int y1 = scape.get(7);
-					int z1 = scape.get(8);
-					Schematic s1 = new Schematic(w, x0, y0, z0, x0 + xs, y0 + ys, z0 + zs);
-					Schematic s2 = new Schematic(w, x1, y1, z1, x1 + xs, y1 + ys, z1 + zs);
-					s1.pasteAt(x1, y1, z1, s2.entitiesInOrigin(), true);
-					s2.pasteAt(x0, y0, z0, null, true);
-					return "Schematics pasted";
-				}){{
-			setParameters(new Parameter<Integer>("xsize", ParameterType.INTEGER, "xsize"),
-					new Parameter<Integer>("ysize", ParameterType.INTEGER, "ysize"),
-					new Parameter<Integer>("zsize", ParameterType.INTEGER, "zsize"),
-					new Parameter<Integer>("x0", ParameterType.INTEGER, "x0"),
-					new Parameter<Integer>("y0", ParameterType.INTEGER, "y0"),
-					new Parameter<Integer>("z0", ParameterType.INTEGER, "z0"),
-					new Parameter<Integer>("x1", ParameterType.INTEGER, "x1"),
-					new Parameter<Integer>("y1", ParameterType.INTEGER, "y1"),
-					new Parameter<Integer>("z1", ParameterType.INTEGER, "z1"));
 		}});
 		*/
 		

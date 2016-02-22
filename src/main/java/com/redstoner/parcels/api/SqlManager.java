@@ -16,7 +16,7 @@ import com.redstoner.utils.mysql.SqlUtil;
 public class SqlManager {
 	
 	private static final String
-		PARCELS_QUERY = "SELECT `id`, `px`, `pz`, `owner` FROM `parcels` WHERE `world` = ?;",
+		PARCELS_QUERY = "SELECT `id`, `px`, `pz`, `owner`, `allow_interact_lever`, `allow_interact_inventory` FROM `parcels` WHERE `world` = ?;",
 		//PARCEL_OWNER_QUERY = "SELECT `owner` FROM `parcels` WHERE `id` = ?;",
 		PARCEL_ADDED_QUERY = "SELECT `player`, `allowed` FROM `parcels_added` WHERE `id` = ?;",
 		PARCEL_ID_QUERY = "SELECT `id` FROM `parcels` WHERE `world` = ? AND `px` = ? AND `pz` = ?;",
@@ -26,6 +26,8 @@ public class SqlManager {
 				+ "`px` INTEGER NOT NULL, "
 				+ "`pz` INTEGER NOT NULL, "
 				+ "`owner` VARCHAR(36), "
+				+ "`allow_interact_lever` TINYINT(1) NOT NULL DEFAULT 0, "
+				+ "`allow_interact_inventory` TINYINT(1) NOT NULL DEFAULT 0, "
 				+ "UNIQUE KEY location(`world`, `px`, `pz`)"
 				+ ");",
 		CREATE_TABLE_ADDED = "CREATE TABLE IF NOT EXISTS `parcels_added` ("
@@ -37,6 +39,8 @@ public class SqlManager {
 				+ ");",
 		DROP_TABLES = "DROP TABLE IF EXISTS `parcels_added`;"
 				+ "DROP TABLE IF EXISTS `parcels`;",
+		SET_ALLOW_INTERACT_LEVER = "UPDATE `parcels` SET `allow_interact_lever` = ? WHERE `id` = ?;",
+		SET_ALLOW_INTERACT_INVENTORY = "UPDATE `parcels` SET `allow_interact_inventory` = ? WHERE `id` = ?;",
 		SET_OWNER_UPDATE = "UPDATE `parcels` SET `owner` = ? WHERE `id` = ?;",
 		ADD_PLAYER_UPDATE = "REPLACE `parcels_added` (`id`, `player`, `allowed`) VALUES (?, ?, ?);",
 		REMOVE_PLAYER_UPDATE = "DELETE FROM `parcels_added` WHERE `id` = ? AND `player` = ?;",
@@ -51,7 +55,6 @@ public class SqlManager {
 			SqlUtil.executeUpdate(conn, CREATE_TABLE_PARCELS, CREATE_TABLE_ADDED);
 			
 			try {
-				//Thread.sleep(2000);
 				
 				for (Entry<String, ParcelWorld> entry : WorldManager.getWorlds().entrySet()) {
 					String worldName = entry.getKey();
@@ -80,6 +83,9 @@ public class SqlManager {
 						if (owner != null) {
 							p.setOwnerIgnoreSQL(toUUID(owner));
 						}
+						
+						p.getSettings().setAllowsInteractLeverIgnoreSQL(parcels.getInt(5) != 0);
+						p.getSettings().setAllowsInteractInventoryIgnoreSQL(parcels.getInt(6) != 0);
 						
 						PreparedStatement query2 = conn.prepareStatement(PARCEL_ADDED_QUERY);
 						query2.setInt(1, parcels.getInt(1));
@@ -157,6 +163,38 @@ public class SqlManager {
 		});
 	}
 	
+	/* Setting template
+	public static void setAllowInteract(String world, int px, int pz, boolean enabled) {
+		CONNECTOR.asyncConn(conn -> {
+			try {
+				setBooleanParcelSetting(conn, world, px, pz, SET_ALLOW_INTERACT_, enabled);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		});
+	}
+	*/
+	
+	public static void setAllowInteractLever(String world, int px, int pz, boolean enabled) {
+		CONNECTOR.asyncConn(conn -> {
+			try {
+				setBooleanParcelSetting(conn, world, px, pz, SET_ALLOW_INTERACT_LEVER, enabled);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		});
+	}
+	
+	public static void setAllowInteractInventory(String world, int px, int pz, boolean enabled) {
+		CONNECTOR.asyncConn(conn -> {
+			try {
+				setBooleanParcelSetting(conn, world, px, pz, SET_ALLOW_INTERACT_INVENTORY, enabled);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		});
+	}
+	
 	public static void addPlayer(String world, int px, int pz, UUID player, boolean allowed) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
@@ -189,7 +227,14 @@ public class SqlManager {
 	
 	private static void setOwner(Connection conn, String world, int px, int pz, UUID owner) throws SQLException {
 		PreparedStatement update = conn.prepareStatement(SET_OWNER_UPDATE);
-		update.setString(1, owner.toString());
+		update.setString(1, owner == null ? null : owner.toString());
+		update.setInt(2, getId(conn, world, px, pz));
+		update.executeUpdate();
+	}
+	
+	private static void setBooleanParcelSetting(Connection conn, String world, int px, int pz, String query, boolean enabled) throws SQLException {
+		PreparedStatement update = conn.prepareStatement(query);
+		update.setBoolean(1, enabled);
 		update.setInt(2, getId(conn, world, px, pz));
 		update.executeUpdate();
 	}

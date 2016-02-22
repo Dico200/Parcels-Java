@@ -37,9 +37,8 @@ public class ParcelsPlugin extends JavaPlugin {
 		plugin = this;
 		
 		getConfig().set("worlds.Parcels.items-blocked", ParcelWorldSettings.DEFAULT_WORLD_SETTINGS.get("items-blocked"));
-		
 		getConfig().options().copyDefaults(true);
-		saveDefaultConfig();
+		saveConfig();
 		
 		worldManager = WorldManager.INSTANCE;
 	}
@@ -49,8 +48,8 @@ public class ParcelsPlugin extends JavaPlugin {
 	public void onEnable() {
 
 		this.newUseMySQL = true;
-		StorageManager.initialise();
 		
+		StorageManager.initialise();
 		ParcelCommands.register();
 		ParcelListener.register();
 		

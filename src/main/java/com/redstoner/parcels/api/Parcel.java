@@ -20,6 +20,7 @@ public class Parcel implements Serializable {
 	
 	//Players added to the parcel. If true: they can build. If false: They are banned.
 	private final PlayerMap<Boolean> added;
+	private final ParcelSettings settings;
 	private final int x, z;
 	
 	public Parcel(String world, int x, int z) {
@@ -27,6 +28,7 @@ public class Parcel implements Serializable {
 		this.owner = Optional.empty();
 		this.x = x;
 		this.z = z;
+		this.settings = new ParcelSettings(this);
 		if (StorageManager.useMySQL) {
 			this.added = new SqlPlayerMap<Boolean>(true) {
 
@@ -49,6 +51,10 @@ public class Parcel implements Serializable {
 		} else {
 			this.added = new SerialPlayerMap<Boolean>(true);
 		}
+	}
+	
+	public String getWorld() {
+		return world;
 	}
 	
 	public String getId() {
@@ -108,8 +114,8 @@ public class Parcel implements Serializable {
 		return added.is(user.getUniqueId(), false);
 	}
 	
-	public boolean allowLeverInteractionByOutsiders() {
-		return false; //TODO
+	public ParcelSettings getSettings() {
+		return settings;
 	}
 	
 	public PlayerMap<Boolean> getAdded() {

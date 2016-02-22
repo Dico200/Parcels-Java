@@ -15,6 +15,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
+import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.api.list.PlayerMap;
 import com.redstoner.parcels.api.schematic.ParcelSchematic;
 import com.redstoner.parcels.api.schematic.Schematic;
@@ -71,6 +72,14 @@ public class ParcelWorld {
 		return Optional.empty();
 	}
 	
+	public Optional<Parcel> getParcelAt(Location loc) {
+		return getParcelAt(loc.getBlockX(), loc.getBlockZ());
+	}
+	
+	public Optional<Parcel> getParcelAt(Block b) {
+		return getParcelAt(b.getX(), b.getZ());
+	}
+	
 	public Optional<Parcel> getParcelAtID(int px, int pz) {
 		return parcels.isWithinBoundaryAt(px, pz)? Optional.of(getParcelByID(px, pz)) : Optional.empty();
 	}
@@ -87,8 +96,12 @@ public class ParcelWorld {
 		int sectionSize = settings.sectionSize;
 		absX -= settings.xOffset + settings.pathOffset + px*sectionSize;
 		absZ -= settings.zOffset + settings.pathOffset + pz*sectionSize;
+		ParcelsPlugin.debug("absX: " + absX);
+		ParcelsPlugin.debug("absZ: " + absZ);
 		int modX = Values.posModulo(absX, sectionSize);
 		int modZ = Values.posModulo(absZ, sectionSize);
+		ParcelsPlugin.debug("modX: " + modX);
+		ParcelsPlugin.debug("modZ: " + modZ);
 		return isOriginParcel(modX, modZ);
 	}
 	

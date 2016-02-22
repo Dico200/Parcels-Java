@@ -24,19 +24,23 @@ public class ParcelWorldSettings {
 		private static final long serialVersionUID = 1L;
 		
 		{
-			put("wall-type", BlockType.fromString("44"));
-			put("floor-type", BlockType.fromString("155"));
-			put("fill-type", BlockType.fromString("1"));
-			put("path-main-type", BlockType.fromString("24"));
-			put("path-edge-type", BlockType.fromString("152"));
-			put("parcel-size", 101);
-			put("path-size", 8);
-			put("floor-height", 63);
-			put("offset-x", 0);
-			put("offset-z", 0);
+			put("generator.wall-type", BlockType.fromString("44"));
+			put("generator.floor-type", BlockType.fromString("155"));
+			put("generator.fill-type", BlockType.fromString("1"));
+			put("generator.path-main-type", BlockType.fromString("24"));
+			put("generator.path-edge-type", BlockType.fromString("152"));
+			put("generator.parcel-size", 101);
+			put("generator.path-size", 8);
+			put("generator.floor-height", 63);
+			put("generator.offset-x", 0);
+			put("generator.offset-z", 0);
 			put("parcel-axis-limit", 10);
-			put("disable-explosions", true);
-			put("items-blocked", new ArrayList<String>(){
+			put("static-time-day", true);
+			put("static-weather-clear", true);
+			put("interaction.disable-explosions", true);
+			put("interaction.block-portal-creation", true);
+			put("interaction.block-mob-spawning", true);
+			put("interaction.items-blocked", new ArrayList<String>(){
 				private static final long serialVersionUID = 1L;
 				{
 					add("FLINT_AND_STEEL");
@@ -49,48 +53,57 @@ public class ParcelWorldSettings {
 	public final BlockType wall, floor, fill, pathMain, pathEdge;
 	public final int parcelSize, floorHeight, xOffset, zOffset, sectionSize, pathOffset;
 	public final int axisLimit;
-	public final boolean disableExplosions;
+	public final boolean staticTimeDay, staticWeatherClear, disableExplosions, blockPortalCreation, blockMobSpawning;
 	public final List<Material> itemsBlocked;
 	
 	public ParcelWorldSettings(BlockType wall, BlockType floor, BlockType fill, BlockType pathMain, BlockType pathEdge, 
 			int parcelSize, int pathSize, int floorHeight, int offsetX, int offsetZ, int axisLimit, boolean disableExplosions, 
+			boolean staticTimeDay, boolean staticWeatherClear, boolean blockPortalCreation, boolean blockMobSpawning, 
 			List<Material> itemsBlocked) {	
+		
+		this.axisLimit = axisLimit;
+		this.staticTimeDay = staticTimeDay;
+		this.staticWeatherClear = staticWeatherClear;
+		
+		// GENERATOR
 		this.wall = wall;
 		this.floor = floor;
 		this.fill = fill;
 		this.pathMain = pathMain;
 		this.pathEdge = pathEdge;
-		
 		this.parcelSize = parcelSize;
 		this.floorHeight = floorHeight;
 		this.xOffset = offsetX;
 		this.zOffset = offsetZ;
-		
 		this.sectionSize = parcelSize + pathSize;
 		this.pathOffset = ((pathSize % 2 == 0)? pathSize + 2 : pathSize + 1) / 2;
-		
-		this.axisLimit = axisLimit;
-		
+	
+		// INTERACTION
 		this.disableExplosions = disableExplosions;
-		
+		this.blockPortalCreation = blockPortalCreation;
+		this.blockMobSpawning = blockMobSpawning;
 		this.itemsBlocked = itemsBlocked;
 	}
 	
 	public ParcelWorldSettings(CastingMap<String, Object> settings) {
 		this(
-			settings.getCasted("wall-type"), 
-			settings.getCasted("floor-type"), 
-			settings.getCasted("fill-type"), 
-			settings.getCasted("path-main-type"), 
-			settings.getCasted("path-edge-type"), 
-			settings.getCasted("parcel-size"), 
-			settings.getCasted("path-size"), 
-			settings.getCasted("floor-height"),
-			settings.getCasted("offset-x"),
-			settings.getCasted("offset-z"),
+			settings.getCasted("generator.wall-type"), 
+			settings.getCasted("generator.floor-type"), 
+			settings.getCasted("generator.fill-type"), 
+			settings.getCasted("generator.path-main-type"), 
+			settings.getCasted("generator.path-edge-type"), 
+			settings.getCasted("generator.parcel-size"), 
+			settings.getCasted("generator.path-size"), 
+			settings.getCasted("generator.floor-height"),
+			settings.getCasted("generator.offset-x"),
+			settings.getCasted("generator.offset-z"),
 			settings.getCasted("parcel-axis-limit"),
-			settings.getCasted("disable-explosions"),
-			settings.getCasted("items-blocked")
+			settings.getCasted("static-time-day"),
+			settings.getCasted("static-weather-clear"),
+			settings.getCasted("interaction.disable-explosions"),
+			settings.getCasted("interaction.block-portal-creation"),
+			settings.getCasted("interaction.block-mob-spawning"),
+			settings.getCasted("interaction.items-blocked")
 		);
 		 
 	}
@@ -102,13 +115,14 @@ public class ParcelWorldSettings {
 		};
 		
 		if (worlds.isConfigurationSection(world)) {
-			Map<String, Object> input = worlds.getConfigurationSection(world).getValues(false);
+			Map<String, Object> input = worlds.getConfigurationSection(world).getValues(true);
 			Values.validate(input != null, "getValues() (input) null");
 			CastingMap<String, Object> settings = new CastingMap<>();
 			
 			for (Entry<String, Object> entry : DEFAULT_WORLD_SETTINGS.entrySet()) {
 				
 				String key = entry.getKey();
+				ParcelsPlugin.debug("Default key: " + key);
 				if (!input.containsKey(key)) {
 					errorPrinter.add(() -> ParcelsPlugin.log(String.format("  Option '%s' is missing from your settings. Aborting generator.", key)));
 					continue;
@@ -117,18 +131,20 @@ public class ParcelWorldSettings {
 				Object value = null;
 				Object inputValue = input.get(key);
 				if (inputValue instanceof String) {
+					ParcelsPlugin.debug("Found string, parsing BlockType");
 					try {
 						value = BlockType.fromString((String) inputValue);
 					} catch (NumberFormatException e) {
 						errorAdder.accept(key, world);
 					}
-				} else if (key.equals("items-blocked")) {
+				} else if (key.equals("interaction.items-blocked")) {
 					try {
 						value = ((List<String>) inputValue).stream().map(v -> Material.getMaterial(v)).collect(Collectors.toList());
 					} catch (ClassCastException e) {
 						errorAdder.accept(key, world);
 					}
 				} else {
+					ParcelsPlugin.debug("Value directly assigned");
 					value = inputValue;
 				}
 				
