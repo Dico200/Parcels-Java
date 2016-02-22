@@ -1,7 +1,10 @@
 package com.redstoner.parcels.command;
 
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import com.redstoner.command.CommandAction;
 import com.redstoner.command.CommandManager;
@@ -10,6 +13,7 @@ import com.redstoner.command.Messaging;
 import com.redstoner.command.Parameter;
 import com.redstoner.command.ParameterType;
 import com.redstoner.command.Validate;
+import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.Permissions;
@@ -246,6 +250,19 @@ public class ParcelCommands {
 			setHelpInformation("Sets whether players who are not allowed to", "build here can interact with inventories");
 			setParameters(new Parameter<Boolean>("enabled", ParameterType.BOOLEAN, "whether the option is enabled", false));
 		}});
+		
+		CommandManager.register(new LambdaCommand("testdrops", (sender, scape) -> {
+			
+			Player user = (Player) sender;
+			Location loc = user.getLocation();
+			Block b = loc.getWorld().getBlockAt(loc.getBlockX(), (int) (loc.getBlockY() - 0.5), loc.getBlockZ());
+			ParcelsPlugin.debug("Block drops: ");
+			for (ItemStack stack : b.getDrops()) {
+				ParcelsPlugin.debug(stack.toString());
+			}
+			return "tested";
+			
+		}){{setPermission("");}});
 		
 		/*
 		CommandManager.register(new ParcelCommand("parcel ", ParcelRequirement.NONE, 

@@ -88,12 +88,6 @@ public class Schematic {
 			block.paste(world, dx, dy, dz);
 		}
 		
-		SchematicBlock last = blocks[blocks.length - 1];
-		
-		getContainedEntities(world, x, y, z, last.getX(), last.getY(), last.getZ())
-				.filter(e -> (keep == null || !keep.contains(e)) && e.getType() != EntityType.PLAYER)
-				.forEach(e -> e.remove());
-		
 		if (teleportEntities) {
 			entities.forEach(e -> {
 				Location loc = e.getLocation();

@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.inventory.InventoryHolder;
 
 import com.redstoner.parcels.ParcelsPlugin;
 
@@ -36,14 +37,22 @@ class SchematicBlock {
 	public int getZ() {
 		return z;
 	}
+	
+	private static void clearPotentialInventory(BlockState state) {
+		if (state instanceof InventoryHolder) {
+			((InventoryHolder) state).getInventory().clear();
+			state.update();
+		}
+	}
 
 	@SuppressWarnings("deprecation")
 	public void paste(World world, int relativeX, int relativeY, int relativeZ) {
 	    Block block = world.getBlockAt(x + relativeX, y + relativeY, z + relativeZ);
+	    clearPotentialInventory(block.getState());
 		block.setTypeIdAndData(typeId, data, false);
 		if (converter != null) {
     		try {
-    		    BlockState state = block.getState();
+    			BlockState state = block.getState();
         		converter.accept(state);
         		state.update();
     		} catch (ClassCastException e) {
