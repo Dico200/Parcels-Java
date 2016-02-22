@@ -47,17 +47,17 @@ class SchematicBlock {
 
 	@SuppressWarnings("deprecation")
 	public void paste(World world, int relativeX, int relativeY, int relativeZ) {
-	    Block block = world.getBlockAt(x + relativeX, y + relativeY, z + relativeZ);
-	    clearPotentialInventory(block.getState());
+		Block block = world.getBlockAt(x + relativeX, y + relativeY, z + relativeZ);
+		clearPotentialInventory(block.getState());
 		block.setTypeIdAndData(typeId, data, false);
 		if (converter != null) {
-    		try {
-    			BlockState state = block.getState();
-        		converter.accept(state);
-        		state.update();
-    		} catch (ClassCastException e) {
-    		    ParcelsPlugin.debug("Failed to update a block properly in swap");
-    		}
+			try {
+				BlockState state = block.getState();
+				converter.accept(state);
+				state.update();
+			} catch (ClassCastException e) {
+				ParcelsPlugin.debug("Failed to update a block properly in swap");
+			}
 		}
 	}
 	
