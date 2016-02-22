@@ -1,10 +1,7 @@
 package com.redstoner.parcels.command;
 
-import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import com.redstoner.command.CommandAction;
 import com.redstoner.command.CommandException;
@@ -14,7 +11,6 @@ import com.redstoner.command.Messaging;
 import com.redstoner.command.Parameter;
 import com.redstoner.command.ParameterType;
 import com.redstoner.command.Validate;
-import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.Permissions;
@@ -112,9 +108,9 @@ public class ParcelCommands {
 					Validate.isTrue(scape.getParcel().getAdded().remove(unbanned.getUniqueId(), false), "That player wasn't banned from this parcel");
 					return unbanned.getName() + " is no longer banned from this parcel";
 				}){{
-			setDescription("undenies a player from this parcel");
-			setHelpInformation("Undenies a player from this parcel,", "they will be able to enter it again");
-			setParameters(new Parameter<OfflinePlayer>("player", ParameterType.OFFLINE_PLAYER, "the player to undeny"));
+			setDescription("unbans a player from this parcel");
+			setHelpInformation("Unbans a player from this parcel,", "they will be able to enter it again");
+			setParameters(new Parameter<OfflinePlayer>("player", ParameterType.OFFLINE_PLAYER, "the player to unban"));
 		}});
 		
 		CommandManager.register(new ParcelCommand("parcel auto", ParcelRequirement.IN_WORLD,
@@ -205,9 +201,10 @@ public class ParcelCommands {
 		CommandManager.register(new ParcelCommand("parcel clear", ParcelRequirement.IN_OWNED, 
 				(sender, scape) -> {
 					Messaging.send(sender, "Parcels", Formatting.BLUE, "Clearing this parcel, hang tight...");
+					long time = System.currentTimeMillis();
 					scape.getWorld().clearBlocks(scape.getParcel());
 					scape.getWorld().removeEntities(scape.getParcel());
-					return "This parcel was cleared successfully";
+					return String.format("Clear this parcel successfully, %.2fs elapsed", (System.currentTimeMillis() - time) / 1000.0);
 				}){{
 			setDescription("clears this parcel");
 			setHelpInformation("Clears this parcel, resetting all of its blocks", "and removing all entities inside");
@@ -220,8 +217,9 @@ public class ParcelCommands {
 					Coord xz = scape.get("parcel");
 					Parcel parcel2 = Validate.returnIfPresent(world.getParcelAtID(xz.getX(), xz.getZ()), "The target parcel does not exist");
 					Messaging.send(sender, "Parcels", Formatting.BLUE, "Swapping these parcels, hang tight...");
+					long time = System.currentTimeMillis();
 					world.swap(parcel1, parcel2);
-					return "These parcels were swapped successfully";
+					return String.format("Swapped these parcels successfully, %.2fs elapsed", (System.currentTimeMillis() - time) / 1000.0);
 				}){{
 			setDescription("swaps this parcel and its blocks with another");
 			setHelpInformation("Swaps this parcel's data and any other contents,", "such as blocks and their data, with the target parcel");
@@ -268,19 +266,6 @@ public class ParcelCommands {
 			setHelpInformation("Sets whether players who are not allowed to", "build here can interact with inventories");
 			setParameters(new Parameter<Boolean>("enabled", ParameterType.BOOLEAN, "whether the option is enabled", false));
 		}});
-		
-		CommandManager.register(new LambdaCommand("testdrops", (sender, scape) -> {
-			
-			Player user = (Player) sender;
-			Location loc = user.getLocation();
-			Block b = loc.getWorld().getBlockAt(loc.getBlockX(), (int) (loc.getBlockY() - 0.5), loc.getBlockZ());
-			ParcelsPlugin.debug("Block drops: ");
-			for (ItemStack stack : b.getDrops()) {
-				ParcelsPlugin.debug(stack.toString());
-			}
-			return "tested";
-			
-		}){{setPermission("");}});
 		
 		/*
 		CommandManager.register(new ParcelCommand("parcel ", ParcelRequirement.NONE, 

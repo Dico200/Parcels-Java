@@ -58,17 +58,9 @@ public class ParcelWorld {
 	
 	public Optional<Parcel> getParcelAt(int absX, int absZ) {
 		int sectionSize = settings.sectionSize;
-		absX -= settings.xOffset + settings.pathOffset;
-		absZ -= settings.zOffset + settings.pathOffset;
-		int modX = Values.posModulo(absX, sectionSize);
-		int modZ = Values.posModulo(absZ, sectionSize);
-		if (isOriginParcel(modX, modZ)) {
-			int px = (absX - modX) / sectionSize;
-			int pz = (absZ - modZ) / sectionSize;
-			if (parcels.isWithinBoundaryAt(px, pz))
-				return Optional.ofNullable(parcels.getParcelAt(px, pz));
-		}
-		return Optional.empty();
+		int modX = Values.posModulo(absX - settings.xOffset - settings.pathOffset, sectionSize);
+		int modZ = Values.posModulo(absZ - settings.zOffset - settings.pathOffset, sectionSize);
+		return isOriginParcel(modX, modZ)? Optional.ofNullable(parcels.getParcelAt((absX - modX) / sectionSize, (absZ - modZ) / sectionSize)) : Optional.empty();
 	}
 	
 	public Optional<Parcel> getParcelAt(Location loc) {
@@ -208,6 +200,14 @@ public class ParcelWorld {
 		added2.clear();
 		map1.forEach((player, value) -> added2.add(player, value));
 		
+		ParcelSettings settings1 = parcel1.getSettings();
+		ParcelSettings settings2 = parcel2.getSettings();
+		boolean allowsInteractLever = settings1.allowsInteractLever();
+		boolean allowsInteractInventory = settings1.allowsInteractInventory();
+		settings1.setAllowsInteractLever(settings2.allowsInteractLever());
+		settings1.setAllowsInteractInventory(settings2.allowsInteractInventory());
+		settings2.setAllowsInteractLever(allowsInteractLever);
+		settings2.setAllowsInteractInventory(allowsInteractInventory);
 	}
 	
 	private Stream<Entity> getEntities(Parcel parcel) {

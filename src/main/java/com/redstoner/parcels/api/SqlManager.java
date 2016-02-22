@@ -15,44 +15,51 @@ import com.redstoner.utils.mysql.SqlUtil;
 
 public class SqlManager {
 	
+	@SuppressWarnings("unused")
 	private static final String
 		PARCELS_QUERY = "SELECT `id`, `px`, `pz`, `owner`, `allow_interact_lever`, `allow_interact_inventory` FROM `parcels` WHERE `world` = ?;",
 		//PARCEL_OWNER_QUERY = "SELECT `owner` FROM `parcels` WHERE `id` = ?;",
 		PARCEL_ADDED_QUERY = "SELECT `player`, `allowed` FROM `parcels_added` WHERE `id` = ?;",
 		PARCEL_ID_QUERY = "SELECT `id` FROM `parcels` WHERE `world` = ? AND `px` = ? AND `pz` = ?;",
 		CREATE_TABLE_PARCELS = "CREATE TABLE IF NOT EXISTS `parcels` ("
-				+ "`id` INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY, "
-				+ "`world` VARCHAR(32) NOT NULL, "
-				+ "`px` INTEGER NOT NULL, "
-				+ "`pz` INTEGER NOT NULL, "
-				+ "`owner` VARCHAR(36), "
+				+ "`id` INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+				+ "`world` VARCHAR(32) NOT NULL,"
+				+ "`px` INTEGER NOT NULL,"
+				+ "`pz` INTEGER NOT NULL,"
+				+ "`owner` VARCHAR(36),"
 				+ "`allow_interact_lever` TINYINT(1) NOT NULL DEFAULT 0, "
 				+ "`allow_interact_inventory` TINYINT(1) NOT NULL DEFAULT 0, "
 				+ "UNIQUE KEY location(`world`, `px`, `pz`)"
 				+ ");",
-		CREATE_TABLE_ADDED = "CREATE TABLE IF NOT EXISTS `parcels_added` ("
+		CREATE_TABLE_PARCELS_ADDED = "CREATE TABLE IF NOT EXISTS `parcels_added` ("
 				+ "`id` INTEGER NOT NULL,"
 				+ "`player` VARCHAR(36) NOT NULL,"
-				+ "`allowed` TINYINT(1) NOT NULL DEFAULT 1,"
+				+ "`allowed` TINYINT(1) NOT NULL,"
 				+ "FOREIGN KEY (`id`) REFERENCES `parcels`(`id`) ON DELETE CASCADE,"
 				+ "UNIQUE KEY added(`id`, `player`)"
+				+ ");",
+		CREATE_TABLE_GLOBAL_ADDED = "CREATE TABLE IF NOT EXISTS `global_added` ("
+				+ "`player` VARCHAR(36) NOT NULL,"
+				+ "`added` VARCHAR(36) NOT NULL,"
+				+ "`allowed` TINYINT(1) NOT NULL,"
+				+ "UNIQUE KEY pair(`player`, `friend`)"
 				+ ");",
 		DROP_TABLES = "DROP TABLE IF EXISTS `parcels_added`;"
 				+ "DROP TABLE IF EXISTS `parcels`;",
 		SET_ALLOW_INTERACT_LEVER = "UPDATE `parcels` SET `allow_interact_lever` = ? WHERE `id` = ?;",
 		SET_ALLOW_INTERACT_INVENTORY = "UPDATE `parcels` SET `allow_interact_inventory` = ? WHERE `id` = ?;",
 		SET_OWNER_UPDATE = "UPDATE `parcels` SET `owner` = ? WHERE `id` = ?;",
-		ADD_PLAYER_UPDATE = "REPLACE `parcels_added` (`id`, `player`, `allowed`) VALUES (?, ?, ?);",
-		REMOVE_PLAYER_UPDATE = "DELETE FROM `parcels_added` WHERE `id` = ? AND `player` = ?;",
-		CLEAR_PLAYERS_UPDATE = "DELETE FROM `parcels_added` WHERE `id` = ?;",
-		ADD_PARCEL_UPDATE = "INSERT INTO `parcels` (`world`, `px`, `pz`) VALUES (?, ?, ?);";
+		PARCEL_ADD_PLAYER_UPDATE = "REPLACE `parcels_added` (`id`, `player`, `allowed`) VALUES (?, ?, ?);",
+		PARCEL_REMOVE_PLAYER_UPDATE = "DELETE FROM `parcels_added` WHERE `id` = ? AND `player` = ?;",
+		PARCEL_CLEAR_PLAYERS_UPDATE = "DELETE FROM `parcels_added` WHERE `id` = ?;",
+		ADD_PARCEL_UPDATE = "INSERT IGNORE `parcels` (`world`, `px`, `pz`) VALUES (?, ?, ?);";
 	
 	public static SqlConnector CONNECTOR = null;
 	
 	public static void initialise(SqlConnector connector) {
 		CONNECTOR = connector;
 		CONNECTOR.asyncConn(conn -> {
-			SqlUtil.executeUpdate(conn, CREATE_TABLE_PARCELS, CREATE_TABLE_ADDED);
+			SqlUtil.executeUpdate(conn, CREATE_TABLE_PARCELS, CREATE_TABLE_PARCELS_ADDED);
 			
 			try {
 				
@@ -240,7 +247,7 @@ public class SqlManager {
 	}
 	
 	private static void addPlayer(Connection conn, String world, int px, int pz, UUID player, boolean allowed) throws SQLException {
-		PreparedStatement update = conn.prepareStatement(ADD_PLAYER_UPDATE);
+		PreparedStatement update = conn.prepareStatement(PARCEL_ADD_PLAYER_UPDATE);
 		update.setInt(1, getId(conn, world, px, pz));
 		update.setString(2, player.toString());
 		update.setBoolean(3, allowed);
@@ -248,14 +255,14 @@ public class SqlManager {
 	}
 	
 	private static void removePlayer(Connection conn, String world, int px, int pz, UUID player) throws SQLException {
-		PreparedStatement update = conn.prepareStatement(REMOVE_PLAYER_UPDATE);
+		PreparedStatement update = conn.prepareStatement(PARCEL_REMOVE_PLAYER_UPDATE);
 		update.setInt(1, getId(conn, world, px, pz));
 		update.setString(2, player.toString());
 		update.executeUpdate();
 	}
 	
 	private static void removeAllPlayers(Connection conn, String world, int px, int pz) throws SQLException {
-		PreparedStatement update = conn.prepareStatement(CLEAR_PLAYERS_UPDATE);
+		PreparedStatement update = conn.prepareStatement(PARCEL_CLEAR_PLAYERS_UPDATE);
 		update.setInt(1, getId(conn, world, px, pz));
 		update.executeUpdate();
 	}
@@ -287,7 +294,7 @@ public class SqlManager {
 		CONNECTOR.asyncConn(conn -> {
 			try {
 				SqlUtil.executeUpdate(conn, DROP_TABLES);
-				SqlUtil.executeUpdate(conn, CREATE_TABLE_PARCELS, CREATE_TABLE_ADDED);
+				SqlUtil.executeUpdate(conn, CREATE_TABLE_PARCELS, CREATE_TABLE_PARCELS_ADDED);
 				
 				for (Entry<String, ParcelWorld> entry : WorldManager.getWorlds().entrySet()) {
 					String worldName = entry.getKey();
