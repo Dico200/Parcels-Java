@@ -7,9 +7,11 @@ public class Parameters extends LinkedList<Parameter<?>>{
 	
 	private static final long serialVersionUID = 7607300090766311570L;
 	
-	private boolean allowOverflow;
+	private final Command handler;
+	private final boolean allowOverflow;
 	
-	public Parameters(Parameter<?>[] params, boolean allowOverflow) {
+	public Parameters(Command handler, Parameter<?>[] params, boolean allowOverflow) {
+		this.handler = handler;
 		this.allowOverflow = allowOverflow;
 		int i = 0;
 		boolean lastRequired = true;
@@ -44,6 +46,10 @@ public class Parameters extends LinkedList<Parameter<?>>{
 	
 	protected boolean allowsOverflow() {
 		return allowOverflow;
+	}
+	
+	protected Command getHandler() {
+		return handler;
 	}
 
 }

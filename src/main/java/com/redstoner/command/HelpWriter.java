@@ -10,7 +10,7 @@ import com.redstoner.utils.Formatting;
 
 public class HelpWriter {
 	
-	private static final int PAGE_SIZE = 9; // + 2 for header and footer
+	private static final int PAGE_SIZE = 8; // + 2 for header and footer
 	
 	private static final String 
 	 	HEADER_FORMAT 			= Formatting.translateChars('&', "&6Help page %s about &3/%s&6,"),
@@ -19,8 +19,8 @@ public class HelpWriter {
 	 	SYNTAX_FORMAT 			= Formatting.translateChars('&', "&6Syntax: &3/%s %s"),
 	 	SUBCOMMAND_HEADER 		= Formatting.translateChars('&', "&aFollow-ups:"),
 	 	SUBCOMMAND_FORMAT		= Formatting.translateChars('&', "&3/%s%s\n  &a%s"),
-		FOOTER_FORMAT			= Formatting.translateChars('&', "\n&6Use &3/%s help %s &6for the next page");
-		//NOT_A_PAGE				= Formatting.translateChars()
+		FOOTER_FORMAT			= Formatting.translateChars('&', "\n&6Use &3/%s help %s &6for the next page"),
+		NOT_A_PAGE_FORMAT		= HEADER_FORMAT + " does not exist";
 	
 	private String[] helpMessage;
 	private final String command, syntaxMessage;
@@ -45,6 +45,10 @@ public class HelpWriter {
 	}
 	
 	public String parseHelpMessage(CommandSender sender, int page) {
+		if (page > 1000) {
+			return String.format(NOT_A_PAGE_FORMAT, page, command);
+		}
+		
 		StringBuilder message = new StringBuilder(String.format(HEADER_FORMAT, page, command));
 		
 		int end = page * PAGE_SIZE;
@@ -56,13 +60,15 @@ public class HelpWriter {
 			cmdsDisplayed += getCommandsDisplayed(i);
 		}
 		int onThisPage = getCommandsDisplayed(page);
+		
 		Command[] cmds = handler.getChildren().stream().filter(child -> child.accepts(sender)).toArray(size -> new Command[size]);
 		int layer = handler.getLayer();
 		String[] cmdsToDisplay = Arrays.stream(Arrays.copyOfRange(cmds, Math.min(cmdsDisplayed, cmds.length), Math.min(cmdsDisplayed + onThisPage, cmds.length)))
 				.map(c -> String.format(SUBCOMMAND_FORMAT, command, c.collectPath(layer), c.getDescription())).toArray(size -> new String[size]);
 		
-		//if (helpToDisplay.length == 0 && cmdsToDisplay.length == 0)
-			
+		if (helpToDisplay.length == 0 && cmdsToDisplay.length == 0) {
+			return String.format(NOT_A_PAGE_FORMAT, page, command);
+		}
 		
 		for (String s : helpToDisplay)
 			message.append('\n' + s);
@@ -76,7 +82,7 @@ public class HelpWriter {
 	
 	private int getCommandsDisplayed(int page) {
 		int index = page * PAGE_SIZE;
-		return (PAGE_SIZE - (Math.min(index - PAGE_SIZE, helpMessage.length) - Math.min(index, helpMessage.length))) / 2;
+		return (PAGE_SIZE - (Math.min(index, helpMessage.length) - Math.min(index - PAGE_SIZE, helpMessage.length))) / 2;
 	}
 	
 	public String getSyntaxMessage() {
@@ -84,7 +90,9 @@ public class HelpWriter {
 	}
 	
 	void addSubcommandHeader() {
-		helpMessage = Arrays.copyOfRange(helpMessage, 0, helpMessage.length + 1);
-		helpMessage[helpMessage.length - 1] = SUBCOMMAND_HEADER;
+		if (!helpMessage[helpMessage.length - 1].equals(SUBCOMMAND_HEADER)) {
+			helpMessage = Arrays.copyOfRange(helpMessage, 0, helpMessage.length + 1);
+			helpMessage[helpMessage.length - 1] = SUBCOMMAND_HEADER;
+		}
 	}
 }

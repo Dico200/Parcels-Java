@@ -8,12 +8,24 @@ public enum CommandAction {
 
 		@Override
 		String execute(Command handler, CommandSender sender, String[] args) {
-			String message = handler.invokeExecutor(sender, args);
+			try {
+				String message = handler.invokeExecutor(sender, args);
+				CommandAction target = getTargeted(message);
+				return target == null ? message : target.execute(handler, sender, args);
+			} catch (CommandException e) {
+				CommandAction target = getTargeted(e.getMessage());
+				if (target != null)
+					return target.execute(handler, sender, args);
+				throw e;
+			}
+		}
+		
+		private CommandAction getTargeted(String message) {
 			if (message != null)
 				for (CommandAction action : values())
 					if (action != this && message.equals(action.messageId()))
-						return action.execute(handler, sender, args);
-			return message;
+						return action;
+			return null;
 		}
 		
 	},
@@ -31,7 +43,7 @@ public enum CommandAction {
 
 		@Override
 		String execute(Command handler, CommandSender sender, String[] args) {
-			return "Syntax: " + handler.getSyntaxMessage();
+			return handler.getSyntaxMessage();
 		}
 		
 	},
@@ -69,5 +81,5 @@ public enum CommandAction {
 	private String messageId() {
 		return "EXEC:CommandAction." + name();
 	};
-
+	
 }

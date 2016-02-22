@@ -45,7 +45,7 @@ public class Parameter<T> {
 	public T accept(String input) {
 		if (input == null || input.isEmpty()) {
 			if (required)
-				throw new CommandException(String.format("Parameter '%s' is required", name));
+				throw new CommandException("EXEC:CommandAction.DISPLAY_SYNTAX");
 			return null;
 		}
 		try {
@@ -60,8 +60,8 @@ public class Parameter<T> {
 	}
 	
 	public String syntax() {
-		String syntax = String.format("%s %s", type.typeName(), name).trim();
-		return required? String.format("<%s>", syntax) : String.format("[%s]", syntax);
+		String syntax = name.trim();
+		return String.format(required? "<%s>" : "[%s]", syntax);
 	}
 
 }

@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import com.redstoner.command.CommandAction;
+import com.redstoner.command.CommandException;
 import com.redstoner.command.CommandManager;
 import com.redstoner.command.LambdaCommand;
 import com.redstoner.command.Messaging;
@@ -17,6 +18,7 @@ import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.Permissions;
+import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Formatting;
 import com.redstoner.utils.Optional;
 
@@ -25,6 +27,24 @@ public class ParcelCommands {
 	private static final String PREFIX = "Parcels";
 	
 	public static void register() {
+		
+		ParameterType<Coord> PARCEL_TYPE = new ParameterType<Coord>("Parcel", "the ID of a parcel") {
+
+			@Override
+			protected Coord handle(String input) {
+				String[] both = input.split(":");
+				Validate.isTrue(both.length == 2, exceptionMessage());
+				int x, z;
+				try {
+					x = Integer.parseInt(both[0]);
+					z = Integer.parseInt(both[1]);
+				} catch (NumberFormatException e) {
+					throw new CommandException(exceptionMessage());
+				}
+				return Coord.of(x, z);
+			}
+			
+		};
 		
 		CommandManager.register(PREFIX, new LambdaCommand("parcel", (sender, scape) -> "EXEC:CommandAction.DISPLAY_HELP") {{
 			setPermission("parcels.command");
@@ -45,7 +65,7 @@ public class ParcelCommands {
 		
 		CommandManager.register(new ParcelCommand("parcel setowner", ParcelRequirement.IS_ADMIN, 
 				(sender, scape) -> {
-					Validate.isTrue(scape.getParcel().setOwner(scape.get("owner")), "That player already owns this parcel");
+					Validate.isTrue(scape.getParcel().setOwner(scape.<OfflinePlayer>get("owner").getUniqueId()), "That player already owns this parcel");
 					return "Set this plot's owner on your request";
 				}){{
 			setDescription("sets the owner of this parcel");
@@ -124,7 +144,7 @@ public class ParcelCommands {
 			setDescription("teleports you to parcels");
 			setHelpInformation("Teleports you to your parcels,", "unless another player was specified.", "You can specify an index number if you have", "more than one parcel");
 			setAliases("h");
-			setParameters(new Parameter<Integer>("id", ParameterType.INTEGER, "the id of your parcel", false),
+			setParameters(new Parameter<Integer>("id", ParameterType.INTEGER, "the home id of your parcel", false),
 					new Parameter<OfflinePlayer>("player", ParameterType.OFFLINE_PLAYER, "the player whose parcels to teleport to", false));
 		}});
 		
@@ -165,9 +185,8 @@ public class ParcelCommands {
 		CommandManager.register(new ParcelCommand("parcel tp", ParcelRequirement.IN_WORLD, 
 				(sender, scape) -> {
 					ParcelWorld w = scape.getWorld();
-					int x = scape.get("x");
-					int z = scape.get("z");
-					Parcel p = Validate.returnIfPresent(w.getParcelAtID(x, z), "That ID is not within this world's boundaries");
+					Coord xz = scape.get("parcel");
+					Parcel p = Validate.returnIfPresent(w.getParcelAtID(xz.getX(), xz.getZ()), "That ID is not within this world's boundaries");
 					Player target = scape.<Player>getOptional("target").orElse(sender);
 					w.teleport(target, p);
 					String format = "%s teleported %s to the " + p.toString();
@@ -179,8 +198,7 @@ public class ParcelCommands {
 			setDescription("teleports to a parcel");
 			setHelpInformation("Teleports you or a target player", "to the parcel you specify by ID");
 			setAliases("teleport");
-			setParameters(new Parameter<Integer>("x", ParameterType.INTEGER, "the x of the parcel's ID"),
-					new Parameter<Integer>("z", ParameterType.INTEGER, "the z of the parcel's ID"),
+			setParameters(new Parameter<Coord>("parcel", PARCEL_TYPE, "the parcel to teleport to"),
 					new Parameter<Player>("target", ParameterType.PLAYER, "the player to teleport", false));
 		}});
 		
@@ -199,15 +217,15 @@ public class ParcelCommands {
 				(sender, scape) -> {
 					ParcelWorld world = scape.getWorld();
 					Parcel parcel1 = scape.getParcel();
-					Parcel parcel2 = Validate.returnIfPresent(world.getParcelAtID(scape.get(0), scape.get(1)), "The target parcel does not exist");
+					Coord xz = scape.get("parcel");
+					Parcel parcel2 = Validate.returnIfPresent(world.getParcelAtID(xz.getX(), xz.getZ()), "The target parcel does not exist");
 					Messaging.send(sender, "Parcels", Formatting.BLUE, "Swapping these parcels, hang tight...");
 					world.swap(parcel1, parcel2);
 					return "These parcels were swapped successfully";
 				}){{
 			setDescription("swaps this parcel and its blocks with another");
 			setHelpInformation("Swaps this parcel's data and any other contents,", "such as blocks and their data, with the target parcel");
-			setParameters(new Parameter<Integer>("x", ParameterType.INTEGER, "the x of the other parcel's ID"),
-					new Parameter<Integer>("z", ParameterType.INTEGER, "the z of the other parcel's ID"));
+			setParameters(new Parameter<Coord>("parcel", PARCEL_TYPE, "the parcel to swap with"));
 		}});
 		
 		CommandManager.register(new ParcelCommand("parcel option", ParcelRequirement.IN_PARCEL, (sender, scape) -> "EXEC:CommandAction.DISPLAY_HELP"){{

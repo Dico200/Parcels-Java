@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.function.BiPredicate;
 
 import com.redstoner.utils.Optional;
+import com.redstoner.utils.Values;
 
 public class CommandScape {
 	
@@ -39,7 +40,8 @@ public class CommandScape {
 		if (params.size() >= original.length) {
 			this.overflow = new String[]{};
 		} else if (!params.allowsOverflow()) {
-			throw new CommandException(String.format("Too many arguments, expected no more than %s.", params.size()));
+			throw new CommandException("EXEC:CommandAction.DISPLAY_" + (params.getHandler().getChildren().size() > 0 ? "HELP" : "SYNTAX"));
+			//throw new CommandException(String.format("Too many arguments, expected no more than %s.", params.size()));
 		} else {
 			this.overflow = Arrays.copyOfRange(original, params.size(), original.length);
 		}
@@ -57,12 +59,12 @@ public class CommandScape {
 	}
 	
 	public String[] overflow() {
-		assert overflow != null : new UnsupportedOperationException();
+		Values.validate(overflow != null, "This command scape does not allow overflow");
 		return overflow;
 	}
 	
 	public List<String> proposals() {
-		assert proposals != null : new UnsupportedOperationException();
+		Values.validate(proposals != null, "This is not a tab completer");
 		return proposals;
 	}
 	

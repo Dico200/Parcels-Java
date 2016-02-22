@@ -177,7 +177,7 @@ public abstract class Command extends Hierarchy<Command> {
 	}
 	
 	protected final void setParameters(boolean allowOverflow, Parameter<?>... params) {
-		this.params = new Parameters(params, allowOverflow);
+		this.params = new Parameters(this, params,  allowOverflow);
 	};
 	
 	protected final void setParameters(Parameter<?>... params) {
@@ -212,15 +212,14 @@ public abstract class Command extends Hierarchy<Command> {
 		this.messager = new HelpWriter(this, command, helpInformation, aliases, params.syntax());
 	}
 	
-	/*
 	@Override
 	protected boolean addChild(String id, Hierarchy<Command> instance) {
 		if (super.addChild(id, instance)) {
-			messager.addSubcommandHeader();
+			if (messager != null)
+				messager.addSubcommandHeader();
 			return true;
 		}
 		return false;
 	}
-	*/
 
 }
