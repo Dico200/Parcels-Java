@@ -1,6 +1,6 @@
 MySQL:
   # Currently forced enabled
-  enabled: 'true'
+  enabled: true
   hostname: 'localhost:3306'
   database: 'example_db_name'
   username: 'username'
@@ -11,26 +11,47 @@ MySQL:
 
 worlds:
   Parcels:
-  
-    # Type ID first, Data value second. Data values can be excluded.
-    wall-type: '44:6'
-    floor-type: '35:8'
-    fill-type: '35:7'
-    path-main-type: '35:6'
-    path-edge-type: '35:14'
-    
-    # The size of a parcel, both dimensions are the same.
-    parcel-size: 101
-    
-    # The width of the path, including the wall blocks. 
-    path-size: 8
-    
-    # The level the floor's at.
-    floor-height: 63
-    
-    # Offset the world if you want to for whatever reason.
-    offset-x: 0
-    offset-z: 0
-    
     # The amount of (active) parcels in each direction counting from the parcel with ID (0:0).
     parcel-axis-limit: 10
+    
+    # Whether to always keep the sun directly up there.
+    static-time-day: true
+    
+    # Whether to keep the weather sunny.
+    static-weather-clear: true
+    
+    interaction:
+      # Whether to disable explosions in the world. If enabled, they will not destroy blocks or propel entities.
+      disable-explosions: true
+      
+      # Whether to disable portal creation.
+      block-portal-creation: true
+      
+      # Whether to disable mob spawning.
+      block-mob-spawning: true
+      
+      # Items whose use will be blocked. Right clicking while holding one of these items will be cancelled.
+      # For item names, see https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html
+      items-blocked:
+      - FLINT_AND_STEEL
+    
+    generator:
+      # Type ID first, Data value second. Data values can be excluded.
+      wall-type: '44:6'
+      floor-type: '35:8'
+      fill-type: '35:7'
+      path-main-type: '35:6'
+      path-edge-type: '35:14'
+      
+      # The size of a parcel, both dimensions are the same.
+      parcel-size: 101
+      
+      # The width of the path, including the wall blocks. 
+      path-size: 8
+      
+      # The level the floor's at.
+      floor-height: 63
+      
+      # Offset the world if you want to for whatever reason.
+      offset-x: 0
+      offset-z: 0
