@@ -1,5 +1,6 @@
 package com.redstoner.parcels;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
@@ -39,6 +40,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
+import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -449,10 +451,11 @@ public class ParcelListener implements Listener {
 			Entity passenger = vehicle.getPassenger();
 			if (passenger != null) {
 				vehicle.eject();
-				passenger.remove();
 				if (passenger.getType() == EntityType.PLAYER) {
-				vehicle.eject();
-				Messaging.send((Player)passenger, "Parcels", Formatting.RED, "Your ride ends here");
+					vehicle.eject();
+					Messaging.send((Player)passenger, "Parcels", Formatting.RED, "Your ride ends here");
+				} else {
+					passenger.remove();
 				}
 			}
 			vehicle.remove();
@@ -496,7 +499,6 @@ public class ParcelListener implements Listener {
 		
 		Entity hanging = event.getEntity();
 		WorldManager.getWorld(hanging.getWorld()).ifPresent(world -> {
-			ParcelsPlugin.debug("BreakByEntityEvent");
 			
 			Entity remover = event.getRemover();
 			if (remover instanceof Player) {
@@ -518,7 +520,7 @@ public class ParcelListener implements Listener {
 	/*
 	 * Prevents players from placing paintings and item frames
 	 */
-	@EventHandler
+	@EventHandler(ignoreCancelled = true)
 	public void onHangingPlace(HangingPlaceEvent event) {
 		
 		Player user = event.getPlayer();
@@ -532,6 +534,35 @@ public class ParcelListener implements Listener {
 			}
 		});
 		
+	}
+	
+	/*
+	 * Prevents stuff from growing outside of plots
+	 */
+	@EventHandler
+	public void onGrow(StructureGrowEvent event) {
+		
+		WorldManager.getWorld(event.getLocation().getWorld()).ifPresent(world -> {
+			
+			world.getParcelAt(event.getLocation()).ifPresentOrElse(parcel -> {
+				
+				Player user = event.getPlayer();
+				if (!user.hasPermission(Permissions.ADMIN_BUILDANYWHERE) && !parcel.canBuild(user)) {
+					cancel(event);
+					return;
+				}
+				
+				List<BlockState> blocks = event.getBlocks();
+				for (BlockState block : new ArrayList<>(blocks)) {
+					if (!world.getParcelAt(block.getBlock()).isPresent()) {
+						blocks.remove(block);
+					}
+				}
+			}, () -> {
+				cancel(event);
+			});
+			
+		});
 	}
 
 }

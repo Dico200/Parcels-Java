@@ -113,7 +113,7 @@ public class Schematic {
 
 			@Override
 			public int compare(Block b1, Block b2) {
-				return priority(b2.getType()) - priority(b1.getType());
+				return priority(b1.getType()) - priority(b2.getType());
 			}
 
 			{

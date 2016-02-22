@@ -220,12 +220,12 @@ public class ParcelCommands {
 					Boolean enabled = scape.get("enabled");
 					Parcel p = scape.getParcel();
 					if (enabled == null) {
-						String word = p.getSettings().allowsInteractInventory()? "" : "not ";
+						String word = p.getSettings().allowsInteractLever()? "" : "not ";
 						return "This parcel does " + word + "allow interaction with levers, buttons, etc.";
 					}
 					Validate.isTrue(sender.hasPermission(Permissions.ADMIN_MANAGE) || p.isOwner(sender), "You must own this parcel to change its options");
 					String word = enabled? "enabled" : "disabled";
-					Validate.isTrue(scape.getParcel().getSettings().setAllowsInteractInventory(enabled), "That option was already " + word);
+					Validate.isTrue(scape.getParcel().getSettings().setAllowsInteractLever(enabled), "That option was already " + word);
 					return "That option is now " + word;
 				}){{
 			setDescription("allows editing levers");
