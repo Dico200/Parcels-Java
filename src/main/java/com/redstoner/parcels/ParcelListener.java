@@ -27,15 +27,20 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityCreatePortalEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
-import org.bukkit.event.inventory.InventoryInteractEvent;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.hanging.HangingPlaceEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.WorldLoadEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
 import com.redstoner.command.Messaging;
@@ -50,6 +55,21 @@ public class ParcelListener implements Listener {
 	
 	public static void register() {
 		Bukkit.getPluginManager().registerEvents(new ParcelListener(), ParcelsPlugin.getInstance());
+	}
+	
+	private static void cancel(Cancellable event) {
+		event.setCancelled(true);
+	}
+	
+	private static Location inventoryLocation(Inventory inv) {
+		InventoryHolder holder = inv.getHolder();
+		if (holder instanceof BlockState) {
+			return ((BlockState) holder).getLocation();
+		} else if (inv instanceof Entity) {
+			return ((Entity) inv).getLocation();
+		} else {
+			return null;
+		}
 	}
 	
 	private static void checkBuildEvent(Cancellable event, Block b, Player user) {
@@ -88,12 +108,12 @@ public class ParcelListener implements Listener {
 		}
 	}
 	
-	private static void cancel(Cancellable event) {
-		event.setCancelled(true);
-	}
-	
+	/*
+	 * Prevents players from entering plots they are banned from
+	 */
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onMove(PlayerMoveEvent event) {
+		
 		Player user = event.getPlayer();
 		if (!user.hasPermission(Permissions.ADMIN_BYPASS)) {
 			Location to = event.getTo();
@@ -111,40 +131,67 @@ public class ParcelListener implements Listener {
 		}
 	}
 	
-	@EventHandler
+	/*
+	 * Prevents players from breaking blocks outside of parcels
+	 */
+	@EventHandler(ignoreCancelled = true)
 	public void onBreak(BlockBreakEvent event) {
 
 		checkBuildEvent(event, event.getBlock(), event.getPlayer());
 	}
 	
-	@EventHandler
+	/*
+	 * Prevents players from placing blocks outside of parcels
+	 */
+	@EventHandler(ignoreCancelled = true)
 	public void onPlace(BlockPlaceEvent event) {
 
 		checkBuildEvent(event, event.getBlockPlaced(), event.getPlayer());
 	}
 	
-	@EventHandler
+	/*
+	 * Prevents pistons from touching blocks outside parcels
+	 */
+	@EventHandler(ignoreCancelled = true)
 	public void onPistonExtend(BlockPistonExtendEvent event) {
+		
 		checkPistonAction(event, event.getBlocks());
 	}
 	
-	@EventHandler
+	/*
+	 * Prevents pistons from touching blocks outside parcels
+	 */
+	@EventHandler(ignoreCancelled = true)
 	public void onPistonRetract(BlockPistonRetractEvent event) {
+		
 		checkPistonAction(event, event.getBlocks());
 	}
 	
-	@EventHandler
+	/*
+	 * Prevents explosions if enabled by the configs for that world
+	 */
+	@EventHandler(ignoreCancelled = true)
 	public void onEntityExplosion(EntityExplodeEvent event) {
+		
 		WorldManager.getWorld(event.getLocation().getWorld()).filter(w -> w.getSettings().disableExplosions).ifPresent(() -> cancel(event));
 	}
 	
-	@EventHandler
+	/*
+	 * Prevents liquids from flowing outside of parcels
+	 */
+	@EventHandler(ignoreCancelled = true)
 	public void onFlow(BlockFromToEvent event) {
+		
 		if (!WorldManager.getParcel(event.getToBlock()).isPresent())
 			cancel(event);
 	}
 	
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	/*
+	 * Prevents players from placing liquids, using flint and steel, changing redstone components,
+	 * clicking levers buttons stepping on pressure plates (unless allowed by the plot), 
+	 * and using items disabled in the configuration for that world.
+	 */
+	@EventHandler(ignoreCancelled = true)
 	public void onInteract(PlayerInteractEvent event) {	
 
 		Player user = event.getPlayer();
@@ -222,13 +269,19 @@ public class ParcelListener implements Listener {
 		});
 	}
 	
-	@EventHandler
+	/*
+	 * Prevents players from breeding mobs, entering or opening boats/minecarts, 
+	 * rotating item frames, doing stuff with leashes, and putting stuff on armor stands.
+	 */
+	@EventHandler(ignoreCancelled = true)
 	public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
 
 		Player user = event.getPlayer();
+		if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE))
+			return;
 		
 		WorldManager.getWorld(user.getWorld()).ifPresent(world -> {
-			if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE) || world.getParcelAt(user.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
+			if (world.getParcelAt(user.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
 				return;
 			}
 			
@@ -243,6 +296,7 @@ public class ParcelListener implements Listener {
 			case MINECART_TNT:		
 				
 			case ARMOR_STAND:
+			case PAINTING:
 			case ITEM_FRAME:
 			case LEASH_HITCH:		
 				
@@ -260,7 +314,10 @@ public class ParcelListener implements Listener {
 		});
 	}
 	
-	@EventHandler
+	/*
+	 * Prevents endermen from griefing.
+	 */
+	@EventHandler(ignoreCancelled = true)
 	public void onEntityChangeBlock(EntityChangeBlockEvent event) {
 
 		Entity e = event.getEntity();
@@ -269,34 +326,56 @@ public class ParcelListener implements Listener {
 		}
 	}
 	
-	@EventHandler
+	/*
+	 * Prevents portals from being created if set so in the configs for that world
+	 */
+	@EventHandler(ignoreCancelled = true)
 	public void onEntityCreatePortal(EntityCreatePortalEvent event) {
 
 		WorldManager.getWorld(event.getEntity().getWorld()).filter(world -> world.getSettings().blockPortalCreation).ifPresent(() -> cancel(event));
 	}
 	
-	@EventHandler
-	public void onInventoryInteract(InventoryInteractEvent event) {
-
-		WorldManager.getWorld(event.getWhoClicked().getWorld()).ifPresent(world -> {
-			ParcelsPlugin.debug("InventoryInteract");
+	/*
+	 * Prevents players from dropping items
+	 */
+	@EventHandler(ignoreCancelled = true)
+	public void onDropItem(PlayerDropItemEvent event) {
+		
+		Player user = event.getPlayer();
+		if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE))
+			return;
+		
+		WorldManager.getWorld(user.getWorld()).ifPresent(world -> {
 			
-			Player user = (Player) event.getWhoClicked();
-			if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE))
-				return;
-			
-			InventoryHolder inv = event.getInventory().getHolder();
-			Location loc;
-			if (inv instanceof BlockState) {
-				ParcelsPlugin.debug("BlockState");
-				loc = ((BlockState) inv).getLocation();
-			} else if (inv instanceof Entity) {
-				ParcelsPlugin.debug("Entity");
-				loc = ((Entity) inv).getLocation();
-			} else {
-				ParcelsPlugin.debug("Nothing");
-				return;
+			if (!world.getParcelAt(user.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
+				cancel(event);
 			}
+		});
+		
+	}
+	
+	/*
+	 * Prevents players from editing inventories
+	 */
+	@EventHandler(ignoreCancelled = true)
+	public void onInventoryClick(InventoryClickEvent event) {
+		
+		Player user = (Player) event.getWhoClicked();
+		if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE))
+			return;
+		
+		WorldManager.getWorld(user.getWorld()).ifPresent(world -> {
+			Inventory inv = event.getInventory();
+			if (inv == null) // if hotbar, returns null
+				return;
+			
+			InventoryHolder holder = inv.getHolder();
+			if (holder instanceof Entity && ((Entity) holder).getType() == EntityType.PLAYER)
+				return;
+			
+			Location loc = inventoryLocation(inv);
+			if (loc == null)
+				return;
 			
 			if (!world.getParcelAt(loc).filter(p -> p.canBuild(user) || p.getSettings().allowsInteractInventory()).isPresent()) {
 				cancel(event);
@@ -304,9 +383,13 @@ public class ParcelListener implements Listener {
 		});
 	}
 	
+	
+	/*
+	 * Cancels weather changes and sets the weather to sunny if requested by the config for that world.
+	 */
 	private int ignoreWeatherChanges = 0;
 	
-	@EventHandler(priority = EventPriority.HIGHEST)
+	@EventHandler
 	public void onWeatherChange(WeatherChangeEvent event) {
 		WorldManager.getWorld(event.getWorld()).filter(world -> world.getSettings().staticWeatherClear).ifPresent(world -> {
 			if (ignoreWeatherChanges > 0) {
@@ -322,6 +405,10 @@ public class ParcelListener implements Listener {
 		});
 	}
 	
+	/*
+	 * Sets time to day and doDayLightCycle gamerule if requested by the config for that world
+	 * Sets the weather to sunny if requested by the config for that world.
+	 */
 	@EventHandler
 	public void onWorldLoad(WorldLoadEvent event) {
 		WorldManager.getWorld(event.getWorld()).ifPresent(world -> {
@@ -340,15 +427,23 @@ public class ParcelListener implements Listener {
 			}
 		});
 	}
-		
-	@EventHandler
+	
+	/*
+	 * Prevents mobs (living entities) from spawning if that is disabled for that world in the config.
+	 */
+	@EventHandler(ignoreCancelled = true)
 	public void onEntitySpawn(EntitySpawnEvent event) {
+		
 		Entity e = event.getEntity();
 		WorldManager.getWorld(e.getWorld()).filter(world -> e instanceof LivingEntity && world.getSettings().blockMobSpawning).ifPresent(() -> cancel(event));
 	}
 	
+	/*
+	 * Prevents minecarts/boats from moving outside a plot
+	 */
 	@EventHandler
 	public void onVehicleMove(VehicleMoveEvent event) {
+		
 		if (!WorldManager.getParcel(event.getTo()).isPresent()) {
 			Vehicle vehicle = event.getVehicle();
 			Entity passenger = vehicle.getPassenger();
@@ -363,6 +458,80 @@ public class ParcelListener implements Listener {
 			vehicle.remove();
 		}
 			
+	}
+	
+	/*
+	 * This one prevents players from removing items from item frames
+	 */
+	@EventHandler 
+	public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+		
+		Entity e = event.getEntity();
+		if (!(e.getType() == EntityType.ITEM_FRAME)) {
+			return;
+		}
+		
+		WorldManager.getWorld(e.getWorld()).ifPresent(world -> {
+			Entity damager = event.getDamager();
+			if (damager instanceof Player) {
+				Player user = (Player) damager;
+				
+				if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE)) {
+					return;
+				}
+				
+				if (!world.getParcelAt(e.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
+					cancel(event);
+				}
+			}	
+		});
+	}
+	
+	/*
+	 * Prevents players from deleting paintings and item frames
+	 * This appears to take care of shooting with a bow, throwing snowballs or throwing ender pearls.
+	 */
+	@EventHandler
+	public void onHangingBreak(HangingBreakByEntityEvent event) {
+		
+		Entity hanging = event.getEntity();
+		WorldManager.getWorld(hanging.getWorld()).ifPresent(world -> {
+			ParcelsPlugin.debug("BreakByEntityEvent");
+			
+			Entity remover = event.getRemover();
+			if (remover instanceof Player) {
+				ParcelsPlugin.debug("Player found");
+				Player user = (Player) remover;
+				
+				if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE)) {
+					return;
+				}
+				ParcelsPlugin.debug("Checking build permissions");
+				if (!world.getParcelAt(hanging.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
+					cancel(event);
+				}
+			}
+		});
+		
+	}
+	
+	/*
+	 * Prevents players from placing paintings and item frames
+	 */
+	@EventHandler
+	public void onHangingPlace(HangingPlaceEvent event) {
+		
+		Player user = event.getPlayer();
+		if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE))
+			return;
+		
+		WorldManager.getWorld(user.getWorld()).ifPresent(world -> {
+			Block b = event.getBlock().getRelative(event.getBlockFace());
+			if (!world.getParcelAt(b).filter(p -> p.canBuild(user)).isPresent()) {
+				cancel(event);
+			}
+		});
+		
 	}
 
 }
