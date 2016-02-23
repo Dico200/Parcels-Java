@@ -58,8 +58,10 @@ public class ParcelWorld {
 	
 	public Optional<Parcel> getParcelAt(int absX, int absZ) {
 		int sectionSize = settings.sectionSize;
-		int modX = Values.posModulo(absX - settings.xOffset - settings.pathOffset, sectionSize);
-		int modZ = Values.posModulo(absZ - settings.zOffset - settings.pathOffset, sectionSize);
+		absX -= settings.xOffset + settings.pathOffset;
+		absZ -= settings.zOffset + settings.pathOffset;
+		int modX = Values.posModulo(absX, sectionSize);
+		int modZ = Values.posModulo(absZ, sectionSize);
 		return isOriginParcel(modX, modZ)? Optional.ofNullable(parcels.getParcelAt((absX - modX) / sectionSize, (absZ - modZ) / sectionSize)) : Optional.empty();
 	}
 	
