@@ -103,7 +103,7 @@ public class Parcel implements Serializable {
 	}
 	
 	public boolean isClaimed() {
-		return getOwner().isPresent();
+		return owner.isPresent();
 	}
 	
 	public boolean isAllowed(OfflinePlayer user) {

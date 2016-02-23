@@ -2,6 +2,7 @@ package com.redstoner.parcels;
 
 import org.bukkit.Bukkit;
 import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.redstoner.parcels.api.ParcelWorldSettings;
@@ -52,6 +53,11 @@ public class ParcelsPlugin extends JavaPlugin {
 		StorageManager.initialise();
 		ParcelCommands.register();
 		ParcelListener.register();
+		
+		Plugin worldEdit = getServer().getPluginManager().getPlugin("WorldEdit");
+		if (worldEdit != null) {
+			WorldEditListener.register(worldEdit);
+		}
 		
 		if (!StorageManager.useMySQL) {
 			int interval = getConfig().getInt("MySQL.save-interval-no-mysql");
