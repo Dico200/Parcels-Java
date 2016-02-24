@@ -7,21 +7,21 @@ public class ParcelSettings {
 	}
 	
 	private final Parcel parcel;
-	private boolean allowsInteractLever = false;
+	private boolean allowsInteractInputs = false;
 	private boolean allowsInteractInventory = false;
 	
-	public boolean allowsInteractLever() {
-		return allowsInteractLever;
+	public boolean allowsInteractInputs() {
+		return allowsInteractInputs;
 	}
 	
 	public boolean allowsInteractInventory() {
 		return allowsInteractInventory;
 	}
 	
-	public boolean setAllowsInteractLever(boolean enabled) {
-		if (enabled != this.allowsInteractLever) {
-			this.allowsInteractLever = enabled;
-			SqlManager.setAllowInteractLever(parcel.getWorld(), parcel.getX(), parcel.getZ(), enabled);
+	public boolean setAllowsInteractInputs(boolean enabled) {
+		if (enabled != this.allowsInteractInputs) {
+			this.allowsInteractInputs = enabled;
+			SqlManager.setAllowInteractInputs(parcel.getWorld(), parcel.getX(), parcel.getZ(), enabled);
 			return true;
 		}
 		return false;
@@ -36,8 +36,8 @@ public class ParcelSettings {
 		return false;
 	}
 	
-	public void setAllowsInteractLeverIgnoreSQL(boolean enabled) {
-		this.allowsInteractLever = enabled;
+	public void setAllowsInteractInputsIgnoreSQL(boolean enabled) {
+		this.allowsInteractInputs = enabled;
 	}
 	
 	public void setAllowsInteractInventoryIgnoreSQL(boolean enabled) {

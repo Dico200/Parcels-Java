@@ -79,13 +79,12 @@ public class ParcelGenerator extends ChunkGenerator {
 			@Override
 			public void populate(World world, Random random, Chunk chunk) {
 				iterAll(chunk.getX(), chunk.getZ(), floorData, wallData, pathMainData, pathEdgeData, fillData, (c, type) -> {
-					if (type != 0) {
+					if (c.y == 1) {
 						Block b = chunk.getBlock(c.x, c.y, c.z);
 						b.setData(type);
-						if (c.y == 1)
-							b.setBiome(Biome.JUNGLE);
-					} else if (c.y == 1) {
-						chunk.getBlock(c.x, c.y, c.z).setBiome(Biome.JUNGLE);
+						b.setBiome(Biome.JUNGLE);
+					} else {
+						chunk.getBlock(c.x, c.y, c.z).setData(type);
 					}
 				});
 			}

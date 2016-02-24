@@ -146,8 +146,7 @@ public class ParcelCommands {
 		
 		CommandManager.register(new ParcelCommand("parcel dispose", ParcelRequirement.IN_OWNED, 
 				(sender, scape) -> {
-					scape.getParcel().setOwner(null);
-					scape.getParcel().getAdded().clear();
+					scape.getParcel().dispose();
 					return "This parcel no longer has any data";
 				}){{
 			setDescription("removes any data about this parcel");
@@ -204,7 +203,7 @@ public class ParcelCommands {
 					long time = System.currentTimeMillis();
 					scape.getWorld().clearBlocks(scape.getParcel());
 					scape.getWorld().removeEntities(scape.getParcel());
-					return String.format("Clear this parcel successfully, %.2fs elapsed", (System.currentTimeMillis() - time) / 1000.0);
+					return String.format("Cleared this parcel successfully, %.2fs elapsed", (System.currentTimeMillis() - time) / 1000.0);
 				}){{
 			setDescription("clears this parcel");
 			setHelpInformation("Clears this parcel, resetting all of its blocks", "and removing all entities inside");
@@ -231,21 +230,21 @@ public class ParcelCommands {
 			setHelpInformation("Sets whether players who are not allowed to", "build here can interact with certain things.");
 		}});
 		
-		CommandManager.register(new ParcelCommand("parcel option lever", ParcelRequirement.IN_PARCEL, 
+		CommandManager.register(new ParcelCommand("parcel option inputs", ParcelRequirement.IN_PARCEL, 
 				(sender, scape) -> {
 					Boolean enabled = scape.get("enabled");
 					Parcel p = scape.getParcel();
 					if (enabled == null) {
-						String word = p.getSettings().allowsInteractLever()? "" : "not ";
-						return "This parcel does " + word + "allow interaction with levers, buttons, etc.";
+						String word = p.getSettings().allowsInteractInputs()? "" : "not ";
+						return "This parcel does " + word + "allow using levers, buttons, etc.";
 					}
 					Validate.isTrue(sender.hasPermission(Permissions.ADMIN_MANAGE) || p.isOwner(sender), "You must own this parcel to change its options");
 					String word = enabled? "enabled" : "disabled";
-					Validate.isTrue(scape.getParcel().getSettings().setAllowsInteractLever(enabled), "That option was already " + word);
+					Validate.isTrue(scape.getParcel().getSettings().setAllowsInteractInputs(enabled), "That option was already " + word);
 					return "That option is now " + word;
 				}){{
-			setDescription("allows editing levers");
-			setHelpInformation("Sets whether players who are not allowed to", "build here can interact with levers, buttons," + "pressure plates, tripwire or redstone ore");
+			setDescription("allows using inputs");
+			setHelpInformation("Sets whether players who are not allowed to", "build here can use levers, buttons," + "pressure plates, tripwire or redstone ore");
 			setParameters(new Parameter<Boolean>("enabled", ParameterType.BOOLEAN, "whether the option is enabled", false));
 		}});
 		

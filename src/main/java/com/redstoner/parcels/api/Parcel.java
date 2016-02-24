@@ -122,6 +122,13 @@ public class Parcel implements Serializable {
 		return added;
 	}
 	
+	public void dispose() {
+		setOwner(null);
+		added.clear();
+		settings.setAllowsInteractInputs(false);
+		settings.setAllowsInteractInventory(false);
+	}
+	
 	public String toString() {
 		return String.format("parcel at (%s)", getId());
 	}

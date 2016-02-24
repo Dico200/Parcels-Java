@@ -14,9 +14,6 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.material.MaterialData;
-
-import com.redstoner.parcels.ParcelsPlugin;
 
 public class Schematic {
 	
@@ -37,14 +34,11 @@ public class Schematic {
 				absolute(x2 - x1)/2.0, absolute(y2 - y1)/2.0, absolute(z2 - z1)/2.0).stream();	
 	}
 	
-	@SuppressWarnings("unused")
 	private static final Comparator<Block> ATTACHABLE;
-	
-	private static final Set<Class<? extends MaterialData>> ATTACHABLES;
 	
 	private final World world;
 	private final int x0, y0, z0;
-	private final SchematicBlock[] blocks1, blocks2;
+	private final SchematicBlock[] blocks;
 	private final List<Entity> entities;
 	
 	public Schematic(World world, int x1, int y1, int z1, int x2, int y2, int z2) {
@@ -59,26 +53,18 @@ public class Schematic {
 		int ymax = y0 + absolute(y2 - y1);
 		int zmax = z0 + absolute(z2 - z1);
 		
-		Builder<Block> blocks1 = Stream.builder();
-		Builder<Block> blocks2 = Stream.builder();
+		Builder<Block> blocks = Stream.builder();
 		
 		int x, z, y;
-		Block block;
 		for (x = x0; x <= xmax; x++) {
 			for (z = z0; z <= zmax; z++) {
 				for (y = y0; y <= ymax; y++) {
-					block = world.getBlockAt(x, y, z);
-					if (ATTACHABLES.contains(block.getType().getData())) {
-						blocks2.accept(block);
-					} else {
-						blocks1.accept(block);
-					}
+					blocks.accept(world.getBlockAt(x, y, z));
 				}
 			}
 		}
 		
-		this.blocks1 = blocks1.build()./*sorted(ATTACHABLE).*/map(SchematicBlock::new).toArray(size -> new SchematicBlock[size]);
-		this.blocks2 = blocks2.build().map(SchematicBlock::new).toArray(size -> new SchematicBlock[size]);
+		this.blocks = blocks.build().sorted(ATTACHABLE).map(SchematicBlock::new).toArray(size -> new SchematicBlock[size]);
 		this.entities = getContainedEntities(world, x1, y1, z1, x2, y2, z2).filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
 	}
 	
@@ -98,69 +84,104 @@ public class Schematic {
 		int dx = x - x0;
 		int dy = y - y0;
 		int dz = z - z0;
-		
-		ParcelsPlugin.debug("--Pasting schematic");
-		ParcelsPlugin.debug("Pasting unattachable blocks");
-		long time1 = System.currentTimeMillis();
-		for (SchematicBlock block : blocks1) {
+
+		for (SchematicBlock block : blocks) {
 			block.paste(world, dx, dy, dz);
 		}
-		ParcelsPlugin.debug(String.format("  %.2fs elapsed,", (System.currentTimeMillis() - time1) / 1000.0));
-		
-		ParcelsPlugin.debug("Pasting attachable blocks");
-		long time2 = System.currentTimeMillis();
-		for (SchematicBlock block : blocks2) {
-			block.paste(world, dx, dy, dz);
-		}
-		ParcelsPlugin.debug(String.format("  %.2fs elapsed,", (System.currentTimeMillis() - time2) / 1000.0));
 		
 		if (teleportEntities) {
-			long time3 = System.currentTimeMillis();
-			ParcelsPlugin.debug("Teleporting entities");
 			entities.forEach(e -> {
 				Location loc = e.getLocation();
 				e.teleport(new Location(world, loc.getX() + dx, loc.getY() + dy, loc.getZ() + dz, loc.getYaw(), loc.getPitch()));
 			});
-			ParcelsPlugin.debug(String.format("  %.2fs elapsed,", (System.currentTimeMillis() - time3) / 1000.0));
 		}
-		ParcelsPlugin.debug(String.format("Total time of %.2fs elapsed,", (System.currentTimeMillis() - time1) / 1000.0));
 	}
 	
 	static {
 		
-		ATTACHABLES = new HashSet<>();	
-		ATTACHABLES.add(org.bukkit.material.Banner.class);
-		ATTACHABLES.add(org.bukkit.material.Cake.class);
-		ATTACHABLES.add(org.bukkit.material.CocoaPlant.class);
-		ATTACHABLES.add(org.bukkit.material.Crops.class);
-		ATTACHABLES.add(org.bukkit.material.Diode.class);
-		ATTACHABLES.add(org.bukkit.material.Door.class);
-		ATTACHABLES.add(org.bukkit.material.FlowerPot.class);
-		ATTACHABLES.add(org.bukkit.material.LongGrass.class);
-		ATTACHABLES.add(org.bukkit.material.Mushroom.class);
-		ATTACHABLES.add(org.bukkit.material.NetherWarts.class);
-		ATTACHABLES.add(org.bukkit.material.PressurePlate.class);
-		ATTACHABLES.add(org.bukkit.material.Rails.class);
-		ATTACHABLES.add(org.bukkit.material.RedstoneWire.class);
-		ATTACHABLES.add(org.bukkit.material.Sign.class);
-		ATTACHABLES.add(org.bukkit.material.SimpleAttachableMaterialData.class);
-		ATTACHABLES.add(org.bukkit.material.Tripwire.class);
-		ATTACHABLES.add(org.bukkit.material.Vine.class);
-		
 		ATTACHABLE = new Comparator<Block>() {
 			
-			private int priority(Material material) {
-				// The higher the priority, the later the block is placed.
-				return ATTACHABLES.contains(material.getData())? 1 : 0;
-			}
+			private final Set<Material> attachables;
 
 			@Override
 			public int compare(Block b1, Block b2) {
-				return priority(b1.getType()) - priority(b2.getType());
+				boolean c1 = attachables.contains(b1.getType());
+				return c1 == attachables.contains(b2.getType()) ? 0 : c1? 1 : -1;
 			}
-
+			
+			{
+				attachables = new HashSet<Material>() {
+					private static final long serialVersionUID = 1L;
+					{
+						add(Material.ACACIA_DOOR);
+						add(Material.ACTIVATOR_RAIL);
+						add(Material.BIRCH_DOOR);
+						add(Material.BROWN_MUSHROOM);
+						add(Material.CACTUS);
+						add(Material.CAKE_BLOCK);
+						add(Material.CARPET);
+						add(Material.CARROT);
+						add(Material.COCOA);
+						add(Material.CROPS);
+						add(Material.DARK_OAK_DOOR);
+						add(Material.DEAD_BUSH);
+						add(Material.DETECTOR_RAIL);
+						add(Material.DIODE_BLOCK_OFF);
+						add(Material.DIODE_BLOCK_ON);
+						add(Material.DOUBLE_PLANT);
+						add(Material.DRAGON_EGG);
+						add(Material.FIRE);
+						add(Material.FLOWER_POT);
+						add(Material.GOLD_PLATE);
+						add(Material.IRON_DOOR_BLOCK);
+						add(Material.IRON_PLATE);
+						add(Material.IRON_TRAPDOOR);
+						add(Material.JUNGLE_DOOR);
+						add(Material.LADDER);
+						add(Material.LEVER);
+						add(Material.LONG_GRASS);
+						add(Material.MELON_STEM);
+						add(Material.NETHER_WARTS);
+						//add(Material.PISTON_BASE);
+						//add(Material.PISTON_EXTENSION);
+						//add(Material.PISTON_MOVING_PIECE);
+						//add(Material.PISTON_STICKY_BASE);
+						add(Material.PORTAL);
+						add(Material.POTATO);
+						add(Material.POWERED_RAIL);
+						add(Material.PUMPKIN_STEM);
+						add(Material.RAILS);
+						add(Material.REDSTONE_COMPARATOR_OFF);
+						add(Material.REDSTONE_COMPARATOR_ON);
+						add(Material.REDSTONE_TORCH_OFF);
+						add(Material.REDSTONE_TORCH_ON);
+						add(Material.REDSTONE_WIRE);
+						add(Material.RED_MUSHROOM);
+						add(Material.RED_ROSE);
+						add(Material.SAPLING);
+						add(Material.SIGN_POST);
+						add(Material.SNOW);
+						add(Material.SPRUCE_DOOR);
+						add(Material.STANDING_BANNER);
+						add(Material.STONE_BUTTON);
+						add(Material.STONE_PLATE);
+						add(Material.SUGAR_CANE_BLOCK);
+						add(Material.TORCH);
+						add(Material.TRAP_DOOR);
+						add(Material.TRIPWIRE);
+						add(Material.TRIPWIRE_HOOK);
+						add(Material.VINE);
+						add(Material.WALL_BANNER);
+						add(Material.WALL_SIGN);
+						add(Material.WATER_LILY);
+						add(Material.WOOD_BUTTON);
+						add(Material.WOODEN_DOOR); //The item is WOOD_DOOR
+						add(Material.WOOD_PLATE);
+						add(Material.YELLOW_FLOWER);
+					}
+				};
+			}
 		};
-		
 	}
 }
 

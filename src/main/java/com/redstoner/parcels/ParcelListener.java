@@ -13,11 +13,13 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Explosive;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Vehicle;
+import org.bukkit.entity.minecart.ExplosiveMinecart;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -45,6 +47,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.StructureGrowEvent;
@@ -77,7 +80,7 @@ public class ParcelListener implements Listener {
 		ignoreWeatherChanges = 0;
 		entities = new ConcurrentHashMap<>();
 		
-		/*
+		/*\
 		 * Tracks entities. If the entity is dead, they are removed from the list.
 		 * If the entity is found to have left the parcel it was created in, it will be removed from the world and from the list.
 		 * If it is still in the parcel it was created in, and it is on the ground, it is removed from the list.
@@ -225,7 +228,7 @@ public class ParcelListener implements Listener {
 	
 	/*
 	 * Prevents players from placing liquids, using flint and steel, changing redstone components,
-	 * clicking levers buttons stepping on pressure plates (unless allowed by the plot), 
+	 * using inputs (unless allowed by the plot), 
 	 * and using items disabled in the configuration for that world.
 	 */
 	@EventHandler(ignoreCancelled = true)
@@ -258,8 +261,14 @@ public class ParcelListener implements Listener {
 				case LEVER:
 				case STONE_BUTTON:
 				case WOOD_BUTTON:
-					if (!hasAdminPerm && !clickedP.filter(p -> p.canBuild(user) || p.getSettings().allowsInteractLever()).isPresent()) {
-						Messaging.send(user, "Parcels", Formatting.YELLOW, "You cannot use levers/buttons in this parcel");
+				case FENCE_GATE:
+				case WOODEN_DOOR:
+				case ANVIL:
+				case TRAP_DOOR:
+				case TRAPPED_CHEST:
+				//case REDSTONE_ORE:
+					if (!hasAdminPerm && !clickedP.filter(p -> p.canBuild(user) || p.getSettings().allowsInteractInputs()).isPresent()) {
+						Messaging.send(user, "Parcels", Formatting.YELLOW, "You cannot use inputs in this parcel");
 						cancel(event);
 						return;
 					}
@@ -294,7 +303,7 @@ public class ParcelListener implements Listener {
 			
 			case PHYSICAL:
 
-				if (!hasAdminPerm && !clickedP.filter(p -> p.canBuild(user) || p.getSettings().allowsInteractLever()).isPresent()) {
+				if (!hasAdminPerm && !clickedP.filter(p -> p.canBuild(user) || p.getSettings().allowsInteractInputs()).isPresent()) {
 					cancel(event);
 					return;
 				}
@@ -386,6 +395,24 @@ public class ParcelListener implements Listener {
 			
 			Item item = event.getItemDrop();
 			if (!world.getParcelAt(item.getLocation()).filter(p -> p.canBuild(user) || p.getSettings().allowsInteractInventory()).isPresent()) {
+				cancel(event);
+			}
+		});
+	}
+	
+	/*
+	 * Prevents players from picking up items
+	 */
+	@EventHandler(ignoreCancelled = true)
+	public void onPlayerPickupItem(PlayerPickupItemEvent event) {
+		
+		Player user = event.getPlayer();
+		if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE))
+			return;
+		
+		WorldManager.getWorld(user.getWorld()).ifPresent(world -> {
+			
+			if (!world.getParcelAt(user.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
 				cancel(event);
 			}
 		});
@@ -504,13 +531,16 @@ public class ParcelListener implements Listener {
 	@EventHandler 
 	public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
 		
-		Entity e = event.getEntity();
-		if (!(e.getType() == EntityType.ITEM_FRAME)) {
-			return;
-		}
+		Entity damaged = event.getEntity();
 		
-		WorldManager.getWorld(e.getWorld()).ifPresent(world -> {
+		WorldManager.getWorld(damaged.getWorld()).ifPresent(world -> {
 			Entity damager = event.getDamager();
+			
+			if (damager instanceof Explosive || damager instanceof ExplosiveMinecart) {
+				cancel(event);
+				return;
+			}
+			
 			Player user;
 			if (damager instanceof Player) {
 				user = (Player) damager;
@@ -524,7 +554,7 @@ public class ParcelListener implements Listener {
 				return;
 			}
 			
-			if (!world.getParcelAt(e.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
+			if (!world.getParcelAt(damaged.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
 				cancel(event);
 			}
 		});
@@ -542,13 +572,12 @@ public class ParcelListener implements Listener {
 			
 			Entity remover = event.getRemover();
 			if (remover instanceof Player) {
-				ParcelsPlugin.debug("Player found");
 				Player user = (Player) remover;
 				
 				if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE)) {
 					return;
 				}
-				ParcelsPlugin.debug("Checking build permissions");
+				
 				if (!world.getParcelAt(hanging.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
 					cancel(event);
 				}

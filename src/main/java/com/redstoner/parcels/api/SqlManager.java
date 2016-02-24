@@ -17,7 +17,7 @@ public class SqlManager {
 	
 	@SuppressWarnings("unused")
 	private static final String
-		PARCELS_QUERY = "SELECT `id`, `px`, `pz`, `owner`, `allow_interact_lever`, `allow_interact_inventory` FROM `parcels` WHERE `world` = ?;",
+		PARCELS_QUERY = "SELECT `id`, `px`, `pz`, `owner`, `allow_interact_inputs`, `allow_interact_inventory` FROM `parcels` WHERE `world` = ?;",
 		//PARCEL_OWNER_QUERY = "SELECT `owner` FROM `parcels` WHERE `id` = ?;",
 		PARCEL_ADDED_QUERY = "SELECT `player`, `allowed` FROM `parcels_added` WHERE `id` = ?;",
 		PARCEL_ID_QUERY = "SELECT `id` FROM `parcels` WHERE `world` = ? AND `px` = ? AND `pz` = ?;",
@@ -27,7 +27,7 @@ public class SqlManager {
 				+ "`px` INTEGER NOT NULL,"
 				+ "`pz` INTEGER NOT NULL,"
 				+ "`owner` VARCHAR(36),"
-				+ "`allow_interact_lever` TINYINT(1) NOT NULL DEFAULT 0, "
+				+ "`allow_interact_inputs` TINYINT(1) NOT NULL DEFAULT 0, "
 				+ "`allow_interact_inventory` TINYINT(1) NOT NULL DEFAULT 0, "
 				+ "UNIQUE KEY location(`world`, `px`, `pz`)"
 				+ ");",
@@ -46,7 +46,7 @@ public class SqlManager {
 				+ ");",
 		DROP_TABLES = "DROP TABLE IF EXISTS `parcels_added`;"
 				+ "DROP TABLE IF EXISTS `parcels`;",
-		SET_ALLOW_INTERACT_LEVER = "UPDATE `parcels` SET `allow_interact_lever` = ? WHERE `id` = ?;",
+		SET_ALLOW_INTERACT_INPUTS = "UPDATE `parcels` SET `allow_interact_inputs` = ? WHERE `id` = ?;",
 		SET_ALLOW_INTERACT_INVENTORY = "UPDATE `parcels` SET `allow_interact_inventory` = ? WHERE `id` = ?;",
 		SET_OWNER_UPDATE = "UPDATE `parcels` SET `owner` = ? WHERE `id` = ?;",
 		PARCEL_ADD_PLAYER_UPDATE = "REPLACE `parcels_added` (`id`, `player`, `allowed`) VALUES (?, ?, ?);",
@@ -91,7 +91,7 @@ public class SqlManager {
 							p.setOwnerIgnoreSQL(toUUID(owner));
 						}
 						
-						p.getSettings().setAllowsInteractLeverIgnoreSQL(parcels.getInt(5) != 0);
+						p.getSettings().setAllowsInteractInputsIgnoreSQL(parcels.getInt(5) != 0);
 						p.getSettings().setAllowsInteractInventoryIgnoreSQL(parcels.getInt(6) != 0);
 						
 						PreparedStatement query2 = conn.prepareStatement(PARCEL_ADDED_QUERY);
@@ -182,10 +182,10 @@ public class SqlManager {
 	}
 	*/
 	
-	public static void setAllowInteractLever(String world, int px, int pz, boolean enabled) {
+	public static void setAllowInteractInputs(String world, int px, int pz, boolean enabled) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				setBooleanParcelSetting(conn, world, px, pz, SET_ALLOW_INTERACT_LEVER, enabled);
+				setBooleanParcelSetting(conn, world, px, pz, SET_ALLOW_INTERACT_INPUTS, enabled);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}

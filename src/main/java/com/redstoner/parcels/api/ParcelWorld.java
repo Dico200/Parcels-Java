@@ -136,8 +136,7 @@ public class ParcelWorld {
 	}
 	
 	public void reset(Parcel parcel) {
-		parcel.setOwner(null);
-		parcel.getAdded().clear();
+		parcel.dispose();
 		clearBlocks(parcel);
 		removeEntities(parcel);
 	}
@@ -204,19 +203,18 @@ public class ParcelWorld {
 		
 		ParcelSettings settings1 = parcel1.getSettings();
 		ParcelSettings settings2 = parcel2.getSettings();
-		boolean allowsInteractLever = settings1.allowsInteractLever();
+		boolean allowsInteractLever = settings1.allowsInteractInputs();
 		boolean allowsInteractInventory = settings1.allowsInteractInventory();
-		settings1.setAllowsInteractLever(settings2.allowsInteractLever());
+		settings1.setAllowsInteractInputs(settings2.allowsInteractInputs());
 		settings1.setAllowsInteractInventory(settings2.allowsInteractInventory());
-		settings2.setAllowsInteractLever(allowsInteractLever);
+		settings2.setAllowsInteractInputs(allowsInteractLever);
 		settings2.setAllowsInteractInventory(allowsInteractInventory);
 	}
 	
 	private Stream<Entity> getEntities(Parcel parcel) {
 		World world = getWorld();
 		Coord NW = getBottomCoord(parcel);
-		int parcelDistance = settings.parcelSize - 1;
-		return Schematic.getContainedEntities(world, NW.getX(), 0, NW.getZ(), NW.getX() + parcelDistance, 255, NW.getZ() + parcelDistance);
+		return Schematic.getContainedEntities(world, NW.getX(), 0, NW.getZ(), NW.getX() + settings.parcelSize, 255, NW.getZ() + settings.parcelSize);
 	}
 	
 	public void removeEntities(Parcel parcel) {
