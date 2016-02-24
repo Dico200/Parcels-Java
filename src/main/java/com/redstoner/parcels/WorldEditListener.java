@@ -32,7 +32,7 @@ public class WorldEditListener {
 	@Subscribe(priority = Priority.VERY_EARLY)
 	public void onEditSession(EditSessionEvent event) {
 		
-		WorldManager.INSTANCE.getWorld(event.getWorld().getName()).ifPresent(world -> {
+		WorldManager.getWorld(event.getWorld().getName()).ifPresent(world -> {
 			
 			Stage stage = event.getStage();
 			if (stage != Stage.BEFORE_CHANGE && stage != Stage.BEFORE_HISTORY) {

@@ -5,7 +5,6 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.redstoner.parcels.api.ParcelWorldSettings;
 import com.redstoner.parcels.api.StorageManager;
 import com.redstoner.parcels.api.WorldManager;
 import com.redstoner.parcels.command.ParcelCommands;
@@ -31,17 +30,15 @@ public class ParcelsPlugin extends JavaPlugin {
 	
 	@Override
 	public ChunkGenerator getDefaultWorldGenerator(String world, String id) {
-		return worldManager.getGenerator(world);
+		return WorldManager.getWorld(world).map(w -> w.getGenerator()).orElse(null);
 	}
 	
 	public ParcelsPlugin() {
 		plugin = this;
 		
-		getConfig().set("worlds.Parcels.items-blocked", ParcelWorldSettings.DEFAULT_WORLD_SETTINGS.get("items-blocked"));
 		getConfig().options().copyDefaults(true);
 		saveConfig();
 		
-		worldManager = WorldManager.INSTANCE;
 	}
 	
 	@SuppressWarnings("deprecation")
@@ -74,12 +71,6 @@ public class ParcelsPlugin extends JavaPlugin {
 	@Override
 	public void onDisable() {
 		StorageManager.save(newUseMySQL);
-	}
-	
-	private WorldManager worldManager;
-	
-	public WorldManager getWorldManager() {
-		return worldManager;
 	}
 	
 }

@@ -64,7 +64,7 @@ public class Schematic {
 			}
 		}
 		
-		this.blocks = blocks.build().sorted(ATTACHABLE).map(SchematicBlock::new).toArray(size -> new SchematicBlock[size]);
+		this.blocks = blocks.build().sorted(ATTACHABLE).map(SchematicBlock::new).toArray(SchematicBlock[]::new);
 		this.entities = getContainedEntities(world, x1, y1, z1, x2, y2, z2).filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
 	}
 	

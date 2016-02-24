@@ -1,14 +1,7 @@
 package com.redstoner.parcels.api;
 
-import com.redstoner.parcels.ParcelsPlugin;
-import com.redstoner.parcels.generation.ParcelGenerator;
-import com.redstoner.utils.MultiRunner;
-import com.redstoner.utils.Values;
-import com.redstoner.utils.Optional;
-
 import java.util.HashMap;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.bukkit.Location;
@@ -16,86 +9,47 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 
-public enum WorldManager {
-	
-	INSTANCE;
-	
+import com.redstoner.parcels.ParcelsPlugin;
+import com.redstoner.utils.MultiRunner;
+import com.redstoner.utils.Optional;
+import com.redstoner.utils.Values;
+
+public class WorldManager {
 	
 	public static HashMap<String, ParcelWorld> getWorlds() {
-		return INSTANCE.worlds;
+		return worlds;
+	}
+	
+	public static Optional<ParcelWorld> getWorld(String world) {
+		return Optional.ofNullable(worlds.get(world));
 	}
 	
 	public static Optional<ParcelWorld> getWorld(World w) {
-		return INSTANCE.getWorld(w.getName());
-	}
-	
-	public static Optional<ParcelWorld> getWorld(Block b) {
-		return getWorld(b.getWorld());
-	}
-	
-	public static Optional<Parcel> getParcel(Block b) {
-		return getWorld(b.getWorld()).flatMap(w -> w.getParcelAt(b.getX(), b.getZ()));
-	}
-	
-	public static Optional<Parcel> getParcel(Location loc) {
-		return getParcel(loc.getWorld().getBlockAt(loc));
+		return getWorld(w.getName());
 	}
 	
 	public static void ifWorldPresent(Block b, BiConsumer<ParcelWorld, Optional<Parcel>> present) {
-		getWorld(b).ifPresent(w -> present.accept(w, w.getParcelAt(b.getX(), b.getZ())));
+		getWorld(b.getWorld()).ifPresent(w -> present.accept(w, w.getParcelAt(b.getX(), b.getZ())));
 	}
 	
-	public static void ifWorldPresent(Location loc, BiConsumer<ParcelWorld, Optional<Parcel>> present) {
-		ifWorldPresent(loc.getWorld().getBlockAt(loc), present);
-	}
-	
-	public static void ifParcelPresent(Block b, BiConsumer<ParcelWorld, Parcel> present) {
-		ifWorldPresent(b, (world, mParcel) -> mParcel.ifPresent(parcel -> present.accept(world, parcel)));
-	}
-	
-	public static void ifParcelPresent(Location loc, BiConsumer<ParcelWorld, Parcel> present) {
-		ifWorldPresent(loc, (world, mParcel) -> mParcel.ifPresent(parcel -> present.accept(world, parcel)));
-	}
-	
-	WorldManager() {
-		this.plugin = ParcelsPlugin.getInstance();
-		ParcelsPlugin.log("WorldManager initialized");
-		loadSettingsFromConfig();
-	}
-	
-	public Optional<Parcel> getParcelAt(Location loc) {
+	public static Optional<Parcel> getParcelAt(Location loc) {
 		return get(loc.getWorld().getName(), w -> w.getParcelAt(loc.getBlockX(), loc.getBlockZ()));
 	}
+
 	
-	public ParcelWorldSettings getSettings(String world) {
-		return get(world, w -> w.getSettings());
+	private WorldManager() {
+		throw new RuntimeException();
 	}
 	
-	public ParcelGenerator getGenerator(String world) {
-		return get(world, w -> w.getGenerator());
-	}
-	
-	private <T> T get(String world, Function<ParcelWorld, T> function) {
+	private static <T> T get(String world, Function<ParcelWorld, T> function) {
 		Optional<ParcelWorld> w = getWorld(world);
 		return w.isPresent()? function.apply(w.get()) : null;
 	}
 	
-	@SuppressWarnings("unused")
-	private boolean exec(String world, Consumer<ParcelWorld> function) {
-		Optional<ParcelWorld> w = getWorld(world);
-		w.ifPresent(function::accept);
-		return w.isPresent();
-	}
+	private static ParcelsPlugin plugin;
+	private static HashMap<String, ParcelWorld> worlds = new HashMap<>();
 	
-	private ParcelsPlugin plugin;
-	private HashMap<String, ParcelWorld> worlds = new HashMap<>();
-
-	
-	public Optional<ParcelWorld> getWorld(String world) {
-		return Optional.ofNullable(this.worlds.get(world));
-	}
-	
-	private void loadSettingsFromConfig() {
+	private static void loadSettingsFromConfig() {
 		MultiRunner printErrors = new MultiRunner(() -> {
 			ParcelsPlugin.log("##########################################################");
 		}, () -> {
@@ -108,8 +62,13 @@ public enum WorldManager {
 		
 		worlds.getKeys(false).forEach(world -> {
 			ParcelWorldSettings.parseSettings(worlds, world, printErrors).ifPresent(pws -> {
-				this.worlds.put(world, new ParcelWorld(world, pws));
+				WorldManager.worlds.put(world, new ParcelWorld(world, pws));
 			});
 		});
+	}
+	
+	static {
+		plugin = ParcelsPlugin.getInstance();
+		loadSettingsFromConfig();
 	}
 }

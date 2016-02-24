@@ -42,8 +42,8 @@ class ParcelContainer implements Serializable {
 		parcels = IntStream.rangeClosed(-axisLimit, axisLimit)
 				.mapToObj(x -> IntStream.rangeClosed(-axisLimit, axisLimit)
 						.mapToObj(z -> new Parcel(world, x, z)) // Change this if we change the way SQL is loaded
-						.toArray(size -> new Parcel[size])
-				).toArray(size -> new Parcel[size][]);
+						.toArray(Parcel[]::new)
+				).toArray(Parcel[][]::new);
 	}
 	
 	//private final String world;

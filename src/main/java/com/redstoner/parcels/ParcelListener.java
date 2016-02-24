@@ -91,7 +91,7 @@ public class ParcelListener implements Listener {
 			entities.forEach((entity, firedFrom) -> {
 				if (entity.isDead()) {
 					entities.remove(entity);
-				} else if (WorldManager.getParcel(entity.getLocation()).orElse(null) != firedFrom) {
+				} else if (WorldManager.getParcelAt(entity.getLocation()).orElse(null) != firedFrom) {
 					entity.remove();
 					entities.remove(entity);
 				} else if (entity.isOnGround()) {
@@ -125,7 +125,7 @@ public class ParcelListener implements Listener {
 	}
 	
 	private static void checkPistonAction(BlockPistonEvent event, List<Block> affectedBlocks) {	
-		Optional<ParcelWorld> mWorld = WorldManager.getWorld(event.getBlock());
+		Optional<ParcelWorld> mWorld = WorldManager.getWorld(event.getBlock().getWorld());
 		if (!mWorld.isPresent())
 			return;
 		
@@ -222,8 +222,12 @@ public class ParcelListener implements Listener {
 	@EventHandler(ignoreCancelled = true)
 	public void onBlockFromTo(BlockFromToEvent event) {
 		
-		if (!WorldManager.getParcel(event.getToBlock()).isPresent())
-			cancel(event);
+		WorldManager.getWorld(event.getToBlock().getWorld()).ifPresent(world -> {
+			
+			if (!world.getParcelAt(event.getToBlock()).isPresent()) {
+				cancel(event);
+			}
+		});
 	}
 	
 	/*
@@ -508,20 +512,24 @@ public class ParcelListener implements Listener {
 	@EventHandler
 	public void onVehicleMove(VehicleMoveEvent event) {
 		
-		if (!WorldManager.getParcel(event.getTo()).isPresent()) {
-			Vehicle vehicle = event.getVehicle();
-			Entity passenger = vehicle.getPassenger();
-			if (passenger != null) {
-				vehicle.eject();
-				if (passenger.getType() == EntityType.PLAYER) {
+		WorldManager.getWorld(event.getTo().getWorld()).ifPresent(world -> {
+			
+			if (!world.getParcelAt(event.getTo()).isPresent()) {
+				Vehicle vehicle = event.getVehicle();
+				Entity passenger = vehicle.getPassenger();
+				if (passenger != null) {
 					vehicle.eject();
-					Messaging.send((Player)passenger, "Parcels", Formatting.RED, "Your ride ends here");
-				} else {
-					passenger.remove();
+					if (passenger.getType() == EntityType.PLAYER) {
+						vehicle.eject();
+						Messaging.send((Player)passenger, "Parcels", Formatting.RED, "Your ride ends here");
+					} else {
+						passenger.remove();
+					}
 				}
+				vehicle.remove();
 			}
-			vehicle.remove();
-		}
+			
+		});
 			
 	}
 	
@@ -674,7 +682,7 @@ public class ParcelListener implements Listener {
 		if (block.getType() != Material.DISPENSER && block.getType() != Material.DROPPER)
 			return;
 		
-		WorldManager.getWorld(block).ifPresent(world -> {
+		WorldManager.getWorld(block.getWorld()).ifPresent(world -> {
 			
 			if (!world.getParcelAt(block.getRelative(getDispenserFace(block.getData()))).isPresent()) {
 				cancel(event);
