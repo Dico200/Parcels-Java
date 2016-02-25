@@ -20,22 +20,22 @@ import com.redstoner.utils.Values;
 public class ParcelGenerator extends ChunkGenerator {
 	
 	public ParcelGenerator(ParcelWorldSettings pws) {	
-		this.floorId = pws.floor.getId();
-		this.wallId = pws.wall.getId();
-		this.pathMainId = pws.pathMain.getId();
-		this.pathEdgeId = pws.pathEdge.getId();
-		this.fillId = pws.fill.getId();
+		this.floorId = pws.floorType.getId();
+		this.wallId = pws.wallType.getId();
+		this.pathMainId = pws.pathMainType.getId();
+		this.pathEdgeId = pws.pathEdgeType.getId();
+		this.fillId = pws.fillType.getId();
 		
-		this.floorData = pws.floor.getData();
-		this.wallData = pws.wall.getData();
-		this.pathMainData = pws.pathMain.getData();
-		this.pathEdgeData = pws.pathEdge.getData();
-		this.fillData = pws.fill.getData();
+		this.floorData = pws.floorType.getData();
+		this.wallData = pws.wallType.getData();
+		this.pathMainData = pws.pathMainType.getData();
+		this.pathEdgeData = pws.pathEdgeType.getData();
+		this.fillData = pws.fillType.getData();
 		
 		this.parcelSize = pws.parcelSize;
 		this.floorHeight = pws.floorHeight;
-		this.xOffset = pws.xOffset;
-		this.zOffset = pws.zOffset;
+		this.xOffset = pws.offsetX;
+		this.zOffset = pws.offsetZ;
 		this.sectionSize = pws.sectionSize;
 		this.pathOffset = pws.pathOffset;
 		

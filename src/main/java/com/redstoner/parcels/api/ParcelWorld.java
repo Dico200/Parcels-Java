@@ -58,8 +58,8 @@ public class ParcelWorld {
 	
 	public Optional<Parcel> getParcelAt(int absX, int absZ) {
 		int sectionSize = settings.sectionSize;
-		absX -= settings.xOffset + settings.pathOffset;
-		absZ -= settings.zOffset + settings.pathOffset;
+		absX -= settings.offsetX + settings.pathOffset;
+		absZ -= settings.offsetZ + settings.pathOffset;
 		int modX = Values.posModulo(absX, sectionSize);
 		int modZ = Values.posModulo(absZ, sectionSize);
 		return isOriginParcel(modX, modZ)? Optional.ofNullable(parcels.getParcelAt((absX - modX) / sectionSize, (absZ - modZ) / sectionSize)) : Optional.empty();
@@ -87,8 +87,8 @@ public class ParcelWorld {
 	
 	public boolean isInParcel(int absX, int absZ, int px, int pz) {
 		int sectionSize = settings.sectionSize;
-		absX -= settings.xOffset + settings.pathOffset + px*sectionSize;
-		absZ -= settings.zOffset + settings.pathOffset + pz*sectionSize;
+		absX -= settings.offsetX + settings.pathOffset + px*sectionSize;
+		absZ -= settings.offsetZ + settings.pathOffset + pz*sectionSize;
 		int modX = Values.posModulo(absX, sectionSize);
 		int modZ = Values.posModulo(absZ, sectionSize);
 		return isOriginParcel(modX, modZ);
@@ -105,14 +105,14 @@ public class ParcelWorld {
 	}
 	
 	public Coord getBottomCoord(Parcel parcel) {
-		return Coord.of(settings.sectionSize * parcel.getX() + settings.pathOffset + settings.xOffset,
-						settings.sectionSize * parcel.getZ() + settings.pathOffset + settings.zOffset);
+		return Coord.of(settings.sectionSize * parcel.getX() + settings.pathOffset + settings.offsetX,
+						settings.sectionSize * parcel.getZ() + settings.pathOffset + settings.offsetZ);
 	}
 	
 	@SuppressWarnings("unused")
 	private Parcel fromNWCoord(Coord coord) {
-		return parcels.getParcelAt((coord.getX() - settings.pathOffset - settings.xOffset)/settings.sectionSize,
-								   (coord.getZ() - settings.pathOffset - settings.zOffset)/settings.sectionSize);
+		return parcels.getParcelAt((coord.getX() - settings.pathOffset - settings.offsetX)/settings.sectionSize,
+								   (coord.getZ() - settings.pathOffset - settings.offsetZ)/settings.sectionSize);
 	}
 	
 	public Parcel[] getOwned(OfflinePlayer user) {
@@ -165,10 +165,10 @@ public class ParcelWorld {
 	@SuppressWarnings("deprecation")
 	public void clearBlocks(Parcel parcel) {
 		
-		short fillId = settings.fill.getId();
-		byte fillData = settings.fill.getData();
-		short floorId = settings.floor.getId();
-		byte floorData = settings.floor.getData();
+		short fillId = settings.fillType.getId();
+		byte fillData = settings.fillType.getData();
+		short floorId = settings.floorType.getId();
+		byte floorData = settings.floorType.getData();
 		int floorHeight = settings.floorHeight;
 		
 		getBlocks(parcel).forEach(block -> {

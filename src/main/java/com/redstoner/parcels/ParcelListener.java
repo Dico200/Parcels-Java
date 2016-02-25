@@ -286,7 +286,7 @@ public class ParcelListener implements Listener {
 				
 				if (event.hasItem()) {
 					Material item = event.getItem().getType();
-					if (world.getSettings().itemsBlocked.contains(event.getItem().getType())) {
+					if (world.getSettings().blockedItems.contains(event.getItem().getType())) {
 						Messaging.send(user, "Parcels", Formatting.YELLOW, "That item is disabled in this world");
 						cancel(event);
 						return;

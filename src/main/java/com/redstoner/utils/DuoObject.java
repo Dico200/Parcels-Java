@@ -43,6 +43,17 @@ public class DuoObject<T, U> {
 			return v2;
 		}
 		
+		@Override
+		public boolean equals(Object other) {
+			System.out.println("Coord.equals called");
+			if (other instanceof Coord) {
+				Coord otherC = (Coord) other;
+				System.out.println("Found other instance");
+				return otherC.v1 == v1 && otherC.v2 == v2;
+			}
+			return false;
+		}
+		
 	}
 	
 	public static class DCoord extends DuoObject<Double, Double> {
@@ -80,7 +91,7 @@ public class DuoObject<T, U> {
 	public static class BlockType extends DuoObject<Short, Byte> {
 		
 		public static BlockType fromString(String s) throws NumberFormatException {
-			Values.validate(s != null, "BlockType was passed null");
+			Values.checkNotNull(s);
 			String[] both = s.split(":");
 			String id;
 			String data = "0";

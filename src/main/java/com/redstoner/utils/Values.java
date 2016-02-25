@@ -4,6 +4,18 @@ public class Values {
 	
 	private Values() {}
 	
+	public static <T> T checkNotNull(T obj) {
+		if (obj == null) 
+			throw new NullPointerException();
+		return obj;
+	}
+	
+	public static <T, U extends Throwable> T checkNotNull(T obj, U exc) throws U {
+		if (obj == null)
+			throw exc;
+		return obj;
+	}
+	
 	public static void validate(boolean b, String s) {
 		validate(b, new RuntimeException(s));
 	}

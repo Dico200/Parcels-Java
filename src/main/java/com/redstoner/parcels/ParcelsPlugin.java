@@ -1,5 +1,9 @@
 package com.redstoner.parcels;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bukkit.Bukkit;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
@@ -10,6 +14,13 @@ import com.redstoner.parcels.api.WorldManager;
 import com.redstoner.parcels.command.ParcelCommands;
 
 public class ParcelsPlugin extends JavaPlugin {
+	
+	public static final Map<String, String> messages = Collections.unmodifiableMap(new HashMap<String, String>() {
+		private static final long serialVersionUID = 1L;
+		{
+			
+		}
+	});
 	
 	private static ParcelsPlugin plugin = null;
 	private static boolean debugging = true;

@@ -10,9 +10,7 @@ import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 
 import com.redstoner.parcels.ParcelsPlugin;
-import com.redstoner.utils.MultiRunner;
 import com.redstoner.utils.Optional;
-import com.redstoner.utils.Values;
 
 public class WorldManager {
 	
@@ -50,19 +48,16 @@ public class WorldManager {
 	private static HashMap<String, ParcelWorld> worlds = new HashMap<>();
 	
 	private static void loadSettingsFromConfig() {
-		MultiRunner printErrors = new MultiRunner(() -> {
-			ParcelsPlugin.log("##########################################################");
-		}, () -> {
-			ParcelsPlugin.log("##########################################################");
-		});
 		
-		ConfigurationSection worlds = plugin.getConfig().getConfigurationSection("worlds");
-		Values.validate(worlds != null, "worlds section null");
-		Values.validate(worlds.getKeys(false) != null, "getKeys() null");
+		ConfigurationSection worldsConfig = plugin.getConfig().getConfigurationSection("worlds");
+		if (worldsConfig == null) {
+			ParcelsPlugin.log("Failed to find your world's settings in config.");
+			return;
+		}
 		
-		worlds.getKeys(false).forEach(world -> {
-			ParcelWorldSettings.parseSettings(worlds, world, printErrors).ifPresent(pws -> {
-				WorldManager.worlds.put(world, new ParcelWorld(world, pws));
+		worldsConfig.getKeys(false).forEach(worldName -> {
+			ParcelWorldSettings.parseSettings(worldsConfig, worldName).ifPresent(pws -> {
+				worlds.put(worldName, new ParcelWorld(worldName, pws));
 			});
 		});
 	}

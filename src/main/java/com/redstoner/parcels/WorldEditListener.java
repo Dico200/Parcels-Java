@@ -8,10 +8,11 @@ import com.redstoner.command.Messaging;
 import com.redstoner.parcels.api.Permissions;
 import com.redstoner.parcels.api.WorldManager;
 import com.redstoner.utils.Formatting;
+import com.redstoner.utils.OneTimeRunner;
+import com.sk89q.worldedit.EditSession.Stage;
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.Vector2D;
 import com.sk89q.worldedit.WorldEditException;
-import com.sk89q.worldedit.EditSession.Stage;
 import com.sk89q.worldedit.blocks.BaseBlock;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.event.extent.EditSessionEvent;
@@ -51,33 +52,29 @@ public class WorldEditListener {
 
 			event.setExtent(new AbstractDelegateExtent(event.getExtent()) {
 				
-				private boolean messageSent = false;
+				private OneTimeRunner messageSender = new OneTimeRunner(() -> {
+					Messaging.send(user, "Parcels", Formatting.YELLOW, "You can't use WorldEdit there");
+				});
 				
-				@Override
-				public boolean setBlock(Vector coord, BaseBlock block) throws WorldEditException {
-					if (world.getParcelAt(coord.getBlockX(), coord.getBlockZ()).filter(p -> p.canBuild(user)).isPresent()) {
-						return super.setBlock(coord, block);
-					}
-					if (!messageSent ? messageSent = true : false) {
-						Messaging.send(user, "Parcels", Formatting.YELLOW, "You can't use WorldEdit there");
-					}
+				private boolean canBuild(int x, int z) {
+					if (world.getParcelAt(x, z).filter(p -> p.canBuild(user)).isPresent()) 
+						return true;
+					messageSender.run();
 					return false;
 				}
 				
 				@Override
+				public boolean setBlock(Vector coord, BaseBlock block) throws WorldEditException {
+					return canBuild(coord.getBlockX(), coord.getBlockZ()) && super.setBlock(coord, block);
+				}
+				
+				@Override
 				public boolean setBiome(Vector2D coord, BaseBiome biome) {
-					if (world.getParcelAt(coord.getBlockX(), coord.getBlockZ()).filter(p -> p.canBuild(user)).isPresent()) {
-						return super.setBiome(coord, biome);
-					}
-					if (!messageSent ? messageSent = true : false) {
-						Messaging.send(user, "Parcels", Formatting.YELLOW, "You can't use WorldEdit there");
-					}
-					return false;
+					return canBuild(coord.getBlockX(), coord.getBlockZ()) && super.setBiome(coord, biome);
 				}
 				
 			});
 			
 		});
 	}
-	
 }
