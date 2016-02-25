@@ -10,17 +10,16 @@ import com.redstoner.parcels.ParcelsPlugin;
 
 public class SqlConnector {
 	
+	private static final ThreadGroup threadGroup = new ThreadGroup("SqlConnector");
+	
 	private final String host, username, password, database;
 	private Connection conn;
-	private final ThreadGroup threadGroup;
 	
 	public SqlConnector(String host, String database, String username, String password) {
 		this.host = host;
 		this.database = database;
 		this.username = username;
 		this.password = password;
-		this.threadGroup = new ThreadGroup("SqlConnector");
-		threadGroup.setDaemon(false);
 		
 		openConn();
 
@@ -64,5 +63,9 @@ public class SqlConnector {
 		} catch (SQLException e) {
 			ParcelsPlugin.log("Failed to close database connection.");
 		}
+	}
+	
+	static {
+		threadGroup.setDaemon(false);
 	}
 }

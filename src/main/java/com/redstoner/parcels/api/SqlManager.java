@@ -61,59 +61,63 @@ public class SqlManager {
 		CONNECTOR.asyncConn(conn -> {
 			SqlUtil.executeUpdate(conn, CREATE_TABLE_PARCELS, CREATE_TABLE_PARCELS_ADDED);
 			
-			try {
-				
-				for (Entry<String, ParcelWorld> entry : WorldManager.getWorlds().entrySet()) {
-					String worldName = entry.getKey();
-					ParcelWorld world = entry.getValue();
-					
-					PreparedStatement query = conn.prepareStatement(PARCELS_QUERY);
-					query.setString(1, worldName);
-					ResultSet parcels = query.executeQuery();
-					
-					while (parcels.next()) {
-						
-						int px = parcels.getInt(2);
-						int pz = parcels.getInt(3);
-						String owner = parcels.getString(4);
-						
-						Optional<Parcel> parcel = world.getParcelAtID(px, pz);
-						
-						if (!parcel.isPresent()) {
-							parcels.deleteRow();
-							ParcelsPlugin.debug(String.format("Deleted parcel at %s,%s from database", px, pz));
-							continue;
-						}
-						
-						Parcel p = parcel.get();
-						
-						if (owner != null) {
-							p.setOwnerIgnoreSQL(toUUID(owner));
-						}
-						
-						p.getSettings().setAllowsInteractInputsIgnoreSQL(parcels.getInt(5) != 0);
-						p.getSettings().setAllowsInteractInventoryIgnoreSQL(parcels.getInt(6) != 0);
-						
-						PreparedStatement query2 = conn.prepareStatement(PARCEL_ADDED_QUERY);
-						query2.setInt(1, parcels.getInt(1));
-						ResultSet added = query2.executeQuery();
-						
-						Map<UUID, Boolean> addedPlayers = p.getAdded().getMap();
-						while (added.next()) {
-							addedPlayers.put(toUUID(added.getString(1)), added.getInt(2) != 0);
-						}
-						added.close();
-					}
-					parcels.close();
-				}
-			} catch (SQLException e) {
-				ParcelsPlugin.log("[ERROR] While querying the MySQL database:");
-				e.printStackTrace();
-			}// catch (InterruptedException e) {
-				//e.printStackTrace();
-			//}
+			loadAllFromDatabase(conn);
 			
 		});
+	}
+	
+	public static void loadAllFromDatabase(Connection conn) {
+		
+		try {
+			
+			for (Entry<String, ParcelWorld> entry : WorldManager.getWorlds().entrySet()) {
+				String worldName = entry.getKey();
+				ParcelWorld world = entry.getValue();
+				
+				PreparedStatement query = conn.prepareStatement(PARCELS_QUERY);
+				query.setString(1, worldName);
+				ResultSet parcels = query.executeQuery();
+				
+				while (parcels.next()) {
+					
+					int px = parcels.getInt(2);
+					int pz = parcels.getInt(3);
+					String owner = parcels.getString(4);
+					
+					Optional<Parcel> parcel = world.getParcelAtID(px, pz);
+					
+					if (!parcel.isPresent()) {
+						parcels.deleteRow();
+						ParcelsPlugin.debug(String.format("Deleted parcel at %s,%s from database", px, pz));
+						continue;
+					}
+					
+					Parcel p = parcel.get();
+					
+					if (owner != null) {
+						p.setOwnerIgnoreSQL(toUUID(owner));
+					}
+					
+					p.getSettings().setAllowsInteractInputsIgnoreSQL(parcels.getInt(5) != 0);
+					p.getSettings().setAllowsInteractInventoryIgnoreSQL(parcels.getInt(6) != 0);
+					
+					PreparedStatement query2 = conn.prepareStatement(PARCEL_ADDED_QUERY);
+					query2.setInt(1, parcels.getInt(1));
+					ResultSet added = query2.executeQuery();
+					
+					Map<UUID, Boolean> addedPlayers = p.getAdded().getMap();
+					while (added.next()) {
+						addedPlayers.put(toUUID(added.getString(1)), added.getInt(2) != 0);
+					}
+					added.close();
+				}
+				parcels.close();
+			}
+		} catch (SQLException e) {
+			ParcelsPlugin.log("[ERROR] While querying the MySQL database:");
+			e.printStackTrace();
+		}
+		
 	}
 	
 	private static UUID toUUID(String uuid) {

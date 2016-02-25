@@ -95,6 +95,41 @@ public class ParcelWorldSettings {
 		 
 	}
 	
+	public static ParcelWorldSettings parseMap(String worldName, Map<String, Object> input, MultiRunner errorPrinter) {
+		
+		ParcelWorldSettings parsed = null;
+		
+		Values.validate(input != null, "getValues() (input) null");
+		CastingMap<String, Object> settings = new CastingMap<>();
+		
+		WORLD_SETTINGS_PARSER.forEach((key, function) -> {
+			
+			String excPrefix = "  Option '" + key + "' ";
+			if (!input.containsKey(key)) {
+				errorPrinter.add(() -> ParcelsPlugin.log(excPrefix + "is missing from your settings. Aborting generator."));
+			} else {			
+				try {
+					settings.put(key, function.apply(input.get(key)));
+				} catch (SettingParseException e) {
+					errorPrinter.add(() -> ParcelsPlugin.log(excPrefix + "could not be parsed. Aborting generator."));
+					errorPrinter.add(() -> ParcelsPlugin.log("    Cause: " + e.getMessage()));
+				}
+			}
+			
+		});
+		
+		if (!errorPrinter.willRun()) {
+			parsed = new ParcelWorldSettings(settings);
+		}
+		
+		input.keySet().stream()
+		.filter(key -> !WORLD_SETTINGS_PARSER.containsKey(key))
+		.filter(key -> !key.equals("interaction") && !key.equals("generator"))
+		.forEach(key -> errorPrinter.add(() -> ParcelsPlugin.log(String.format("  Just FYI: Key '%s' isn't an option (Ignoring).", key))));
+		
+		return parsed;
+	}
+	
 	public static Optional<ParcelWorldSettings> parseSettings(ConfigurationSection worlds, String worldName) {
 		MultiRunner errorPrinter = new MultiRunner(() -> {
 			ParcelsPlugin.log("##########################################################");
@@ -106,35 +141,8 @@ public class ParcelWorldSettings {
 		ParcelWorldSettings parsed = null;
 		
 		if (worlds.isConfigurationSection(worldName)) {
-			
-			Map<String, Object> input = worlds.getConfigurationSection(worldName).getValues(true);
-			Values.validate(input != null, "getValues() (input) null");
-			CastingMap<String, Object> settings = new CastingMap<>();
-			
-			WORLD_SETTINGS_PARSER.forEach((key, function) -> {
-				
-				String excPrefix = "  Option '" + key + "' ";
-				if (!input.containsKey(key)) {
-					errorPrinter.add(() -> ParcelsPlugin.log(excPrefix + "is missing from your settings. Aborting generator."));
-				} else {			
-					try {
-						settings.put(key, function.apply(input.get(key)));
-					} catch (SettingParseException e) {
-						errorPrinter.add(() -> ParcelsPlugin.log(excPrefix + "could not be parsed. Aborting generator."));
-						errorPrinter.add(() -> ParcelsPlugin.log("    Cause: " + e.getMessage()));
-					}
-				}
-				
-			});
-			
-			if (!errorPrinter.willRun()) {
-				parsed = new ParcelWorldSettings(settings);
-			}
-			
-			input.keySet().stream()
-			.filter(key -> !WORLD_SETTINGS_PARSER.containsKey(key))
-			.filter(key -> !key.equals("interaction") && !key.equals("generator"))
-			.forEach(key -> errorPrinter.add(() -> ParcelsPlugin.log(String.format("  Just FYI: Key '%s' isn't an option (Ignoring).", key))));
+
+			parsed = parseMap(worldName, worlds.getConfigurationSection(worldName).getValues(true), errorPrinter);
 			
 		} else {
 			errorPrinter.add(() -> ParcelsPlugin.log(String.format("  A world must be configured as a ConfigurationSection (a map).")));

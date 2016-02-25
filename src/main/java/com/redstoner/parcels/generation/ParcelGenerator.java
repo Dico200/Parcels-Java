@@ -61,7 +61,7 @@ public class ParcelGenerator extends ChunkGenerator {
 		//Bool.validate(floorHeight <= world.getMaxHeight(), "The floor level may not be higher than the world's maximum height");
 		//Bool.validate(world.getMaxHeight() >> 4 == 0, "The world's max height must be a multiple of 16");
 		
-		short[][] chunk = IntStream.range(0, world.getMaxHeight() / 16).mapToObj(i -> new short[4096]).toArray(size -> new short[size][]);
+		short[][] chunk = IntStream.range(0, 16).mapToObj(i -> new short[4096]).toArray(size -> new short[size][]);
 		
 		//[floor(y / 16)][y % 16 * 256 + z * 16 + x]
 		iterAll(chunkX, chunkZ, floorId, wallId, pathMainId, pathEdgeId, fillId, (c, type) -> {

@@ -26,12 +26,18 @@ public class ParcelsPlugin extends JavaPlugin {
 	private static boolean debugging = true;
 	
 	public static void log(String s) {
-		plugin.getLogger().info(s);
+		if (plugin != null)
+			plugin.getLogger().info(s);
+		else
+			System.out.println("[Parcels]: " + s);
 	}
 	
 	public static void debug(String s) {
 		if (debugging) {
-			plugin.getLogger().info("[DEBUG] " + s);
+			if (plugin != null)
+				plugin.getLogger().info("[DEBUG] " + s);
+			else
+				System.out.println("[Parcels]: [DEBUG]" + s);
 		}
 	}
 	
