@@ -63,7 +63,11 @@ public class WorldManager {
 	}
 	
 	static {
-		plugin = ParcelsPlugin.getInstance();
-		loadSettingsFromConfig();
+		try {
+			plugin = ParcelsPlugin.getInstance();
+			loadSettingsFromConfig();
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+		}
 	}
 }

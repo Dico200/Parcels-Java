@@ -127,12 +127,17 @@ public class ParcelWorld {
 		return parcels;
 	}
 	
+	//Resizes to current, old size in config
 	void setParcels(ParcelContainer parcels) {
 		if (this.parcels.getAxisLimit() != parcels.getAxisLimit()) {
 			this.parcels = ParcelContainer.resize(parcels, name, this.parcels.getAxisLimit());
 		} else {
 			this.parcels = parcels;
 		}
+	}
+	
+	void refreshParcels() {
+		this.parcels = new ParcelContainer(name, settings.axisLimit);
 	}
 	
 	public void reset(Parcel parcel) {

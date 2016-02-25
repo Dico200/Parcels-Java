@@ -61,18 +61,21 @@ public class SqlManager {
 		CONNECTOR.asyncConn(conn -> {
 			SqlUtil.executeUpdate(conn, CREATE_TABLE_PARCELS, CREATE_TABLE_PARCELS_ADDED);
 			
-			loadAllFromDatabase(conn);
+			loadAllFromDatabase(conn, false);
 			
 		});
 	}
 	
-	public static void loadAllFromDatabase(Connection conn) {
+	public static void loadAllFromDatabase(Connection conn, boolean resetContainers) {
 		
 		try {
 			
 			for (Entry<String, ParcelWorld> entry : WorldManager.getWorlds().entrySet()) {
 				String worldName = entry.getKey();
 				ParcelWorld world = entry.getValue();
+				if (resetContainers) { //Dangerous as parcels are momentarily completely reset. (Async)
+					world.refreshParcels();
+				}
 				
 				PreparedStatement query = conn.prepareStatement(PARCELS_QUERY);
 				query.setString(1, worldName);

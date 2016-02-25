@@ -1,20 +1,30 @@
 package com.redstoner.parcels.api;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.junit.*;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import com.redstoner.parcels.ParcelsPlugin;
+import com.redstoner.parcels.api.fake.FakeServer;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.MultiRunner;
 import com.redstoner.utils.mysql.SqlConnector;
 
 public class ParcelsApiTest {
+	
+	public static final UUID fakeUUID1 = UUID.fromString("51f2ad3c-6cc8-40ea-aa2b-f25970316921");
+	public static final UUID fakeUUID2 = UUID.fromString("e78eb639-1076-45df-a50c-ba349b122280");
 	
 	private static SqlConnector connector;
 	private static String worldName;
@@ -24,17 +34,26 @@ public class ParcelsApiTest {
 	public static void setUpClass() throws Exception {
 		
 		String host = "localhost:3306";
-		String database = "redstoner";
+		String database = "test";
 		String username = "root";
 		String password = "";
 		
 		connector = new SqlConnector(host, database, username, password);
 		
-		worldName = "testWorld";
+		/*
+		 * DO NOT EVER ENTER A NAME IN USE. I REPEAT: DO NOT ENTER THE NAME OF A REAL USED PARCEL WORLD.
+		 * (Well, it doesn't matter if you use a different db but it's DANGEROUS)
+		 */
+		worldName = "junitTestWorld";
+		new FakeServer();
 		
 	}
 	
 	@Test
+	public void startTest() {
+		testEverything();
+	}
+	
 	public void testEverything() {
 		
 		Map<String, Object> settings = new HashMap<String, Object>() {
@@ -76,6 +95,7 @@ public class ParcelsApiTest {
 		assertNotNull(parsedSettings);
 		
 		world = new ParcelWorld(worldName, parsedSettings);
+		WorldManager.getWorlds().put(worldName, world);
 		
 		ParcelWorldSettings fromWorld = world.getSettings();
 		assertEquals(fromWorld.axisLimit, 10);
@@ -102,7 +122,23 @@ public class ParcelsApiTest {
 		
 		SqlManager.initialise(connector);
 		
-		testParcels();
+		try {
+			
+			testParcels();
+			
+		} finally {
+		
+			connector.asyncConn(conn -> {
+				try {
+					PreparedStatement update = conn.prepareStatement("DELETE FROM `parcels` WHERE `world` = ?;");
+					update.setString(1, worldName);
+					update.executeUpdate();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			});
+			
+		}
 
 	}
 	
@@ -143,7 +179,7 @@ public class ParcelsApiTest {
 		checkWorldBlockId(bottomX, settings.floorHeight - 1, bottomZ, settings.fillType.getId());
 		checkWorldBlockId(bottomX - 2, settings.floorHeight, bottomZ - 2, settings.pathEdgeType.getId());
 		
-		//testInteractionSettings(p);
+		testSQL(p.getX(), p.getZ());
 	}
 	
 	private void checkWorldBlockId(int x, int y, int z, short type) {
@@ -162,31 +198,57 @@ public class ParcelsApiTest {
 		assertEquals(result, type);
 	}
 	
-	private void testInteractionSettings(Parcel parcel) {
-		System.out.println("Testing interaction settings for " + parcel.toString());
+	private void testSQL(int idx, int idz) {
+		Parcel parcel = world.getParcelByID(idx, idz);
 		
+		System.out.println("Testing SQL for " + parcel.toString());
+		
+		SqlManager.setOwner(worldName, parcel.getX(), parcel.getZ(), fakeUUID1);
+		SqlManager.addPlayer(worldName, parcel.getX(), parcel.getZ(), fakeUUID2, false);
 		SqlManager.setAllowInteractInputs(worldName, parcel.getX(), parcel.getZ(), true);
 		SqlManager.setAllowInteractInventory(worldName, parcel.getX(), parcel.getZ(), true);
 		
 		sleepThread();
 		connector.asyncConn(conn -> {
-			SqlManager.loadAllFromDatabase(conn);
+			SqlManager.loadAllFromDatabase(conn, true);
 		});
 		sleepThread();
 		
-		assertEquals(parcel.getSettings().allowsInteractInputs(), true);
-		assertEquals(parcel.getSettings().allowsInteractInventory(), true);
+		// New object because the container was reset. (by the test only)
+		parcel = world.getParcelByID(idx, idz);
 		
+		assertEquals(true, parcel.isOwner(Bukkit.getOfflinePlayer(fakeUUID1)));
+		assertEquals(true, parcel.isBanned(Bukkit.getOfflinePlayer(fakeUUID2)));
+		assertEquals(false, parcel.isAllowed(Bukkit.getOfflinePlayer(fakeUUID1)));
+		assertEquals(false, parcel.isAllowed(Bukkit.getOfflinePlayer(fakeUUID2)));
+		assertEquals(true, parcel.getSettings().allowsInteractInputs());
+		assertEquals(true, parcel.getSettings().allowsInteractInventory());
+		
+		SqlManager.removePlayer(worldName, parcel.getX(), parcel.getZ(), fakeUUID2);
+		SqlManager.setOwner(worldName, parcel.getX(), parcel.getZ(), fakeUUID2);
+		SqlManager.addPlayer(worldName, parcel.getX(), parcel.getZ(), fakeUUID1, true);
 		SqlManager.setAllowInteractInputs(worldName, parcel.getX(), parcel.getZ(), false);
 		SqlManager.setAllowInteractInventory(worldName, parcel.getX(), parcel.getZ(), false);
+		
 		sleepThread();
 		connector.asyncConn(conn -> {
-			SqlManager.loadAllFromDatabase(conn);
+			SqlManager.loadAllFromDatabase(conn, true);
 		});
 		sleepThread();
 		
-		assertEquals(parcel.getSettings().allowsInteractInputs(), false);
-		assertEquals(parcel.getSettings().allowsInteractInventory(), false);
+		parcel = world.getParcelByID(idx, idz);
+		
+		System.out.println("Added players:");
+		parcel.getAdded().getMap().forEach((player, value) -> {
+			System.out.println(String.format("player %s is allowed: %s", player, value));
+		});
+		
+		assertEquals(false, parcel.isOwner(Bukkit.getOfflinePlayer(fakeUUID1)));
+		assertEquals(false, parcel.isBanned(Bukkit.getOfflinePlayer(fakeUUID2)));
+		assertEquals(true, parcel.isAllowed(Bukkit.getOfflinePlayer(fakeUUID1)));
+		assertEquals(false, parcel.isAllowed(Bukkit.getOfflinePlayer(fakeUUID2)));
+		assertEquals(false, parcel.getSettings().allowsInteractInputs());
+		assertEquals(false, parcel.getSettings().allowsInteractInventory());
 	}
 
 }
