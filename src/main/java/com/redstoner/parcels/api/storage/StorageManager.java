@@ -97,7 +97,7 @@ public class StorageManager {
 			}
 			
 			String worldTo = (String) obj;
-			SqlManager.ImportFromPlotMe(plotMeConnector, worldFrom, worldTo, errorPrinter);
+			SqlManager.importFromPlotMe(plotMeConnector, worldFrom, worldTo, errorPrinter);
 			
 		});
 		errorPrinter.runAll();

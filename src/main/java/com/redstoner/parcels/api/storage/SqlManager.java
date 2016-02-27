@@ -1,5 +1,6 @@
 package com.redstoner.parcels.api.storage;
 
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -137,45 +138,15 @@ public class SqlManager {
 		return UUID.fromString(uuid);
 	}
 	
-	/*
-	private static final List<ParcelId> UPDATING = new ArrayList<>();
-	
-	public static void update(String world, int px, int pz) {
-		ParcelId PID = ParcelId.of(world, px, pz);
-		if (UPDATING.contains(PID))
-			return;
-		UPDATING.add(PID);
-		CONNECTOR.asyncConn(conn -> {
-			try {
-				Parcel parcel = new Parcel(world, px, pz);
-				
-				int id = getId(conn, world, px, pz);
-				
-				PreparedStatement query1 = conn.prepareStatement(PARCEL_OWNER_QUERY);
-				query1.setInt(1, id);
-				ResultSet ownerSet = query1.executeQuery();
-				if (ownerSet.next()) {
-					parcel.setOwnerIgnoreSQL(toUUID(ownerSet.getString(1)));
-				}
-				
-				PreparedStatement query2 = conn.prepareStatement(PARCEL_ADDED_QUERY);
-				query2.setInt(1, id);
-				ResultSet addedSet = query2.executeQuery();
-				Map<UUID, Boolean> added = parcel.getAdded().getMap();
-				while (addedSet.next()) {
-					added.put(toUUID(addedSet.getString(1)), addedSet.getInt(2) != 0);
-				}
-				
-				WorldManager.getWorld(Bukkit.getWorld(world)).get().getParcels().setParcelAt(px, pz, parcel);
-				
-				UPDATING.remove(PID);
-				
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-		});
+	private static void logSqlExc(String header, SQLException e) {
+		ParcelsPlugin.log(header);
+		ParcelsPlugin.log("Error code: " + e.getErrorCode());
+		ParcelsPlugin.log("SQL State: " + e.getSQLState());
+		ParcelsPlugin.log("Details: " + e.getMessage());
+		ParcelsPlugin.log("---------------- Start Stack ----------------");
+		e.printStackTrace();
+		ParcelsPlugin.log("----------------  End Stack  ----------------");
 	}
-	*/
 	
 	public static void setOwner(String world, int px, int pz, UUID owner) {
 		CONNECTOR.asyncConn(conn -> {
@@ -333,7 +304,7 @@ public class SqlManager {
 		});
 	}
 	
-	public static void ImportFromPlotMe(SqlConnector plotMeConnector, String worldNameFrom, String worldNameTo, MultiRunner errorPrinter) {
+	public static void importFromPlotMe(SqlConnector plotMeConnector, String worldNameFrom, String worldNameTo, MultiRunner errorPrinter) {
 		
 		ParcelWorld world = WorldManager.getWorld(worldNameTo).orElse(null);
 		if (world == null) {
@@ -341,16 +312,23 @@ public class SqlManager {
 			return;
 		}
 		
-		plotMeConnector.asyncConn(plotMeConn -> {
+		plotMeConnector.asyncConn(plotMeConn -> {			
 			CONNECTOR.syncConn(parcelsConn -> {
+				
+				PlotMeTableSetup setup = PlotMeTableSetup.getSetup(plotMeConn);
+				
+				if (setup == null) {
+					ParcelsPlugin.log("Didn't find PlotMe's MySQL tables to import from");
+					loadFromDatabase(parcelsConn, worldNameTo, false);
+					return;
+				}
 			
-				try {			
+				try {					
 					
-					PreparedStatement plotQuery = plotMeConn.prepareStatement("SELECT `plot_id`, `plotX`, `plotZ`, `ownerID` FROM `plotmeplots` WHERE `world` = ?;");
-					plotQuery.setString(1, worldNameFrom);
-					ResultSet plotSet = plotQuery.executeQuery();
+					ResultSet plotSet = setup.getPlots(plotMeConn, worldNameFrom);
+					
 					if (!plotSet.isBeforeFirst()) {
-						ParcelsPlugin.log(String.format("[ERROR] No plotme data found for world by name '%s'", worldNameFrom));
+						ParcelsPlugin.log(String.format("[ERROR] No PlotMe data found for world by name '%s' (but the table exists)", worldNameFrom));
 						loadFromDatabase(parcelsConn, worldNameTo, false);
 						return;
 					}
@@ -361,26 +339,21 @@ public class SqlManager {
 					parcelsSmt.close();
 					
 					while (plotSet.next()) {
-						int plotMeId = plotSet.getInt(1);
-						int parcelsId = getId(parcelsConn, worldNameTo, plotSet.getInt(2), plotSet.getInt(3));						
-						setOwner(parcelsConn, parcelsId, plotSet.getString(4));
+
+						int parcelId = getId(parcelsConn, worldNameTo, plotSet.getInt(1), plotSet.getInt(2));	
+						setOwner(parcelsConn, parcelId, setup.getUUIDFromIndex(plotSet, 3));
 						
-						// PlotMe's AccessLevel thing appears to always be ALLOWED, where TRUSTED is not in use.
 						// Import allowed players
-						PreparedStatement allowedQuery = plotMeConn.prepareStatement("SELECT `player` FROM `plotmeallowed` WHERE `plot_id` = ?;");
-						allowedQuery.setInt(1, plotMeId);
-						ResultSet allowedSet = allowedQuery.executeQuery();						
+						ResultSet allowedSet = setup.getAllowed(plotMeConn, plotSet);				
 						while (allowedSet.next()) {
-							addPlayer(parcelsConn, parcelsId, allowedSet.getString(1), true);
+							addPlayer(parcelsConn, parcelId, setup.getUUIDFromIndex(allowedSet, 1), true);
 						}
 						allowedSet.close();
 						
-						// Import denied/banned players
-						PreparedStatement deniedQuery = plotMeConn.prepareStatement("SELECT `player` FROM `plotmedenied` WHERE `plot_id` = ?;");
-						deniedQuery.setInt(1, plotMeId);
-						ResultSet deniedSet = deniedQuery.executeQuery();					
+						// Import denied players
+						ResultSet deniedSet = setup.getDenied(plotMeConn, plotSet);					
 						while (deniedSet.next()) {
-							addPlayer(parcelsConn, parcelsId, deniedSet.getString(1), false);
+							addPlayer(parcelsConn, parcelId, setup.getUUIDFromIndex(deniedSet, 1), false);
 						}
 						deniedSet.close();
 						
@@ -394,21 +367,130 @@ public class SqlManager {
 				loadFromDatabase(parcelsConn, worldNameTo, true);
 				
 			});
-		});
-		
-	}
-	
-	private static void logSqlExc(String header, SQLException e) {
-		ParcelsPlugin.log(header);
-		ParcelsPlugin.log("Error code: " + e.getErrorCode());
-		ParcelsPlugin.log("SQL State: " + e.getSQLState());
-		ParcelsPlugin.log("Details: " + e.getMessage());
-		ParcelsPlugin.log("---------------- Start Stack ----------------");
-		e.printStackTrace();
-		ParcelsPlugin.log("----------------  End Stack  ----------------");
+		});		
 	}
 	
 }
+
+enum PlotMeTableSetup {
+	
+	FIRST {
+		
+		@Override
+		public boolean isCase(Connection conn) {
+			try {
+				conn.createStatement().executeQuery("SELECT 1 FROM `plotmecore_plots` LIMIT 1;");
+				return true;
+			} catch (SQLException e) {
+				return false;
+			}
+		}
+		
+		@Override
+		public ResultSet getPlots(Connection conn, String worldName) throws SQLException {
+			PreparedStatement query = conn.prepareStatement("SELECT `plotX`, `plotZ`, `ownerID`, `plot_id` FROM `plotmecore_plots` WHERE `world` = ?;");
+			query.setString(1, worldName);
+			return query.executeQuery();
+		}
+		
+		@Override
+		public ResultSet getAllowed(Connection conn, ResultSet plotSet) throws SQLException {
+			PreparedStatement query = conn.prepareStatement("SELECT `player` FROM `plotmecore_allowed` WHERE `plot_id` = ?;");
+			query.setInt(1, plotSet.getInt(4));
+			return query.executeQuery();
+		}
+		
+		@Override
+		public ResultSet getDenied(Connection conn, ResultSet plotSet) throws SQLException {
+			PreparedStatement query = conn.prepareStatement("SELECT `player` FROM `plotmecore_denied` WHERE `plot_id` = ?;");
+			query.setInt(1, plotSet.getInt(4));
+			return query.executeQuery();
+		}
+
+		@Override
+		public String getUUIDFromIndex(ResultSet set, int index) throws SQLException {
+			return set.getString(index);
+		}
+		
+	},
+	
+	SECOND {
+		
+		@Override
+		public boolean isCase(Connection conn) {
+			try {
+				conn.createStatement().executeQuery("SELECT 1 FROM `plotmeplots` LIMIT 1;");
+				return true;
+			} catch (SQLException e) {
+				return false;
+			}
+		}	
+		
+		@Override
+		public ResultSet getPlots(Connection conn, String worldName) throws SQLException {
+			PreparedStatement query = conn.prepareStatement("SELECT `idZ`, `idX`, `ownerId`, `world` FROM `plotmeplots` WHERE `world` = ?;");
+			query.setString(1, worldName);
+			return query.executeQuery();
+		}
+		
+		@Override
+		public ResultSet getAllowed(Connection conn, ResultSet plotSet) throws SQLException {
+			PreparedStatement query = conn.prepareStatement("SELECT `playerid` FROM `plotmeallowed` WHERE `world` = ? AND `idX` = ? AND `idZ` = ?;");
+			query.setString(1, plotSet.getString(4));
+			query.setInt(2, plotSet.getInt(1));
+			query.setInt(3, plotSet.getInt(2));
+			return query.executeQuery();
+		}
+		
+		@Override
+		public ResultSet getDenied(Connection conn, ResultSet plotSet) throws SQLException {
+			PreparedStatement query = conn.prepareStatement("SELECT `playerid` FROM `plotmedenied` WHERE `world` = ? AND `idX` = ? AND `idZ` = ?;");
+			query.setString(1, plotSet.getString(4));
+			query.setInt(2, plotSet.getInt(1));
+			query.setInt(3, plotSet.getInt(2));
+			return query.executeQuery();
+		}
+		
+		/*
+		 * PlotMe's old SqlManager uses this very strange setup to convert UUID to byte[] and byte[] to UUID.
+		 */
+		@Override
+		public String getUUIDFromIndex(ResultSet set, int index) throws SQLException {
+			byte[] array = set.getBytes(index);
+			if (array.length != 16) {
+			      throw new IllegalArgumentException("Illegal byte array length: " + array.length);
+		    }
+		    ByteBuffer byteBuffer = ByteBuffer.wrap(array);
+		    long mostSignificant = byteBuffer.getLong();
+		    long leastSignificant = byteBuffer.getLong();
+		    String uuid = new UUID(mostSignificant, leastSignificant).toString();
+		    ParcelsPlugin.debug("Converted: " + uuid);
+		    return uuid;
+		}
+		
+	};
+	
+	public abstract boolean isCase(Connection conn);
+	
+	public abstract ResultSet getPlots(Connection conn, String worldName) throws SQLException;
+	
+	public abstract ResultSet getAllowed(Connection conn, ResultSet plotSet) throws SQLException;
+	
+	public abstract ResultSet getDenied(Connection conn, ResultSet plotSet) throws SQLException;
+	
+	public abstract String getUUIDFromIndex(ResultSet set, int index) throws SQLException;
+	
+	public static PlotMeTableSetup getSetup(Connection conn) {
+		for (PlotMeTableSetup setup : values()) {
+			if (setup.isCase(conn)) {
+				return setup;
+			}
+		}
+		return null;
+	}
+	
+}
+
 /*
 class ParcelId {
 	

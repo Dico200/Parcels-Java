@@ -119,7 +119,7 @@ public class Optional<T> implements Serializable {
 		if (mapper == null)
 			throw new NullPointerException();
 		if (isPresent())
-			return Optional.of(mapper.apply(value));
+			return Optional.ofNullable(mapper.apply(value));
 		return empty();
 	}
 	

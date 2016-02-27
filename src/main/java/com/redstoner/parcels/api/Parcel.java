@@ -3,7 +3,6 @@ package com.redstoner.parcels.api;
 import java.io.Serializable;
 import java.util.UUID;
 
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
 import com.redstoner.parcels.api.list.PlayerMap;
@@ -13,6 +12,7 @@ import com.redstoner.parcels.api.storage.SqlManager;
 import com.redstoner.parcels.api.storage.StorageManager;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Optional;
+import com.redstoner.utils.UUIDUtil;
 
 public class Parcel implements Serializable {
 	private static final long serialVersionUID = -7252413358120772747L;
@@ -137,8 +137,8 @@ public class Parcel implements Serializable {
 	
 	public String getInfo() {
 		return String.format("&bID: (&e%s&b) Owner: &e%s&b\nAllowed: &e%s&b\nBanned: &e%s", 
-				getId(), getOwner().map(player -> Bukkit.getOfflinePlayer(player).getName()).orElse(""), 
-				added.toString(true), added.toString(false));
+				getId(), owner.map(player -> UUIDUtil.getName(player)).orElse(""), 
+				added.listString(true), added.listString(false));
 	}
 
 }

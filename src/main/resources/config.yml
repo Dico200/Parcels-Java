@@ -1,5 +1,6 @@
 MySQL:
-  # Currently forced enabled
+  # Currently forced enabled. You must have working login details.
+  # If there's no password, use '' instead of null.
   enabled: true
   hostname: 'localhost:3306'
   database: 'example_db_name'
@@ -30,10 +31,11 @@ worlds:
       # Whether to disable mob spawning.
       block-mob-spawning: true
       
-      # Items whose use will be blocked. Right clicking while holding one of these items will be cancelled.
+      # Items whose use will be blocked. Right clicking while holding one of these items will be ignored.
       # For item names, see https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html
-      items-blocked:
-      - FLINT_AND_STEEL
+      # If you add an item, use the shown format without the # and remove the [].
+      items-blocked: []
+      #- FLINT_AND_STEEL
     
     generator:
       # Type ID first, Data value second. Data values can be excluded.
@@ -55,3 +57,41 @@ worlds:
       # Offset the world if you want to for whatever reason.
       offset-x: 0
       offset-z: 0
+
+# For importing a world from PlotMe
+import-plotme-settings:
+  # If set to true, Parcels will import PlotMe
+  # data from the MySQL server on next start/reload.
+  # enabled is set back to false afterwards,
+  # regardless of success/fail.
+  enabled: false
+  
+  # MySQL connection details for the PlotMe database.
+  MySQL:
+    hostname: localhost:3306
+    database: plotme
+    username: root
+    password: ''
+  
+  # Worlds to import. Probably just one.
+  # The first world is the name of the PlotMe world.
+  # The world next to it is the name of the Parcel world.
+  # You likely want these world names to be the same,
+  # to keep the region data for plots. If they are, make
+  # sure you have identical generator settings for your Parcel world.
+  
+  worlds:
+    plotworld: Parcels
+  
+  # When translating generator settings:
+  # - PlotSize -> parcel-size
+  # - PathWidth -> path-size
+  # - GroundHeight -> floor-height
+  # - XTranslation -> offset-x
+  # - ZTranslation -> offset-z
+  #
+  # - WallBlock -> wall-type
+  # - PlotFloorBlock -> floor-type
+  # - FillBlock - fill-type
+  # - RoadMainBlock -> path-main-type
+  # - PathAltBlock -> path-edge-type

@@ -1,10 +1,10 @@
 package com.redstoner.parcels.api.list;
 
+import com.redstoner.utils.UUIDUtil;
+
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.bukkit.Bukkit;
 
 public class PlayerMap<T> {
 	
@@ -49,10 +49,10 @@ public class PlayerMap<T> {
 		return players;
 	}
 	
-	public String toString(T value) {
+	public String listString(T value) {
 		String players = String.join(", ", (CharSequence[]) this.players.entrySet().stream()
 				.filter(entry -> entry.getValue().equals(value))
-				.map(entry -> Bukkit.getOfflinePlayer(entry.getKey()).getName())
+				.map(entry -> UUIDUtil.getName(entry.getKey()))
 				.toArray(size -> new String[size]));
 		return players;
 	}
