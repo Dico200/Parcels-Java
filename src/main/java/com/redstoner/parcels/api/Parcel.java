@@ -9,6 +9,8 @@ import org.bukkit.OfflinePlayer;
 import com.redstoner.parcels.api.list.PlayerMap;
 import com.redstoner.parcels.api.list.SerialPlayerMap;
 import com.redstoner.parcels.api.list.SqlPlayerMap;
+import com.redstoner.parcels.api.storage.SqlManager;
+import com.redstoner.parcels.api.storage.StorageManager;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Optional;
 
@@ -65,7 +67,7 @@ public class Parcel implements Serializable {
 		return owner;
 	}
 	
-	boolean setOwnerIgnoreSQL(UUID owner) {
+	public boolean setOwnerIgnoreSQL(UUID owner) {
 		if (this.owner.equals(owner))
 			return false;
 		this.owner = Optional.ofNullable(owner);

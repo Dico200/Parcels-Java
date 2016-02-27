@@ -2,6 +2,10 @@ package com.redstoner.parcels;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.plugin.Plugin;
 
 import com.redstoner.command.Messaging;
@@ -22,11 +26,13 @@ import com.sk89q.worldedit.util.eventbus.EventHandler.Priority;
 import com.sk89q.worldedit.util.eventbus.Subscribe;
 import com.sk89q.worldedit.world.biome.BaseBiome;
 
-public class WorldEditListener {
+public class WorldEditListener implements Listener {
 	
 	public static void register(Plugin worldEdit) {
 		if (worldEdit instanceof WorldEditPlugin) {
-			((WorldEditPlugin) worldEdit).getWorldEdit().getEventBus().register(new WorldEditListener());
+			WorldEditListener listener = new WorldEditListener();
+			((WorldEditPlugin) worldEdit).getWorldEdit().getEventBus().register(listener);
+			Bukkit.getPluginManager().registerEvents(listener, ParcelsPlugin.getInstance());
 		}
 	}
 	
@@ -77,4 +83,29 @@ public class WorldEditListener {
 			
 		});
 	}
+	
+	/* 
+	 * Called after WorldEdit's PlayerCommandPreprocessEvent handler (on LOW), which calls the event again if // is found (for some reason).
+	 * See https://github.com/sk89q/WorldEdit/blob/master/worldedit-bukkit/src/main/java/com/sk89q/worldedit/bukkit/WorldEditListener.java :79
+	 * Catches /up and //up only if an argument was found.
+	 * 
+	 * I tried catching with WorldEdit's CommandEvent, but that doesn't seem to respond to cancellation.
+	 */
+	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event) {
+		String[] split = event.getMessage().split(" ");
+		if (split.length >= 2 && split[0].substring(1).equalsIgnoreCase("up")) {
+			Player user = event.getPlayer();
+			if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE))
+				return;
+			
+			WorldManager.getWorld(user.getWorld()).ifPresent(world -> {
+				if (!world.getParcelAt(user.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
+					Messaging.send(event.getPlayer(), "Parcels", Formatting.YELLOW, "You can't use WorldEdit there");
+					event.setCancelled(true);
+				}
+			});
+		}
+	}
+	
 }

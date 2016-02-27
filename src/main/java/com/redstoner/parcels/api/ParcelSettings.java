@@ -1,5 +1,7 @@
 package com.redstoner.parcels.api;
 
+import com.redstoner.parcels.api.storage.SqlManager;
+
 public class ParcelSettings {
 	
 	ParcelSettings(Parcel parcel) {

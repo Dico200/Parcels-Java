@@ -8,7 +8,7 @@ import java.util.stream.Stream.Builder;
 
 import com.redstoner.parcels.ParcelsPlugin;
 
-class ParcelContainer implements Serializable {
+public class ParcelContainer implements Serializable {
 	private static final long serialVersionUID = -2960464067977890792L;
 
 	static ParcelContainer resize(ParcelContainer container, String world, int newLimit) {
@@ -70,7 +70,7 @@ class ParcelContainer implements Serializable {
 		return isWithinBoundaryAt(x) && isWithinBoundaryAt(z);
 	}
 	
-	protected Parcel[] getAll() {
+	public Parcel[] getAll() {
 		return stream().toArray(size -> new Parcel[size]);
 	}
 	

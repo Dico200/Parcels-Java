@@ -17,6 +17,7 @@ import org.junit.Test;
 
 import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.api.fake.FakeServer;
+import com.redstoner.parcels.api.storage.SqlManager;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.MultiRunner;
 import com.redstoner.utils.mysql.SqlConnector;
@@ -41,7 +42,7 @@ public class ParcelsApiTest {
 		connector = new SqlConnector(host, database, username, password);
 		
 		/*
-		 * DO NOT EVER ENTER A NAME IN USE. I REPEAT: DO NOT ENTER THE NAME OF A REAL USED PARCEL WORLD.
+		 * DO NOT ENTER THE NAME OF A USED PARCEL WORLD, UNLESS THE PLOTME WORLD IS THERE TOO (which is likely...)
 		 * (Well, it doesn't matter if you use a different db but it's DANGEROUS)
 		 */
 		worldName = "junitTestWorld";
@@ -120,7 +121,7 @@ public class ParcelsApiTest {
 		assertEquals(fromWorld.offsetX, 2);
 		assertEquals(fromWorld.offsetZ, -3);
 		
-		SqlManager.initialise(connector);
+		SqlManager.initialise(connector, true);
 		
 		try {
 			
@@ -210,7 +211,7 @@ public class ParcelsApiTest {
 		
 		sleepThread();
 		connector.asyncConn(conn -> {
-			SqlManager.loadAllFromDatabase(conn, true);
+			SqlManager.loadAllFromDatabase(conn);
 		});
 		sleepThread();
 		
@@ -232,7 +233,7 @@ public class ParcelsApiTest {
 		
 		sleepThread();
 		connector.asyncConn(conn -> {
-			SqlManager.loadAllFromDatabase(conn, true);
+			SqlManager.loadAllFromDatabase(conn);
 		});
 		sleepThread();
 		

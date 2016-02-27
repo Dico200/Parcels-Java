@@ -123,12 +123,12 @@ public class ParcelWorld {
 		return Optional.ofNullable(parcels.nextUnclaimed());
 	}
 	
-	ParcelContainer getParcels() {
+	public ParcelContainer getParcels() {
 		return parcels;
 	}
 	
 	//Resizes to current, old size in config
-	void setParcels(ParcelContainer parcels) {
+	public void setParcels(ParcelContainer parcels) {
 		if (this.parcels.getAxisLimit() != parcels.getAxisLimit()) {
 			this.parcels = ParcelContainer.resize(parcels, name, this.parcels.getAxisLimit());
 		} else {
@@ -136,7 +136,7 @@ public class ParcelWorld {
 		}
 	}
 	
-	void refreshParcels() {
+	public void refreshParcels() {
 		this.parcels = new ParcelContainer(name, settings.axisLimit);
 	}
 	
