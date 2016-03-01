@@ -11,8 +11,8 @@ import org.bukkit.configuration.ConfigurationSection;
 
 import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.utils.DuoObject.BlockType;
+import com.redstoner.utils.ErrorPrinter;
 import com.redstoner.utils.Maps.CastingMap;
-import com.redstoner.utils.MultiRunner;
 import com.redstoner.utils.Optional;
 import com.redstoner.utils.Values;
 
@@ -95,24 +95,23 @@ public class ParcelWorldSettings {
 		 
 	}
 	
-	public static ParcelWorldSettings parseMap(String worldName, Map<String, Object> input, MultiRunner errorPrinter) {
+	public static ParcelWorldSettings parseMap(String worldName, Map<String, Object> input, ErrorPrinter errorPrinter) {
 		
 		ParcelWorldSettings parsed = null;
-		
-		Values.validate(input != null, "getValues() (input) null");
+
 		CastingMap<String, Object> settings = new CastingMap<>();
 		
 		WORLD_SETTINGS_PARSER.forEach((key, function) -> {
 			
-			String excPrefix = "  Option '" + key + "' ";
+			String excPrefix = "Option '" + key + "' ";
 			if (!input.containsKey(key)) {
-				errorPrinter.add(() -> ParcelsPlugin.log(excPrefix + "is missing from your settings. Aborting generator."));
+				errorPrinter.add(excPrefix + "is missing from your settings. Aborting generator.");
 			} else {			
 				try {
 					settings.put(key, function.apply(input.get(key)));
 				} catch (SettingParseException e) {
-					errorPrinter.add(() -> ParcelsPlugin.log(excPrefix + "could not be parsed. Aborting generator."));
-					errorPrinter.add(() -> ParcelsPlugin.log("    Cause: " + e.getMessage()));
+					errorPrinter.add(excPrefix + "could not be parsed. Aborting generator.");
+					errorPrinter.add("  Cause: " + e.getMessage());
 				}
 			}
 			
@@ -125,18 +124,14 @@ public class ParcelWorldSettings {
 		input.keySet().stream()
 		.filter(key -> !WORLD_SETTINGS_PARSER.containsKey(key))
 		.filter(key -> !key.equals("interaction") && !key.equals("generator"))
-		.forEach(key -> errorPrinter.add(() -> ParcelsPlugin.log(String.format("  Just FYI: Key '%s' isn't an option (Ignoring).", key))));
+		.forEach(key -> errorPrinter.add(String.format("Just FYI: Key '%s' isn't an option (Ignoring).", key)));
 		
 		return parsed;
 	}
 	
 	public static Optional<ParcelWorldSettings> parseSettings(ConfigurationSection worlds, String worldName) {
-		MultiRunner errorPrinter = new MultiRunner(() -> {
-			ParcelsPlugin.log("##########################################################");
-			ParcelsPlugin.log(String.format("Exception(s) occurred while loading settings for world '%s':", worldName));
-		}, () -> {
-			ParcelsPlugin.log("##########################################################");
-		});
+		ErrorPrinter errorPrinter = new ErrorPrinter(s -> ParcelsPlugin.log(s),
+				String.format("Exception(s) occurred while loading settings for world '%s':", worldName));
 		
 		ParcelWorldSettings parsed = null;
 		
@@ -145,7 +140,7 @@ public class ParcelWorldSettings {
 			parsed = parseMap(worldName, worlds.getConfigurationSection(worldName).getValues(true), errorPrinter);
 			
 		} else {
-			errorPrinter.add(() -> ParcelsPlugin.log(String.format("  A world must be configured as a ConfigurationSection (a map).")));
+			errorPrinter.add("A world must be configured as a ConfigurationSection (a map).");
 		}
 		
 		errorPrinter.runAll();

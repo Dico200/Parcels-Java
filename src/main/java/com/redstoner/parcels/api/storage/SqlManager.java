@@ -13,10 +13,8 @@ import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.WorldManager;
-import com.redstoner.utils.MultiRunner;
-import com.redstoner.utils.Optional;
-import com.redstoner.utils.mysql.SqlConnector;
-import com.redstoner.utils.mysql.SqlUtil;
+import com.redstoner.utils.ErrorPrinter;
+import com.redstoner.utils.sql.SQLConnector;
 
 public class SqlManager {
 	
@@ -59,13 +57,19 @@ public class SqlManager {
 		PARCEL_CLEAR_PLAYERS_UPDATE = "DELETE FROM `parcels_added` WHERE `id` = ?;",
 		ADD_PARCEL_UPDATE = "INSERT IGNORE `parcels` (`world`, `px`, `pz`) VALUES (?, ?, ?);";
 	
-	public static SqlConnector CONNECTOR = null;
+	public static SQLConnector CONNECTOR = null;
 	
-	public static void initialise(SqlConnector connector, boolean load) {
-		CONNECTOR = connector;
+	public static void initialise(SQLConnector parcelsConnector, boolean load) {
+		CONNECTOR = parcelsConnector;
 		CONNECTOR.asyncConn(conn -> {
-			SqlUtil.executeUpdate(conn, CREATE_TABLE_PARCELS, CREATE_TABLE_PARCELS_ADDED);
-			
+			try {
+				Statement stm = conn.createStatement();
+				stm.executeUpdate(CREATE_TABLE_PARCELS);
+				stm.executeUpdate(CREATE_TABLE_PARCELS_ADDED);
+				stm.close();
+			} catch (SQLException e) {
+				logSqlExc("An error occurred while creating the tables", e);
+			}
 			if (load) {
 				loadAllFromDatabase(conn);
 			}
@@ -97,31 +101,28 @@ public class SqlManager {
 			while (parcels.next()) {
 				
 				int px = parcels.getInt(2);
-				int pz = parcels.getInt(3);
-				String owner = parcels.getString(4);
+				int pz = parcels.getInt(3);				
+				Parcel parcel = world.getParcelAtID(px, pz).orElse(null);
 				
-				Optional<Parcel> parcel = world.getParcelAtID(px, pz);
-				
-				if (!parcel.isPresent()) {
+				if (parcel == null) {
 					parcels.deleteRow();
 					ParcelsPlugin.debug(String.format("Deleted parcel at %s,%s from database", px, pz));
 					continue;
 				}
 				
-				Parcel p = parcel.get();
-				
+				String owner = parcels.getString(4);
 				if (owner != null) {
-					p.setOwnerIgnoreSQL(toUUID(owner));
+					parcel.setOwnerIgnoreSQL(toUUID(owner));
 				}
 				
-				p.getSettings().setAllowsInteractInputsIgnoreSQL(parcels.getInt(5) != 0);
-				p.getSettings().setAllowsInteractInventoryIgnoreSQL(parcels.getInt(6) != 0);
+				parcel.getSettings().setAllowsInteractInputsIgnoreSQL(parcels.getInt(5) != 0);
+				parcel.getSettings().setAllowsInteractInventoryIgnoreSQL(parcels.getInt(6) != 0);
 				
 				PreparedStatement query2 = conn.prepareStatement(PARCEL_ADDED_QUERY);
 				query2.setInt(1, parcels.getInt(1));
 				ResultSet added = query2.executeQuery();
 				
-				Map<UUID, Boolean> addedPlayers = p.getAdded().getMap();
+				Map<UUID, Boolean> addedPlayers = parcel.getAdded().getMap();
 				while (added.next()) {
 					addedPlayers.put(toUUID(added.getString(1)), added.getInt(2) != 0);
 				}
@@ -277,12 +278,15 @@ public class SqlManager {
 		}
 	}
 	
-	static void saveAll(SqlConnector connector) {
-		CONNECTOR = connector;
+	static void saveAll(SQLConnector sqlConnector) {
+		CONNECTOR = sqlConnector;
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				SqlUtil.executeUpdate(conn, DROP_TABLES);
-				SqlUtil.executeUpdate(conn, CREATE_TABLE_PARCELS, CREATE_TABLE_PARCELS_ADDED);
+				Statement stm = conn.createStatement();
+				stm.executeUpdate(DROP_TABLES);
+				stm.executeUpdate(CREATE_TABLE_PARCELS);
+				stm.executeUpdate(CREATE_TABLE_PARCELS_ADDED);
+				stm.close();
 				
 				for (Map.Entry<String, ParcelWorld> entry : WorldManager.getWorlds().entrySet()) {
 					String worldName = entry.getKey();
@@ -304,7 +308,7 @@ public class SqlManager {
 		});
 	}
 	
-	public static void importFromPlotMe(SqlConnector plotMeConnector, String worldNameFrom, String worldNameTo, MultiRunner errorPrinter) {
+	public static void importFromPlotMe(SQLConnector plotMeConnector, String worldNameFrom, String worldNameTo, ErrorPrinter errorPrinter) {
 		
 		ParcelWorld world = WorldManager.getWorld(worldNameTo).orElse(null);
 		if (world == null) {

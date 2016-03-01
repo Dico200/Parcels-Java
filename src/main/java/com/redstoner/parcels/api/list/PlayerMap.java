@@ -1,16 +1,15 @@
 package com.redstoner.parcels.api.list;
 
-import com.redstoner.utils.UUIDUtil;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.redstoner.utils.UUIDUtil;
 
 public class PlayerMap<T> {
 	
 	private Map<UUID, T> players;
 	
-	// Will be the same instance across entries
 	private T standard;
 	
 	public PlayerMap(T standard) {
@@ -23,10 +22,18 @@ public class PlayerMap<T> {
 	}
 	
 	public boolean add(UUID toAdd, T value) {
-		if (players.containsKey(toAdd))
+		if (is(toAdd, value))
 			return false;
 		players.put(toAdd, value);
 		return true;
+	}
+	
+	public boolean remove(UUID toRemove) {
+		if (players.containsKey(toRemove)) {
+			players.remove(toRemove);
+			return true;
+		}
+		return false;
 	}
 	
 	public boolean remove(UUID toRemove, T value) {
@@ -41,8 +48,7 @@ public class PlayerMap<T> {
 	}
 	
 	public boolean is(UUID toCheck, T value) {
-		T current = get(toCheck);
-		return (current == null && value == null) || current == value;
+		return get(toCheck) == value;
 	}
 	
 	public Map<UUID, T> getMap() {

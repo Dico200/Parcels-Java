@@ -1,14 +1,11 @@
-MySQL:
-  # Currently forced enabled. You must have working login details.
+storage:
+  # If you have no MySQL server, Parcels will use SQLite instead. Just set mysql to false and ignore the rest.
   # If there's no password, use '' instead of null.
-  enabled: true
+  mysql: true
   hostname: 'localhost:3306'
   database: 'example_db_name'
   username: 'username'
   password: 'password'
-  
-  # seconds (disabled)
-  save-interval-no-mysql: 120
 
 worlds:
   Parcels:
@@ -61,17 +58,10 @@ worlds:
 # For importing a world from PlotMe
 import-plotme-settings:
   # If set to true, Parcels will import PlotMe
-  # data from the MySQL server on next start/reload.
+  # data from the SQL server on next start/reload.
   # enabled is set back to false afterwards,
   # regardless of success/fail.
   enabled: false
-  
-  # MySQL connection details for the PlotMe database.
-  MySQL:
-    hostname: localhost:3306
-    database: plotme
-    username: root
-    password: ''
   
   # Worlds to import. Probably just one.
   # The first world is the name of the PlotMe world.

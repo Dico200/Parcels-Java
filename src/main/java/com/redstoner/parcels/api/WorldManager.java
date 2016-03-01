@@ -4,15 +4,17 @@ import java.util.HashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import com.redstoner.utils.Optional;
+
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 
 import com.redstoner.parcels.ParcelsPlugin;
-import com.redstoner.utils.Optional;
 
-public class WorldManager {
+public final class WorldManager {
 	
 	public static HashMap<String, ParcelWorld> getWorlds() {
 		return worlds;
@@ -33,21 +35,30 @@ public class WorldManager {
 	public static Optional<Parcel> getParcelAt(Location loc) {
 		return get(loc.getWorld().getName(), w -> w.getParcelAt(loc.getBlockX(), loc.getBlockZ()));
 	}
-
 	
-	private WorldManager() {
-		throw new RuntimeException();
+	public static boolean isInOtherWorldOrInOwnedParcel(Player user) {
+		if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE))
+			return true;
+		Optional<ParcelWorld> world = getWorld(user.getWorld());
+		return !world.isPresent() || world.get().getParcelAt(user.getLocation()).filter(p -> p.canBuild(user)).isPresent();
 	}
+	
+	private WorldManager() {}
 	
 	private static <T> T get(String world, Function<ParcelWorld, T> function) {
 		Optional<ParcelWorld> w = getWorld(world);
 		return w.isPresent()? function.apply(w.get()) : null;
 	}
 	
-	private static ParcelsPlugin plugin;
+	//private static ParcelsPlugin plugin;
 	private static HashMap<String, ParcelWorld> worlds = new HashMap<>();
 	
 	private static void loadSettingsFromConfig() {
+		ParcelsPlugin plugin = ParcelsPlugin.getInstance();
+		if (plugin == null) {
+			// Running test
+			return;
+		}
 		
 		ConfigurationSection worldsConfig = plugin.getConfig().getConfigurationSection("worlds");
 		if (worldsConfig == null) {
@@ -64,10 +75,9 @@ public class WorldManager {
 	
 	static {
 		try {
-			plugin = ParcelsPlugin.getInstance();
 			loadSettingsFromConfig();
 		} catch (NullPointerException e) {
-			e.printStackTrace();
+			// running test
 		}
 	}
 }

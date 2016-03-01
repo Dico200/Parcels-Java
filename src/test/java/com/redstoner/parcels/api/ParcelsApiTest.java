@@ -19,15 +19,15 @@ import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.api.fake.FakeServer;
 import com.redstoner.parcels.api.storage.SqlManager;
 import com.redstoner.utils.DuoObject.Coord;
-import com.redstoner.utils.MultiRunner;
-import com.redstoner.utils.mysql.SqlConnector;
+import com.redstoner.utils.ErrorPrinter;
+import com.redstoner.utils.sql.MySQLConnector;
 
 public class ParcelsApiTest {
 	
 	public static final UUID fakeUUID1 = UUID.fromString("51f2ad3c-6cc8-40ea-aa2b-f25970316921");
 	public static final UUID fakeUUID2 = UUID.fromString("e78eb639-1076-45df-a50c-ba349b122280");
 	
-	private static SqlConnector connector;
+	private static MySQLConnector connector;
 	private static String worldName;
 	private static ParcelWorld world;
 	
@@ -39,7 +39,7 @@ public class ParcelsApiTest {
 		String username = "root";
 		String password = "";
 		
-		connector = new SqlConnector(host, database, username, password);
+		connector = new MySQLConnector(host, database, username, password);
 		
 		/*
 		 * DO NOT ENTER THE NAME OF A USED PARCEL WORLD, UNLESS THE PLOTME WORLD IS THERE TOO (which is likely...)
@@ -84,12 +84,8 @@ public class ParcelsApiTest {
 			
 		};
 		
-		MultiRunner errorPrinter = new MultiRunner(() -> {
-			ParcelsPlugin.log("##########################################################");
-			ParcelsPlugin.log(String.format("Exception(s) occurred while loading settings for world '%s':", worldName));
-		}, () -> {
-			ParcelsPlugin.log("##########################################################");
-		});
+		ErrorPrinter errorPrinter = new ErrorPrinter(s -> ParcelsPlugin.log(s),
+				String.format("Exception(s) occurred while loading settings for world '%s':", worldName));
 		
 		ParcelWorldSettings parsedSettings = ParcelWorldSettings.parseMap(worldName, settings, errorPrinter);
 		errorPrinter.runAll();

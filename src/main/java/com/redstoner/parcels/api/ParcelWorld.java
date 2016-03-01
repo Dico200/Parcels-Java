@@ -6,6 +6,10 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
 
+import com.redstoner.utils.Optional;
+import com.redstoner.utils.Values;
+import com.redstoner.utils.DuoObject.Coord;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -19,9 +23,6 @@ import com.redstoner.parcels.api.list.PlayerMap;
 import com.redstoner.parcels.api.schematic.ParcelSchematic;
 import com.redstoner.parcels.api.schematic.Schematic;
 import com.redstoner.parcels.generation.ParcelGenerator;
-import com.redstoner.utils.DuoObject.Coord;
-import com.redstoner.utils.Optional;
-import com.redstoner.utils.Values;
 
 public class ParcelWorld {
 	

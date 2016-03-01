@@ -3,6 +3,7 @@ package com.redstoner.utils;
 import com.redstoner.utils.Formatting;
 
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 
 public class FormattingTest {

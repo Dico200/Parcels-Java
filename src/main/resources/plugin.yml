@@ -1,4 +1,4 @@
-load: STARTUP
+load: POSTWORLD
 name: Parcels
 author: Dico
 version: 0.1

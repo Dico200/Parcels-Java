@@ -1,10 +1,11 @@
 package com.redstoner.parcels.api.schematic;
 
+import com.redstoner.utils.DuoObject.Coord;
+
 import org.bukkit.World;
 
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
-import com.redstoner.utils.DuoObject.Coord;
 
 public class ParcelSchematic {
 	

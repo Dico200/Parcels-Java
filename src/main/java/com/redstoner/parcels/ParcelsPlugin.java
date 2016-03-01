@@ -1,6 +1,5 @@
 package com.redstoner.parcels;
 
-import org.bukkit.Bukkit;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -41,17 +40,11 @@ public class ParcelsPlugin extends JavaPlugin {
 	
 	public ParcelsPlugin() {
 		plugin = this;
-		
-		getConfig().options().copyDefaults(true);
-		saveConfig();
-		
 	}
 	
-	@SuppressWarnings("deprecation")
 	@Override
 	public void onEnable() {
-
-		this.newUseMySQL = true;
+		saveDefaultConfig();
 		
 		StorageManager.initialise();
 		ParcelCommands.register();
@@ -61,22 +54,11 @@ public class ParcelsPlugin extends JavaPlugin {
 		if (worldEdit != null) {
 			WorldEditListener.register(worldEdit);
 		}
-		
-		if (!StorageManager.useMySQL) {
-			int interval = getConfig().getInt("MySQL.save-interval-no-mysql");
-			if (interval < 10)
-				interval = 30;
-			Bukkit.getScheduler().scheduleAsyncRepeatingTask(this, () -> {
-				StorageManager.save();
-			}, 20 * interval, 20 * interval);
-		}
 	}
-	
-	public boolean newUseMySQL;
 	
 	@Override
 	public void onDisable() {
-		StorageManager.save(newUseMySQL);
+		StorageManager.save();
 	}
 	
 }

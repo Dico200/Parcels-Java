@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.redstoner.command.Messaging;
+import com.redstoner.utils.Formatting;
+import com.redstoner.utils.Optional;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -55,13 +59,10 @@ import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
-import com.redstoner.command.Messaging;
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.Permissions;
 import com.redstoner.parcels.api.WorldManager;
-import com.redstoner.utils.Formatting;
-import com.redstoner.utils.Optional;
 
 public class ParcelListener implements Listener {
 	

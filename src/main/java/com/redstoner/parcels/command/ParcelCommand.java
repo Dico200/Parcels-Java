@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import org.bukkit.entity.Player;
-
 import com.redstoner.command.CommandException;
 import com.redstoner.command.LambdaCommand;
 import com.redstoner.command.SenderType;
 import com.redstoner.utils.Values;
+
+import org.bukkit.entity.Player;
 
 public class ParcelCommand extends LambdaCommand {
 

@@ -18,6 +18,15 @@ public abstract class SqlPlayerMap<T> extends PlayerMap<T> {
 	}
 	
 	@Override
+	public boolean remove(UUID toRemove) {
+		if (super.remove(toRemove)) {
+			removeFromSQL(toRemove);
+			return true;
+		}
+		return false;
+	}
+	
+	@Override
 	public boolean remove(UUID toRemove, T value) {
 		if (super.remove(toRemove, value)) {
 			removeFromSQL(toRemove);

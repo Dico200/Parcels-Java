@@ -1,9 +1,10 @@
 package com.redstoner.parcels.command;
 
-import com.redstoner.command.CommandScape;
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.WorldManager;
+
+import com.redstoner.command.CommandScape;
 import com.redstoner.utils.Optional;
 
 import org.bukkit.entity.Player;
@@ -14,7 +15,7 @@ public class ParcelScape extends CommandScape {
 		super(scape);
 		this.in = WorldManager.getWorld(user.getWorld());
 		this.at = in.flatMap(w -> w.getParcelAt(user.getLocation().getBlockX(), user.getLocation().getBlockZ()));
-		requirement.check(user, in, at);
+		requirement.test(user, in, at);
 	}
 	
 	private Optional<Parcel> at;

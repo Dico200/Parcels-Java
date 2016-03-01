@@ -6,6 +6,8 @@ import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
+import com.redstoner.utils.Values;
+
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -15,7 +17,6 @@ import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 
 import com.redstoner.parcels.api.ParcelWorldSettings;
-import com.redstoner.utils.Values;
 
 public class ParcelGenerator extends ChunkGenerator {
 	

@@ -34,14 +34,16 @@ public class MultiRunner {
 		return this.toRun.size() > 0;
 	}
 	
-	public void runAll() {
+	public boolean runAll() {
 		if (willRun()) {
 			if (toRunFirst != null)
 				toRunFirst.run();
 			this.toRun.stream().forEach(Runnable::run);
 			if (toRunLast != null)
 				toRunLast.run();
-		}	
+			return true;
+		}
+		return false;
 	}
 	
 	public void reset() {
