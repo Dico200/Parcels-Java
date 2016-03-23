@@ -2,6 +2,8 @@ package com.redstoner.command;
 
 import java.util.List;
 
+import com.redstoner.parcels.ParcelsPlugin;
+
 public class Parameter<T> {
 	
 	private String name;
@@ -56,6 +58,7 @@ public class Parameter<T> {
 	}
 	
 	public List<String> complete(String input) {
+		ParcelsPlugin.debug(String.format("Parameter.complete(%s)", input));
 		return type.complete(input);
 	}
 	

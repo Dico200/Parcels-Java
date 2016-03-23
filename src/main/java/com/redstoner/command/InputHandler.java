@@ -57,9 +57,9 @@ public class InputHandler extends org.bukkit.command.Command {
 	}
 	
 	@Override
-	public List<String> tabComplete(CommandSender sender, String[] args) {
+	public List<String> tabComplete(CommandSender sender, String alias, String[] args) {
 		Command handler = parent.instanceAt(args, true);
-		args = Arrays.copyOfRange(args, handler.getLayer(), args.length);
+		args = Arrays.copyOfRange(args, handler.getLayer() - 1, args.length);
 		return handler.acceptTabComplete(sender, args);
 	}
 }

@@ -3,16 +3,15 @@ package com.redstoner.parcels.api;
 import java.util.HashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-
-import com.redstoner.utils.Optional;
+import java.util.function.Predicate;
 
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Player;
 
 import com.redstoner.parcels.ParcelsPlugin;
+import com.redstoner.utils.Optional;
 
 public final class WorldManager {
 	
@@ -36,11 +35,14 @@ public final class WorldManager {
 		return get(loc.getWorld().getName(), w -> w.getParcelAt(loc.getBlockX(), loc.getBlockZ()));
 	}
 	
-	public static boolean isInOtherWorldOrInOwnedParcel(Player user) {
-		if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE))
-			return true;
-		Optional<ParcelWorld> world = getWorld(user.getWorld());
-		return !world.isPresent() || world.get().getParcelAt(user.getLocation()).filter(p -> p.canBuild(user)).isPresent();
+	public static boolean isInOtherWorldOrInParcel(Location loc, Predicate<Parcel> parcelTest) {
+		Optional<ParcelWorld> world = getWorld(loc.getWorld());
+		return !world.isPresent() || world.get().getParcelAt(loc.getBlockX(), loc.getBlockZ()).filter(parcelTest).isPresent();
+	}
+	
+	public static boolean isInOtherWorldOrInParcel(Block b, Predicate<Parcel> parcelTest) {
+		Optional<ParcelWorld> world = getWorld(b.getWorld());
+		return !world.isPresent() || world.get().getParcelAt(b.getX(), b.getZ()).filter(parcelTest).isPresent();
 	}
 	
 	private WorldManager() {}
@@ -74,10 +76,6 @@ public final class WorldManager {
 	}
 	
 	static {
-		try {
-			loadSettingsFromConfig();
-		} catch (NullPointerException e) {
-			// running test
-		}
+		loadSettingsFromConfig();
 	}
 }

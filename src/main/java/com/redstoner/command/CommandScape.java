@@ -1,9 +1,11 @@
 package com.redstoner.command;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.Map.Entry;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 
 import com.redstoner.utils.Optional;
@@ -11,21 +13,17 @@ import com.redstoner.utils.Values;
 
 public class CommandScape {
 	
-	private String[] original;
-	private List<String> proposals;
-	private String[] overflow;
-	private HashMap<Parameter<?>, Object> parsed;
+	private final String[] original;
+	private final List<String> proposals;
+	private final HashMap<Parameter<?>, Object> parsed;
 	
 	public CommandScape(Parameters params, String[] original, List<String> proposals) {
-		assert original != null;
 		this.original = original;
 		this.parsed = null;
-		this.overflow = null;
 		this.proposals = proposals;
 	}
-	
+	                                                                                                                                                                     
 	public CommandScape(Parameters params, String[] original) {
-		assert original != null;
 		this.original = original;
 		this.parsed = new HashMap<>();
 		this.proposals = null;
@@ -37,13 +35,18 @@ public class CommandScape {
 			parsed.put(param, param.accept(toParse[i]));
 		}
 		
-		if (params.size() >= original.length) {
-			this.overflow = new String[]{};
-		} else if (!params.allowsOverflow()) {
+		if (params.repeatsLastParameter()) {
+			Parameter<?> last = params.get(params.size() - 1);
+			Collection<Object> list = new ArrayList<>();
+			if (original.length >= toParse.length) {
+				list.add(parsed.get(last));
+				for (int i = toParse.length; i < original.length; i++) {
+					list.add(last.accept(original[i]));
+				}
+			}
+			parsed.put(last, list);
+		} else if (original.length > toParse.length) {
 			throw new CommandException("EXEC:CommandAction.DISPLAY_" + (params.getHandler().getChildren().size() > 0 ? "HELP" : "SYNTAX"));
-			//throw new CommandException(String.format("Too many arguments, expected no more than %s.", params.size()));
-		} else {
-			this.overflow = Arrays.copyOfRange(original, params.size(), original.length);
 		}
 	}
 	
@@ -51,16 +54,10 @@ public class CommandScape {
 		this.original = toCast.original;
 		this.parsed = toCast.parsed;
 		this.proposals = toCast.proposals;
-		this.overflow = toCast.overflow;
 	}
 	
 	public String[] original() {
 		return original;
-	}
-	
-	public String[] overflow() {
-		Values.validate(overflow != null, "This command scape does not allow overflow");
-		return overflow;
 	}
 	
 	public List<String> proposals() {

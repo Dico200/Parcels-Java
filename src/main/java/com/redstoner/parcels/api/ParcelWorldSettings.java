@@ -39,6 +39,8 @@ public class ParcelWorldSettings {
 	public final int sectionSize;
 	public final int pathOffset;
 	
+	public final BlockType ownerWallBlockType;
+	
 	private ParcelWorldSettings(int axisLimit, boolean staticTimeDay, boolean staticWeatherClear,
 			
 			boolean disableExplosions, boolean blockPortalCreation, boolean blockMobSpawning, List<Material> itemsBlocked,
@@ -68,6 +70,8 @@ public class ParcelWorldSettings {
 		this.offsetZ = offsetZ;
 		this.sectionSize = parcelSize + pathSize;
 		this.pathOffset = ((pathSize % 2 == 0)? pathSize + 2 : pathSize + 1) / 2;
+		
+		this.ownerWallBlockType = getOwnerWallBlock(wallType);
 	}
 	
 	private ParcelWorldSettings(CastingMap<String, Object> settings) {
@@ -216,6 +220,19 @@ public class ParcelWorldSettings {
 		}
 	};
 	
+	@SuppressWarnings("deprecation")
+	private static BlockType getOwnerWallBlock(BlockType wallType) {
+		switch (Material.getMaterial(wallType.getId())) {
+		case CARPET:
+			return new BlockType((short) Material.WOOL.getId(), wallType.getData());
+		case STEP:
+			return new BlockType((short) Material.DOUBLE_STEP.getId(), wallType.getData());
+		case WOOD_STEP:
+			return new BlockType((short) Material.WOOD_DOUBLE_STEP.getId(), wallType.getData());
+		default:
+			return wallType;
+		}
+	}
 }
 
 class SettingParseException extends RuntimeException {

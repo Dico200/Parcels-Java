@@ -11,7 +11,7 @@ import com.redstoner.parcels.ParcelsPlugin;
 public class ParcelContainer implements Serializable {
 	private static final long serialVersionUID = -2960464067977890792L;
 
-	static ParcelContainer resize(ParcelContainer container, String world, int newLimit) {
+	static ParcelContainer resize(ParcelContainer container, ParcelWorld world, int newLimit) {
 		
 		ParcelContainer result = new ParcelContainer(world, newLimit);
 		container.stream().forEach(parcel -> {
@@ -36,8 +36,7 @@ public class ParcelContainer implements Serializable {
 		}
 	}
 	
-	protected ParcelContainer(String world, int axisLimit) {
-		//this.world = world;
+	protected ParcelContainer(ParcelWorld world, int axisLimit) {
 		this.axisLimit = axisLimit;
 		parcels = IntStream.rangeClosed(-axisLimit, axisLimit)
 				.mapToObj(x -> IntStream.rangeClosed(-axisLimit, axisLimit)

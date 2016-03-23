@@ -6,23 +6,29 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
 
-import com.redstoner.utils.Optional;
-import com.redstoner.utils.Values;
-import com.redstoner.utils.DuoObject.Coord;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Sign;
+import org.bukkit.block.Skull;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
+import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.api.list.PlayerMap;
 import com.redstoner.parcels.api.schematic.ParcelSchematic;
 import com.redstoner.parcels.api.schematic.Schematic;
 import com.redstoner.parcels.generation.ParcelGenerator;
+import com.redstoner.utils.DuoObject.Coord;
+import com.redstoner.utils.Formatting;
+import com.redstoner.utils.Optional;
+import com.redstoner.utils.UUIDUtil;
+import com.redstoner.utils.Values;
 
 public class ParcelWorld {
 	
@@ -32,10 +38,10 @@ public class ParcelWorld {
 	private String name;
 	
 	public ParcelWorld(String name, ParcelWorldSettings settings) {
-		this.parcels = new ParcelContainer(name, settings.axisLimit);
 		this.generator = new ParcelGenerator(settings);
 		this.settings = settings;
 		this.name = name;
+		this.parcels = new ParcelContainer(this, settings.axisLimit);
 	}
 	
 	public ParcelWorldSettings getSettings() {
@@ -131,14 +137,14 @@ public class ParcelWorld {
 	//Resizes to current, old size in config
 	public void setParcels(ParcelContainer parcels) {
 		if (this.parcels.getAxisLimit() != parcels.getAxisLimit()) {
-			this.parcels = ParcelContainer.resize(parcels, name, this.parcels.getAxisLimit());
+			this.parcels = ParcelContainer.resize(parcels, this, this.parcels.getAxisLimit());
 		} else {
 			this.parcels = parcels;
 		}
 	}
 	
 	public void refreshParcels() {
-		this.parcels = new ParcelContainer(name, settings.axisLimit);
+		this.parcels = new ParcelContainer(this, settings.axisLimit);
 	}
 	
 	public void reset(Parcel parcel) {
@@ -225,6 +231,44 @@ public class ParcelWorld {
 	
 	public void removeEntities(Parcel parcel) {
 		getEntities(parcel).filter(entity -> entity.getType() != EntityType.PLAYER).forEach(Entity::remove);
+	}
+	
+	@SuppressWarnings("deprecation")
+	public void setOwnerSign(Parcel parcel) {
+		World world = getWorld();
+		Coord bottom = getBottomCoord(parcel);
+		int bx = bottom.getX();
+		int bz = bottom.getZ();
+		
+		Block wallBlock = world.getBlockAt(bx - 1, settings.floorHeight + 1, bz - 1);
+		Block signBlock = world.getBlockAt(bx - 2, settings.floorHeight + 1, bz - 1);
+		Block skullBlock = world.getBlockAt(bx - 1, settings.floorHeight + 2, bz - 1);
+		Bukkit.getScheduler().runTask(ParcelsPlugin.getInstance(), () -> {
+			parcel.getOwner().ifPresentOrElse(owner -> {
+				String ownerName = UUIDUtil.getName(owner);
+				
+				wallBlock.setTypeIdAndData(settings.ownerWallBlockType.getId(), settings.ownerWallBlockType.getData(), false);
+				
+				signBlock.setType(Material.WALL_SIGN);
+				signBlock.setData((byte) 4);
+				Sign sign = (Sign) signBlock.getState();
+				sign.setLine(0, String.format(Formatting.translateChars('&', "&9ID: (&e%s&b)"), parcel.getId()));
+				sign.setLine(2, Formatting.AQUA + "Owner:");
+				sign.setLine(3, Formatting.YELLOW + ownerName);
+				sign.update();
+				
+				skullBlock.setType(Material.SKULL);
+				skullBlock.setData((byte) 1);
+				Skull skull = (Skull) skullBlock.getState();
+				skull.setOwner(ownerName);
+				skull.setRotation(BlockFace.WEST);
+				skull.update();
+			}, () -> {
+				wallBlock.setTypeIdAndData(settings.wallType.getId(), settings.wallType.getData(), false);
+				signBlock.setTypeIdAndData(0, (byte) 0, false);
+				skullBlock.setTypeIdAndData(0, (byte) 0, false);
+			});	
+		});
 	}
 
 }

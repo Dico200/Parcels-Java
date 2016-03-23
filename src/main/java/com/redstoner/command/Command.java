@@ -47,12 +47,22 @@ public abstract class Command extends Hierarchy<Command> {
 	}
 	
 	private List<String> complete(String[] args) {
+		for (String s : args) {
+			System.out.println(s);
+		}
+		
 		List<String> result = new ArrayList<>();
 		if (args.length > 0) {
 			String last = args[args.length - 1].toLowerCase();
 			for (Command child : getChildren()) {
 				if (child.getId().startsWith(last)) {
 					result.add(child.getId());
+				} else {
+					for (String alias : child.getAliases()) {
+						if (alias.startsWith(last)) {
+							result.add(child.getId());
+						}
+					}
 				}
 			}
 		}
@@ -176,8 +186,8 @@ public abstract class Command extends Hierarchy<Command> {
 		this.aliases = Arrays.asList(aliases);
 	}
 	
-	protected final void setParameters(boolean allowOverflow, Parameter<?>... params) {
-		this.params = new Parameters(this, params,  allowOverflow);
+	protected final void setParameters(boolean repeatLastParameter, Parameter<?>... params) {
+		this.params = new Parameters(this, params,  repeatLastParameter);
 	};
 	
 	protected final void setParameters(Parameter<?>... params) {

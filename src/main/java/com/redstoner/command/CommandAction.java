@@ -73,8 +73,9 @@ public enum CommandAction {
 	abstract String execute(Command handler, CommandSender sender, String[] args);
 	
 	public String toString(Command handler, CommandSender sender, String[] args) {
-		if (CONTINUE != this)
-		return execute(handler, sender, args);
+		if (CONTINUE != this) {
+			return execute(handler, sender, args);
+		}
 		throw new UnsupportedOperationException();
 	}
 	

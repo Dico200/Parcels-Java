@@ -10,18 +10,18 @@ public enum SenderType {
 	CONSOLE(ConsoleCommandSender.class, "That command can only be used by the console"),
 	EITHER(CommandSender.class, null);
 	
-	private Class<?> type;
-	private String message;
-	SenderType(Class<?> type, String message) {
+	private final Class<?> type;
+	private final String message;
+	private SenderType(Class<?> type, String message) {
 		this.type = type;
 		this.message = message;
 	}
 	
-	protected boolean correct(CommandSender sender) {
+	public boolean correct(CommandSender sender) {
 		return type.isInstance(sender);
 	}
 	
-	protected void check(CommandSender sender) {
+	public void check(CommandSender sender) {
 		Validate.isTrue(correct(sender), message);
 	}
 

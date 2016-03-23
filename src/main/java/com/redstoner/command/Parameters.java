@@ -1,5 +1,6 @@
 package com.redstoner.command;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -8,11 +9,11 @@ public class Parameters extends LinkedList<Parameter<?>>{
 	private static final long serialVersionUID = 7607300090766311570L;
 	
 	private final Command handler;
-	private final boolean allowOverflow;
+	private final boolean repeatLastParameter;
 	
-	public Parameters(Command handler, Parameter<?>[] params, boolean allowOverflow) {
+	public Parameters(Command handler, Parameter<?>[] params, boolean repeatLastParameter) {
 		this.handler = handler;
-		this.allowOverflow = allowOverflow;
+		this.repeatLastParameter = repeatLastParameter;
 		int i = 0;
 		boolean lastRequired = true;
 		for (Parameter<?> param : params) {
@@ -40,12 +41,11 @@ public class Parameters extends LinkedList<Parameter<?>>{
 	
 	public List<String> complete(String[] args) {
 		int i = args.length - 1;
-		if (i < 0) i = 0;
-		return get(i).complete(args[i]);
+		return i < size() && i >= 0 ? get(i).complete(args[i]) : new ArrayList<>();
 	}
 	
-	protected boolean allowsOverflow() {
-		return allowOverflow;
+	protected boolean repeatsLastParameter() {
+		return repeatLastParameter;
 	}
 	
 	protected Command getHandler() {

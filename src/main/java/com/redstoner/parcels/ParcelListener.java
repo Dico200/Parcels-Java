@@ -4,10 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.redstoner.command.Messaging;
-import com.redstoner.utils.Formatting;
-import com.redstoner.utils.Optional;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -17,13 +13,11 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Explosive;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Vehicle;
-import org.bukkit.entity.minecart.ExplosiveMinecart;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -39,9 +33,9 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityCreatePortalEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
+import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
@@ -59,10 +53,13 @@ import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
+import com.redstoner.command.Messaging;
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.Permissions;
 import com.redstoner.parcels.api.WorldManager;
+import com.redstoner.utils.Formatting;
+import com.redstoner.utils.Optional;
 
 public class ParcelListener implements Listener {
 	
@@ -159,7 +156,7 @@ public class ParcelListener implements Listener {
 		if (!user.hasPermission(Permissions.ADMIN_BYPASS)) {
 			Location to = event.getTo();
 			WorldManager.getWorld(to.getWorld()).ifPresent(world -> {
-				world.getParcelAt(to.getBlockX(), to.getBlockZ()).filter(parcel -> parcel.getAdded().is(user.getUniqueId(), false)).ifPresent(() -> {
+				world.getParcelAt(to.getBlockX(), to.getBlockZ()).filter(parcel -> parcel.isBanned(user)).ifPresent(() -> {
 					Location from = event.getFrom();
 					world.getParcelAt(from.getBlockX(), from.getBlockZ()).ifPresentOrElse(parcel -> {
 						world.teleport(user, parcel);
@@ -211,10 +208,12 @@ public class ParcelListener implements Listener {
 	/*
 	 * Prevents explosions if enabled by the configs for that world
 	 */
-	@EventHandler(ignoreCancelled = true)
-	public void onEntityExplode(EntityExplodeEvent event) {
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	public void onEntityExplode(ExplosionPrimeEvent event) {
 		
-		WorldManager.getWorld(event.getLocation().getWorld()).filter(w -> w.getSettings().disableExplosions).ifPresent(() -> cancel(event));
+		WorldManager.getWorld(event.getEntity().getLocation().getWorld()).filter(w -> w.getSettings().disableExplosions).ifPresent(() -> {
+			event.setRadius(0);
+		});
 	}
 	
 	/*
@@ -247,6 +246,12 @@ public class ParcelListener implements Listener {
 			
 			Block clickedB = event.getClickedBlock();
 			Optional<Parcel> clickedP = clickedB == null ? Optional.empty() : world.getParcelAt(clickedB.getX(), clickedB.getZ());
+			
+			if (clickedP.filter(p -> p.isBanned(user)).isPresent()) {
+				Messaging.send(user, "Parcels", Formatting.RED, "You cannot interact with parcels you're banned from");
+				cancel(event);
+				return;
+			}
 			
 			Action action = event.getAction();
 			switch (action) {
@@ -396,13 +401,11 @@ public class ParcelListener implements Listener {
 		if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE))
 			return;
 		
-		WorldManager.getWorld(user.getWorld()).ifPresent(world -> {
-			
-			Item item = event.getItemDrop();
-			if (!world.getParcelAt(item.getLocation()).filter(p -> p.canBuild(user) || p.getSettings().allowsInteractInventory()).isPresent()) {
-				cancel(event);
-			}
-		});
+		
+		if (!WorldManager.isInOtherWorldOrInParcel(event.getItemDrop().getLocation(), p -> p.canBuild(user) || p.getSettings().allowsInteractInventory())) {
+			cancel(event);
+		}
+		
 	}
 	
 	/*
@@ -544,11 +547,6 @@ public class ParcelListener implements Listener {
 		
 		WorldManager.getWorld(damaged.getWorld()).ifPresent(world -> {
 			Entity damager = event.getDamager();
-			
-			if (damager instanceof Explosive || damager instanceof ExplosiveMinecart) {
-				cancel(event);
-				return;
-			}
 			
 			Player user;
 			if (damager instanceof Player) {

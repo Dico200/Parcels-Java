@@ -3,7 +3,7 @@ package com.redstoner.utils;
 public class Formatting {
 	
 	private static final char FORMAT_CHAR = '\u00a7';
-	private static final char UNDEFINED = (new char[1])[0];
+	private static final char UNDEFINED = '\0';
 	
 	public static final Formatting
 		BLACK 			= from('0'),

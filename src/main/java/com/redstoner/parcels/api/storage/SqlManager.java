@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.redstoner.parcels.ParcelsPlugin;
+import com.redstoner.parcels.api.GlobalTrusted;
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.WorldManager;
@@ -18,12 +19,11 @@ import com.redstoner.utils.sql.SQLConnector;
 
 public class SqlManager {
 	
-	@SuppressWarnings("unused")
 	private static final String
 		PARCELS_QUERY = "SELECT `id`, `px`, `pz`, `owner`, `allow_interact_inputs`, `allow_interact_inventory` FROM `parcels` WHERE `world` = ?;",
-		//PARCEL_OWNER_QUERY = "SELECT `owner` FROM `parcels` WHERE `id` = ?;",
 		PARCEL_ADDED_QUERY = "SELECT `player`, `allowed` FROM `parcels_added` WHERE `id` = ?;",
 		PARCEL_ID_QUERY = "SELECT `id` FROM `parcels` WHERE `world` = ? AND `px` = ? AND `pz` = ?;",
+		GLOBAL_ADDED_QUERY = "SELECT `player`, `added`, `allowed` FROM `global_added`;",
 		CREATE_TABLE_PARCELS = "CREATE TABLE IF NOT EXISTS `parcels` ("
 				+ "`id` INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,"
 				+ "`world` VARCHAR(32) NOT NULL,"
@@ -45,7 +45,7 @@ public class SqlManager {
 				+ "`player` VARCHAR(36) NOT NULL,"
 				+ "`added` VARCHAR(36) NOT NULL,"
 				+ "`allowed` TINYINT(1) NOT NULL,"
-				+ "UNIQUE KEY pair(`player`, `friend`)"
+				+ "UNIQUE KEY pair(`player`, `added`)"
 				+ ");",
 		DROP_TABLES = "DROP TABLE IF EXISTS `parcels_added`;"
 				+ "DROP TABLE IF EXISTS `parcels`;",
@@ -55,6 +55,9 @@ public class SqlManager {
 		PARCEL_ADD_PLAYER_UPDATE = "REPLACE `parcels_added` (`id`, `player`, `allowed`) VALUES (?, ?, ?);",
 		PARCEL_REMOVE_PLAYER_UPDATE = "DELETE FROM `parcels_added` WHERE `id` = ? AND `player` = ?;",
 		PARCEL_CLEAR_PLAYERS_UPDATE = "DELETE FROM `parcels_added` WHERE `id` = ?;",
+		GLOBAL_ADD_PLAYER_UPDATE = "REPLACE `global_added` (`player`, `added`, `allowed`) VALUES (?, ?, ?);",
+		GLOBAL_REMOVE_PLAYER_UPDATE = "DELETE FROM `global_added` WHERE `player` = ? AND `added` = ?;",
+		GLOBAL_CLEAR_PLAYERS_UPDATE = "DELETE FROM `global_added` WHERE `player` = ?;",
 		ADD_PARCEL_UPDATE = "INSERT IGNORE `parcels` (`world`, `px`, `pz`) VALUES (?, ?, ?);";
 	
 	public static SQLConnector CONNECTOR = null;
@@ -66,6 +69,7 @@ public class SqlManager {
 				Statement stm = conn.createStatement();
 				stm.executeUpdate(CREATE_TABLE_PARCELS);
 				stm.executeUpdate(CREATE_TABLE_PARCELS_ADDED);
+				stm.executeUpdate(CREATE_TABLE_GLOBAL_ADDED);
 				stm.close();
 			} catch (SQLException e) {
 				logSqlExc("An error occurred while creating the tables", e);
@@ -80,6 +84,8 @@ public class SqlManager {
 		for (String worldName : WorldManager.getWorlds().keySet()) {
 			loadFromDatabase(conn, worldName, false);
 		}
+		
+		loadGlobalAddedFromDatabase(conn);
 	}
 	
 	private static void loadFromDatabase(Connection conn, String worldName, boolean resetContainer) {
@@ -135,6 +141,20 @@ public class SqlManager {
 		}
 	}
 	
+	private static void loadGlobalAddedFromDatabase(Connection conn) {
+		try {
+			
+			Statement stm = conn.createStatement();
+			ResultSet addedSet = stm.executeQuery(GLOBAL_ADDED_QUERY);			
+			while (addedSet.next()) {
+				GlobalTrusted.addPlayerIgnoreSQL(addedSet.getString(1), addedSet.getString(2), addedSet.getInt(3) != 0);			
+			}
+			
+		} catch (SQLException e) {
+			logSqlExc("An exception occurred while retrieving globally added players", e);
+		}
+	}
+	
 	private static UUID toUUID(String uuid) {
 		return UUID.fromString(uuid);
 	}
@@ -152,7 +172,7 @@ public class SqlManager {
 	public static void setOwner(String world, int px, int pz, UUID owner) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				setOwner(conn, getId(conn, world, px, pz), owner.toString());
+				setOwner(conn, getId(conn, world, px, pz), owner == null ? null : owner.toString());
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while setting owner for a parcel", e);
 			}
@@ -221,6 +241,36 @@ public class SqlManager {
 		});
 	}
 	
+	public static void addGlobalPlayer(UUID player, UUID added, boolean allowed) {
+		CONNECTOR.asyncConn(conn -> {
+			try {
+				addGlobalPlayer(conn, player.toString(), added.toString(), allowed);
+			} catch (SQLException e) {
+				logSqlExc("[SEVERE] Error occurred while globally adding a player to someone's parcels", e);
+			}
+		});
+	}
+	
+	public static void removeGlobalPlayer(UUID player, UUID removed) {
+		CONNECTOR.asyncConn(conn -> {
+			try {
+				removeGlobalPlayer(conn, player.toString(), removed.toString());
+			} catch (SQLException e) {
+				logSqlExc("[SEVERE] Error occurred while removing a globally added player from someone's parcels", e);
+			}
+		});
+	}
+	
+	public static void removeAllGlobalPlayers(UUID player) {
+		CONNECTOR.asyncConn(conn -> {
+			try {
+				removeAllGlobalPlayers(conn, player.toString());
+			} catch (SQLException e) {
+				logSqlExc("[SEVERE] Error occurred while removing all globally added players from someone's parcels", e);
+			}
+		});
+	}
+	
 	private static void setOwner(Connection conn, int id, String owner) throws SQLException {
 		PreparedStatement update = conn.prepareStatement(SET_OWNER_UPDATE);
 		update.setString(1, owner == null ? null : owner);
@@ -253,6 +303,27 @@ public class SqlManager {
 	private static void removeAllPlayers(Connection conn, String world, int px, int pz) throws SQLException {
 		PreparedStatement update = conn.prepareStatement(PARCEL_CLEAR_PLAYERS_UPDATE);
 		update.setInt(1, getId(conn, world, px, pz));
+		update.executeUpdate();
+	}
+	
+	private static void addGlobalPlayer(Connection conn, String player, String added, boolean allowed) throws SQLException {
+		PreparedStatement update = conn.prepareStatement(GLOBAL_ADD_PLAYER_UPDATE);
+		update.setString(1, player);
+		update.setString(2, added);
+		update.setInt(3, allowed ? 1 : 0);
+		update.executeUpdate();
+	}
+	
+	private static void removeGlobalPlayer(Connection conn, String player, String removed) throws SQLException {
+		PreparedStatement update = conn.prepareStatement(GLOBAL_REMOVE_PLAYER_UPDATE);
+		update.setString(1, player);
+		update.setString(2, removed);
+		update.executeUpdate();
+	}
+	
+	private static void removeAllGlobalPlayers(Connection conn, String player) throws SQLException {
+		PreparedStatement update = conn.prepareStatement(GLOBAL_CLEAR_PLAYERS_UPDATE);
+		update.setString(1, player);
 		update.executeUpdate();
 	}
 	
