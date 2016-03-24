@@ -47,10 +47,6 @@ public abstract class Command extends Hierarchy<Command> {
 	}
 	
 	private List<String> complete(String[] args) {
-		for (String s : args) {
-			System.out.println(s);
-		}
-		
 		List<String> result = new ArrayList<>();
 		if (args.length > 0) {
 			String last = args[args.length - 1].toLowerCase();
