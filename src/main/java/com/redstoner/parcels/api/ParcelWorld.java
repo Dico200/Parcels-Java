@@ -11,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -269,6 +270,20 @@ public class ParcelWorld {
 				skullBlock.setTypeIdAndData(0, (byte) 0, false);
 			});	
 		});
+	}
+	
+	public void setBiome(Parcel parcel, Biome biome) {
+		World world = getWorld();
+		Coord bottom = getBottomCoord(parcel);
+		int bx = bottom.getX();
+		int bz = bottom.getZ();
+		
+		for (int x = bx; x < bx + settings.parcelSize; x++) {
+			for (int z = bz; z < bz + settings.parcelSize; z++) {
+				world.setBiome(x, z, biome);
+			}
+		}
+		
 	}
 
 }

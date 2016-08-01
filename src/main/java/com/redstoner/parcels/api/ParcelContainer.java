@@ -70,10 +70,10 @@ public class ParcelContainer implements Serializable {
 	}
 	
 	public Parcel[] getAll() {
-		return stream().toArray(size -> new Parcel[size]);
+		return stream().toArray(Parcel[]::new);
 	}
 	
-	protected Stream<Parcel> stream() {
+	public Stream<Parcel> stream() {
 		Builder<Parcel> builder = Stream.builder();
 		for (Parcel[] row : parcels)
 			for (Parcel parcel : row)

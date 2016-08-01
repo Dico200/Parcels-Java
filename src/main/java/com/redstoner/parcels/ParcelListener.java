@@ -8,9 +8,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
@@ -18,6 +20,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Vehicle;
+import org.bukkit.entity.minecart.ExplosiveMinecart;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -33,6 +36,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityCreatePortalEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
@@ -61,14 +65,11 @@ import com.redstoner.parcels.api.WorldManager;
 import com.redstoner.utils.Formatting;
 import com.redstoner.utils.Optional;
 
+
 public class ParcelListener implements Listener {
 	
 	public static void register() {
 		Bukkit.getPluginManager().registerEvents(new ParcelListener(), ParcelsPlugin.getInstance());
-	}
-	
-	private static void cancel(Cancellable event) {
-		event.setCancelled(true);
 	}
 	
 	private int ignoreWeatherChanges;
@@ -117,7 +118,7 @@ public class ParcelListener implements Listener {
 		
 		WorldManager.ifWorldPresent(b, (w, maybeP) -> {
 			if (!maybeP.filter(p -> p.canBuild(user) && w.isInParcel(b.getX(), b.getZ(), p.getX(), p.getZ())).isPresent()) {
-				cancel(event);
+				event.setCancelled(true);
 			}
 		});	
 	}
@@ -130,7 +131,7 @@ public class ParcelListener implements Listener {
 		ParcelWorld world = mWorld.get();
 		for (Block block : affectedBlocks) {
 			if (!world.getParcelAt(block.getX(), block.getZ()).isPresent()) {
-				cancel(event);
+				event.setCancelled(true);
 				return;
 			}
 		}
@@ -140,7 +141,7 @@ public class ParcelListener implements Listener {
 		for (Block block : affectedBlocks) {
 			other = block.getRelative(direction);
 			if (!affectedBlocks.contains(other) && !world.getParcelAt(other.getX(), other.getZ()).isPresent()) {
-				cancel(event);
+				event.setCancelled(true);
 				return;
 			}
 		}
@@ -209,11 +210,25 @@ public class ParcelListener implements Listener {
 	 * Prevents explosions if enabled by the configs for that world
 	 */
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-	public void onEntityExplode(ExplosionPrimeEvent event) {
+	public void onExplosionPrime(ExplosionPrimeEvent event) {
+		System.out.println("ExplosionPrimeEvent");
 		
 		WorldManager.getWorld(event.getEntity().getLocation().getWorld()).filter(w -> w.getSettings().disableExplosions).ifPresent(() -> {
 			event.setRadius(0);
 		});
+	}
+	
+	/*
+	 * Prevents creepers and tnt minecarts from exploding if explosions are disabled
+	 * Doesn't prevent breaking item frames ._. pls spigot, call event before item frames die
+	 */
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+	public void onEntityExplode(EntityExplodeEvent event) {
+		
+		WorldManager.getWorld(event.getLocation().getWorld()).filter(w -> w.getSettings().disableExplosions).ifPresent(world -> {
+			event.setCancelled(true);
+		});
+		
 	}
 	
 	/*
@@ -225,7 +240,7 @@ public class ParcelListener implements Listener {
 		WorldManager.getWorld(event.getToBlock().getWorld()).ifPresent(world -> {
 			
 			if (!world.getParcelAt(event.getToBlock()).isPresent()) {
-				cancel(event);
+				event.setCancelled(true);
 			}
 		});
 	}
@@ -234,7 +249,9 @@ public class ParcelListener implements Listener {
 	 * Prevents players from placing liquids, using flint and steel, changing redstone components,
 	 * using inputs (unless allowed by the plot), 
 	 * and using items disabled in the configuration for that world.
+	 * Prevents player from using beds in HELL or SKY biomes if explosions are disabled.
 	 */
+	@SuppressWarnings("deprecation")
 	@EventHandler(ignoreCancelled = true)
 	public void onPlayerInteract(PlayerInteractEvent event) {	
 
@@ -249,7 +266,7 @@ public class ParcelListener implements Listener {
 			
 			if (clickedP.filter(p -> p.isBanned(user)).isPresent()) {
 				Messaging.send(user, "Parcels", Formatting.RED, "You cannot interact with parcels you're banned from");
-				cancel(event);
+				event.setCancelled(true);
 				return;
 			}
 			
@@ -264,7 +281,7 @@ public class ParcelListener implements Listener {
 				case REDSTONE_COMPARATOR_OFF:
 				case REDSTONE_COMPARATOR_ON:
 					if (!hasAdminPerm && !clickedP.filter(p -> p.canBuild(user)).isPresent()) {
-						cancel(event);
+						event.setCancelled(true);
 						return;
 					}
 					break;
@@ -279,8 +296,41 @@ public class ParcelListener implements Listener {
 				//case REDSTONE_ORE:
 					if (!hasAdminPerm && !clickedP.filter(p -> p.canBuild(user) || p.getSettings().allowsInteractInputs()).isPresent()) {
 						Messaging.send(user, "Parcels", Formatting.YELLOW, "You cannot use inputs in this parcel");
-						cancel(event);
+						event.setCancelled(true);
 						return;
+					}
+					break;
+				case BED_BLOCK:
+					
+					if (world.getSettings().disableExplosions) {
+						Block bedHead;
+						switch(clickedB.getData()) {
+						case 0:
+						case 4:
+							bedHead = clickedB.getRelative(BlockFace.SOUTH);
+							break;
+						case 1:
+						case 5:
+							bedHead = clickedB.getRelative(BlockFace.WEST);
+							break;
+						case 2:
+						case 6:
+							bedHead = clickedB.getRelative(BlockFace.NORTH);
+							break;
+						case 3:
+						case 7:
+							bedHead = clickedB.getRelative(BlockFace.EAST);
+							break;
+						default:
+							bedHead = clickedB;
+							break;
+						}
+						
+						if (bedHead.getType() == Material.BED_BLOCK && bedHead.getData() > 7 && (bedHead.getBiome() == Biome.HELL || bedHead.getBiome() == Biome.SKY)) {
+							event.setCancelled(true);
+							Messaging.send(user, "Parcels", Formatting.YELLOW, "You cannot use this bed because it would explode");
+							return;
+						}
 					}
 					break;
 				default:
@@ -294,7 +344,7 @@ public class ParcelListener implements Listener {
 					Material item = event.getItem().getType();
 					if (world.getSettings().blockedItems.contains(event.getItem().getType())) {
 						Messaging.send(user, "Parcels", Formatting.YELLOW, "That item is disabled in this world");
-						cancel(event);
+						event.setCancelled(true);
 						return;
 					} else if (!hasAdminPerm && !clickedP.filter(p -> p.canBuild(user)).isPresent()) {
 						switch(item) {
@@ -302,7 +352,7 @@ public class ParcelListener implements Listener {
 						case WATER_BUCKET:
 						case BUCKET:
 						case FLINT_AND_STEEL:
-							cancel(event);
+							event.setCancelled(true);
 							break;
 						default: 
 							break;
@@ -314,7 +364,7 @@ public class ParcelListener implements Listener {
 			case PHYSICAL:
 
 				if (!hasAdminPerm && !clickedP.filter(p -> p.canBuild(user) || p.getSettings().allowsInteractInputs()).isPresent()) {
-					cancel(event);
+					event.setCancelled(true);
 					return;
 				}
 				break;	
@@ -362,7 +412,7 @@ public class ParcelListener implements Listener {
 			case SHEEP:
 			case VILLAGER:
 			case WOLF:
-				cancel(event);
+				event.setCancelled(true);
 				break;
 			default:
 				break;
@@ -378,7 +428,7 @@ public class ParcelListener implements Listener {
 
 		Entity e = event.getEntity();
 		if (WorldManager.getWorld(e.getWorld()).isPresent() && e.getType() == EntityType.ENDERMAN) {
-			cancel(event);
+			event.setCancelled(true);
 		}
 	}
 	
@@ -388,7 +438,7 @@ public class ParcelListener implements Listener {
 	@EventHandler(ignoreCancelled = true)
 	public void onEntityCreatePortal(EntityCreatePortalEvent event) {
 
-		WorldManager.getWorld(event.getEntity().getWorld()).filter(world -> world.getSettings().blockPortalCreation).ifPresent(() -> cancel(event));
+		WorldManager.getWorld(event.getEntity().getWorld()).filter(world -> world.getSettings().blockPortalCreation).ifPresent(() -> event.setCancelled(true));
 	}
 	
 	/*
@@ -403,7 +453,7 @@ public class ParcelListener implements Listener {
 		
 		
 		if (!WorldManager.isInOtherWorldOrInParcel(event.getItemDrop().getLocation(), p -> p.canBuild(user) || p.getSettings().allowsInteractInventory())) {
-			cancel(event);
+			event.setCancelled(true);
 		}
 		
 	}
@@ -421,7 +471,7 @@ public class ParcelListener implements Listener {
 		WorldManager.getWorld(user.getWorld()).ifPresent(world -> {
 			
 			if (!world.getParcelAt(user.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
-				cancel(event);
+				event.setCancelled(true);
 			}
 		});
 	}
@@ -451,7 +501,7 @@ public class ParcelListener implements Listener {
 				return;
 			
 			if (!world.getParcelAt(loc).filter(p -> p.canBuild(user) || p.getSettings().allowsInteractInventory()).isPresent()) {
-				cancel(event);
+				event.setCancelled(true);
 			}
 		});
 	}
@@ -473,7 +523,7 @@ public class ParcelListener implements Listener {
 			if (ignoreWeatherChanges > 0) {
 				ignoreWeatherChanges--;
 			} else {
-				cancel(event);
+				event.setCancelled(true);
 				resetWeather(world.getWorld());
 			}
 		});
@@ -507,7 +557,7 @@ public class ParcelListener implements Listener {
 	public void onEntitySpawn(EntitySpawnEvent event) {
 		
 		Entity e = event.getEntity();
-		WorldManager.getWorld(e.getWorld()).filter(world -> e instanceof LivingEntity && world.getSettings().blockMobSpawning).ifPresent(() -> cancel(event));
+		WorldManager.getWorld(e.getWorld()).filter(world -> e instanceof LivingEntity && world.getSettings().blockMobSpawning).ifPresent(() -> event.setCancelled(true));
 	}
 	
 	/*
@@ -536,17 +586,28 @@ public class ParcelListener implements Listener {
 		});
 			
 	}
-	
+
 	/*
 	 * Prevents players from removing items from item frames
+	 * Prevents TNT Minecarts and creepers from destroying entities (This event is called BEFORE EntityExplodeEvent GG)
+	 * Actually doesn't prevent this because the entities are destroyed anyway, even though the code works? 
 	 */
 	@EventHandler 
 	public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+		System.out.println("[Parcels] Entitydamagebyentityevent");
 		
 		Entity damaged = event.getEntity();
 		
 		WorldManager.getWorld(damaged.getWorld()).ifPresent(world -> {
 			Entity damager = event.getDamager();
+			
+			System.out.println(damager.getClass().getName());
+			System.out.println(damager instanceof ExplosiveMinecart);
+			if (world.getSettings().disableExplosions && damager instanceof ExplosiveMinecart || damager instanceof Creeper) {
+				event.setCancelled(true);
+				System.out.println("[Parcels] Cancelled");
+				return;
+			}
 			
 			Player user;
 			if (damager instanceof Player) {
@@ -562,7 +623,7 @@ public class ParcelListener implements Listener {
 			}
 			
 			if (!world.getParcelAt(damaged.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
-				cancel(event);
+				event.setCancelled(true);
 			}
 		});
 	}
@@ -586,7 +647,7 @@ public class ParcelListener implements Listener {
 				}
 				
 				if (!world.getParcelAt(hanging.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
-					cancel(event);
+					event.setCancelled(true);
 				}
 			}
 		});
@@ -606,7 +667,7 @@ public class ParcelListener implements Listener {
 		WorldManager.getWorld(user.getWorld()).ifPresent(world -> {
 			Block b = event.getBlock().getRelative(event.getBlockFace());
 			if (!world.getParcelAt(b).filter(p -> p.canBuild(user)).isPresent()) {
-				cancel(event);
+				event.setCancelled(true);
 			}
 		});
 		
@@ -624,7 +685,7 @@ public class ParcelListener implements Listener {
 				
 				Player user = event.getPlayer();
 				if (!user.hasPermission(Permissions.ADMIN_BUILDANYWHERE) && !parcel.canBuild(user)) {
-					cancel(event);
+					event.setCancelled(true);
 					return;
 				}
 				
@@ -635,7 +696,7 @@ public class ParcelListener implements Listener {
 					}
 				}
 			}, () -> {
-				cancel(event);
+				event.setCancelled(true);
 			});
 			
 		});
@@ -684,7 +745,7 @@ public class ParcelListener implements Listener {
 		WorldManager.getWorld(block.getWorld()).ifPresent(world -> {
 			
 			if (!world.getParcelAt(block.getRelative(getDispenserFace(block.getData()))).isPresent()) {
-				cancel(event);
+				event.setCancelled(true);
 			}
 		});
 	}
@@ -700,7 +761,7 @@ public class ParcelListener implements Listener {
 			
 			Parcel parcelFrom = world.getParcelAt(item.getLocation()).orElse(null);
 			if (parcelFrom == null) {
-				cancel(event);
+				event.setCancelled(true);
 			} else {
 				entities.put(item, parcelFrom);
 			}
@@ -717,7 +778,7 @@ public class ParcelListener implements Listener {
 		WorldManager.getWorld(from.getWorld()).ifPresent(world -> {
 			world.getParcelAt(from).ifPresent(parcelFrom -> {
 				if (!world.getParcelAt(event.getTo()).filter(parcelTo -> parcelTo == parcelFrom).isPresent()) {
-					cancel(event);
+					event.setCancelled(true);
 				}
 			});
 		});
@@ -727,7 +788,7 @@ public class ParcelListener implements Listener {
 	 * Prevents projectiles from flying out of parcels
 	 * Prevents players from firing projectiles if they cannot build
 	 */
-	@EventHandler
+	@EventHandler(ignoreCancelled = true)
 	public void onProjectileLaunch(ProjectileLaunchEvent event) {
 		
 		Projectile arrow = event.getEntity();
@@ -735,7 +796,7 @@ public class ParcelListener implements Listener {
 			
 			Parcel firedFrom = world.getParcelAt(arrow.getLocation()).orElse(null);
 			if (firedFrom == null || (arrow.getShooter() instanceof Player && !firedFrom.canBuild((Player) arrow.getShooter()))) {
-				cancel(event);
+				event.setCancelled(true);
 			} else {
 				entities.put(arrow, firedFrom);
 			}

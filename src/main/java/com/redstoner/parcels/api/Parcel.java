@@ -169,7 +169,7 @@ public class Parcel implements Serializable {
 		String bannedList = String.join("&b, ", bannedPlayers.values());
 		
 		return String.format("&bID: (&e%s&b) Owner: &e%s&b\nAllowed: &e%s&b\nBanned: &e%s", 
-				getId(), owner.map(player -> UUIDUtil.getName(player)).orElse(""), allowedList, bannedList);
+				getId(), owner.map(UUIDUtil::getName).orElse(""), allowedList, bannedList);
 	}
 
 }

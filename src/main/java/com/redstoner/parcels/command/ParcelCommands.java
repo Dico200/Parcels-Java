@@ -1,10 +1,14 @@
 package com.redstoner.parcels.command;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.bukkit.OfflinePlayer;
+import org.bukkit.block.Biome;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -28,6 +32,7 @@ import com.redstoner.utils.DuoObject;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Formatting;
 import com.redstoner.utils.Optional;
+import com.redstoner.utils.UUIDUtil;
 
 public final class ParcelCommands {
 	
@@ -391,6 +396,40 @@ public final class ParcelCommands {
 			setDescription("swaps this parcel and its blocks with another");
 			setHelpInformation("Swaps this parcel's data and any other contents,", "such as blocks and entities, with the target parcel");
 			setParameters(new Parameter<Coord>("parcel", PARCEL_TYPE, "the parcel to swap with"));
+		}});
+		
+		CommandManager.register(new ParcelCommand("parcel random", ParcelRequirement.IN_WORLD, 
+				(sender, scape) -> {
+					Stream<Parcel> ownedParcels = scape.getWorld().getParcels().stream();
+					ownedParcels.filter(p -> p.getOwner().isPresent());
+					ownedParcels.skip((long) (Math.random() * ownedParcels.count()));
+					Parcel target = ownedParcels.findFirst().orElse(null);
+					Validate.notNull(target, "There is no owned parcel to teleport to in this world");
+					scape.getWorld().teleport(sender, target);
+					return String.format("Teleported to the %s, it is owned by %s", target.toString(), UUIDUtil.getName(target.getOwner().get()));
+				}){{
+			setDescription("teleports you to a random parcel");
+			setHelpInformation("Teleports you to a random parcel in your current world", "to check it out");		
+		}});
+		
+		String allBiomes = String.join(", ", Arrays.stream(Biome.values()).map(biome -> biome.toString().toLowerCase().replaceAll("_", " ")).toArray(CharSequence[]::new));
+		
+		CommandManager.register(new ParcelCommand("parcel setbiome", ParcelRequirement.IN_OWNED, 
+				(sender, scape) -> {
+					List<String> args = scape.get("biome");
+					String biomeName = String.join("_", args.toArray(new CharSequence[args.size()])).toUpperCase();
+					Biome biome;
+					try {
+						biome = Biome.valueOf(biomeName);
+					} catch (IllegalArgumentException e) {
+						throw new CommandException("That biome could not be found. All biomes: " + allBiomes);
+					}
+					scape.getWorld().setBiome(scape.getParcel(), biome);
+					return "Set the biome to " + biomeName.toLowerCase().replaceAll("_", " ");
+				}){{
+			setDescription("changes the biome of this parcel");
+			setHelpInformation("Changes the biome of this parcel to the requested one,");
+			setParameters(true, new Parameter<String>("biome", ParameterType.STRING, "the biome to set"));
 		}});
 		
 		/* Template

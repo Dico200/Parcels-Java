@@ -7,6 +7,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.bukkit.Material;
+import org.bukkit.block.Biome;
 import org.bukkit.configuration.ConfigurationSection;
 
 import com.redstoner.parcels.ParcelsPlugin;
@@ -39,6 +40,8 @@ public class ParcelWorldSettings {
 	public final int sectionSize;
 	public final int pathOffset;
 	
+	public final Biome defaultBiome;
+	
 	public final BlockType ownerWallBlockType;
 	
 	private ParcelWorldSettings(int axisLimit, boolean staticTimeDay, boolean staticWeatherClear,
@@ -46,7 +49,7 @@ public class ParcelWorldSettings {
 			boolean disableExplosions, boolean blockPortalCreation, boolean blockMobSpawning, List<Material> itemsBlocked,
 			
 			BlockType wallType, BlockType floorType, BlockType fillType, BlockType pathMainType, BlockType pathEdgeType, 
-			int parcelSize, int pathSize, int floorHeight, int offsetX, int offsetZ) {
+			int parcelSize, int pathSize, int floorHeight, int offsetX, int offsetZ, Biome defaultBiome) {
 		
 		this.axisLimit = axisLimit;
 		this.staticTimeDay = staticTimeDay;
@@ -70,8 +73,10 @@ public class ParcelWorldSettings {
 		this.offsetZ = offsetZ;
 		this.sectionSize = parcelSize + pathSize;
 		this.pathOffset = ((pathSize % 2 == 0)? pathSize + 2 : pathSize + 1) / 2;
+		this.defaultBiome = defaultBiome;
 		
 		this.ownerWallBlockType = getOwnerWallBlock(wallType);
+		
 	}
 	
 	private ParcelWorldSettings(CastingMap<String, Object> settings) {
@@ -94,7 +99,8 @@ public class ParcelWorldSettings {
 			settings.getCasted("generator.path-size"), 
 			settings.getCasted("generator.floor-height"),
 			settings.getCasted("generator.offset-x"),
-			settings.getCasted("generator.offset-z")
+			settings.getCasted("generator.offset-z"),
+			settings.getCasted("generator.default-biome")
 		);
 		 
 	}
@@ -198,6 +204,19 @@ public class ParcelWorldSettings {
 				}
 			};
 			
+			Function<Object, Object> parseBiome = obj -> {
+				if (obj instanceof String) {
+					String query = ((String) obj).toUpperCase().replaceAll(" ", "_");
+					try {
+						return Biome.valueOf(query);
+					} catch (IllegalArgumentException e) {
+						throw new SettingParseException("The biome " + query + " does not exist."
+								+ "See https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/Biome.html");
+					}
+				}
+				throw new SettingParseException("This must be a name for the biome.");
+			};
+			
 			put("parcel-axis-limit", checkInteger);
 			put("static-time-day", checkBoolean);
 			put("static-weather-clear", checkBoolean);
@@ -217,6 +236,7 @@ public class ParcelWorldSettings {
 			put("generator.floor-height", checkInteger);
 			put("generator.offset-x", checkInteger);
 			put("generator.offset-z", checkInteger);
+			put("generator.default-biome", parseBiome);
 		}
 	};
 	

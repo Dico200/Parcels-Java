@@ -19,6 +19,10 @@ public class FormattingTest {
 		
 		assertEquals("§r", Formatting.CLEAR.toString());
 		assertEquals("", Formatting.EMPTY.toString());
+		
+		assertEquals("§4this is dark §cthis is light §4this is dark again", 
+				Formatting.translateChars('&', "&4this is dark &cthis is light &<this is dark again"));
 	}
+		
 
 }
