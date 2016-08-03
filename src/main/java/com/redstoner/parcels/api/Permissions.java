@@ -11,7 +11,7 @@ public class Permissions {
 			PARCEL_COMMAND = "parcels.command",
 			PARCEL_HOME_OTHERS = "parcels.command.home.others",
 			ADMIN_BUILDANYWHERE = "parcels.admin.buildanywhere",
-			ADMIN_BYPASS = "parcels.admin.bypass",
+			ADMIN_BYPASS = "parcels.admin.bypass.ban",
 			ADMIN_BYPASS_GAMEMODE = "parcels.admin.bypass.gamemode",
 			ADMIN_MANAGE = "parcels.admin.manage",
 			PARCEL_LIMIT = "parcels.limit.";

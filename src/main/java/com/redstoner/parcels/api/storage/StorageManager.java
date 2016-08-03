@@ -28,14 +28,13 @@ public class StorageManager {
 		}
 		connected = true;
 		
+		SqlManager.initialise(parcelsConnector, true, true);
+		
 		FileConfiguration config = ParcelsPlugin.getInstance().getConfig();
 		if (config.getBoolean("import-plotme-settings.enabled")) {
 			config.set("import-plotme-settings.enabled", false);
 			ParcelsPlugin.getInstance().saveConfig();
-			SqlManager.initialise(parcelsConnector, false);
 			importPlotMeSettings(parcelsConnector);
-		} else {
-			SqlManager.initialise(parcelsConnector, true);
 		}
 		
 	}
@@ -62,11 +61,11 @@ public class StorageManager {
 		}
 		
 		ParcelsPlugin.log("Starting import from plotme database. This may take a while. Preferably, don't use the parcel world in the meantime.");
-		SqlManager.initialise(parcelsConnector, false);
 		worlds.getValues(false).forEach((worldFrom, obj) -> {
 			
 			if (!(obj instanceof String)) {
 				errorPrinter.add(String.format("Failed to find parcel world associated with plotme world '%s'", worldFrom));
+				return;
 			}
 			
 			String worldTo = (String) obj;

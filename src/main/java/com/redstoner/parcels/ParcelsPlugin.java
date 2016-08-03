@@ -55,11 +55,7 @@ public class ParcelsPlugin extends JavaPlugin {
 		if (worldEdit != null) {
 			WorldEditListener.register(worldEdit);
 		}
-	}
-	
-	@Override
-	public void onDisable() {
-		//StorageManager.save(); 
+		
 	}
 	
 }

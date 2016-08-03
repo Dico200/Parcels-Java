@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.api.GlobalTrusted;
@@ -31,21 +32,21 @@ public class SqlManager {
 				+ "`world` VARCHAR(32) NOT NULL,"
 				+ "`px` INTEGER NOT NULL,"
 				+ "`pz` INTEGER NOT NULL,"
-				+ "`owner` BINARY(16),"
+				+ "`owner` CHAR(16),"
 				+ "`allow_interact_inputs` TINYINT(1) NOT NULL DEFAULT 0,"
 				+ "`allow_interact_inventory` TINYINT(1) NOT NULL DEFAULT 0,"
 				+ "UNIQUE KEY location(`world`, `px`, `pz`)"
 				+ ");",
 		CREATE_TABLE_PARCELS_ADDED = "CREATE TABLE IF NOT EXISTS `parcels_added` ("
 				+ "`id` INTEGER NOT NULL,"
-				+ "`player` BINARY(16) NOT NULL,"
+				+ "`player` CHAR(16) NOT NULL,"
 				+ "`allowed` TINYINT(1) NOT NULL,"
 				+ "FOREIGN KEY (`id`) REFERENCES `parcels`(`id`) ON DELETE CASCADE,"
 				+ "UNIQUE KEY added(`id`, `player`)"
 				+ ");",
 		CREATE_TABLE_GLOBAL_ADDED = "CREATE TABLE IF NOT EXISTS `global_added` ("
-				+ "`player` BINARY(16) NOT NULL,"
-				+ "`added` BINARY(16) NOT NULL,"
+				+ "`player` CHAR(16) NOT NULL,"
+				+ "`added` CHAR(16) NOT NULL,"
 				+ "`allowed` TINYINT(1) NOT NULL,"
 				+ "UNIQUE KEY pair(`player`, `added`)"
 				+ ");",
@@ -64,9 +65,11 @@ public class SqlManager {
 	
 	public static SQLConnector CONNECTOR = null;
 	
-	public static void initialise(SQLConnector parcelsConnector, boolean load) {
-		CONNECTOR = parcelsConnector;
-		CONNECTOR.asyncConn(conn -> {
+	public static void initialise(SQLConnector parcelsConnector, boolean load, boolean async) {
+		if (CONNECTOR == null) {
+			CONNECTOR = parcelsConnector;
+		}
+		Consumer<Connection> toRun = conn -> {
 			try {
 				Statement stm = conn.createStatement();
 				stm.executeUpdate(CREATE_TABLE_PARCELS);
@@ -79,7 +82,13 @@ public class SqlManager {
 			if (load) {
 				loadAllFromDatabase(conn);
 			}
-		});
+		};
+		
+		if (async) {
+			CONNECTOR.asyncConn(toRun);
+		} else {
+			CONNECTOR.syncConn(toRun);
+		}
 	}
 	
 	public static void loadAllFromDatabase(Connection conn) {
@@ -156,11 +165,11 @@ public class SqlManager {
 			logSqlExc("An exception occurred while retrieving globally added players", e);
 		}
 	}
-	
-    static byte[] toBytes(UUID uuid) {
-    	return ByteBuffer.wrap(new byte[16]).putLong(uuid.getMostSignificantBits()).putLong(uuid.getLeastSignificantBits()).array();
+
+	static byte[] toBytes(UUID uuid) {
+		return ByteBuffer.wrap(new byte[16]).putLong(uuid.getMostSignificantBits()).putLong(uuid.getLeastSignificantBits()).array();
     }
-	
+
 	private static UUID toUUID(byte[] arr) {
 		checkArgument(arr.length == 16, "Illegal byte[] length");
 		ByteBuffer buffer = ByteBuffer.wrap(arr);
@@ -407,8 +416,11 @@ public class SqlManager {
 			return;
 		}
 		
-		plotMeConnector.asyncConn(plotMeConn -> {			
+		plotMeConnector.asyncConn(plotMeConn -> {	
+			
 			CONNECTOR.syncConn(parcelsConn -> {
+				// Generate missing tables
+				initialise(CONNECTOR, false, false);
 				
 				PlotMeTableSetup setup = PlotMeTableSetup.getSetup(plotMeConn);
 				
@@ -435,7 +447,7 @@ public class SqlManager {
 					
 					while (plotSet.next()) {
 
-						int parcelId = getId(parcelsConn, worldNameTo, plotSet.getInt(1), plotSet.getInt(2));	
+						int parcelId = getId(parcelsConn, worldNameTo, plotSet.getInt(1) - 1, plotSet.getInt(2) - 1);	
 						setOwner(parcelsConn, parcelId, setup.getBytesFromIndex(plotSet, 3));
 						
 						// Import allowed players
@@ -459,10 +471,13 @@ public class SqlManager {
 					logSqlExc("[SEVERE] Error occurred while importing from PlotMe database", e);
 				}
 				
+				// Load imported world data
 				loadFromDatabase(parcelsConn, worldNameTo, true);
+				ParcelsPlugin.log("Finished PlotMe import for Parcels world " + worldNameTo);
 				
 			});
-		});		
+		});
+		
 	}
 	
 }
@@ -513,7 +528,7 @@ enum PlotMeTableSetup {
 		
 		@Override
 		public ResultSet getPlots(Connection conn, String worldName) throws SQLException {
-			PreparedStatement query = conn.prepareStatement("SELECT `idZ`, `idX`, `ownerId`, `world` FROM `plotmeplots` WHERE `world` = ?;");
+			PreparedStatement query = conn.prepareStatement("SELECT `idX`, `idZ`, `ownerId`, `world` FROM `plotmeplots` WHERE `world` = ?;");
 			query.setString(1, worldName);
 			return query.executeQuery();
 		}
@@ -538,9 +553,46 @@ enum PlotMeTableSetup {
 		
 		@Override
 		public byte[] getBytesFromIndex(ResultSet set, int index) throws SQLException {
-			byte[] arr = set.getBytes(index);
-			checkArgument(arr.length == 16, "Illegal byte[] length");
-		    return arr;
+			return set.getBytes(index);
+		}
+		
+	},
+	
+	THIRD {
+		
+		@Override
+		public String getPlotMeTableName() {
+			return "plotmePlots";
+		}
+		
+		@Override
+		public ResultSet getPlots(Connection conn, String worldName) throws SQLException {
+			PreparedStatement query = conn.prepareStatement("SELECT `idX`, `idZ`, `ownerid`, `world` FROM `plotmePlots` WHERE `world` = ?;");
+			query.setString(1, worldName);
+			return query.executeQuery();
+		}
+		
+		@Override
+		public ResultSet getAllowed(Connection conn, ResultSet plotSet) throws SQLException {
+			PreparedStatement query = conn.prepareStatement("SELECT `playerid` FROM `plotmeAllowed` WHERE `world` = ? AND `idX` = ? AND `idZ` = ?;");
+			query.setString(1, plotSet.getString(4));
+			query.setInt(2, plotSet.getInt(1));
+			query.setInt(3, plotSet.getInt(2));
+			return query.executeQuery();
+		}
+		
+		@Override
+		public ResultSet getDenied(Connection conn, ResultSet plotSet) throws SQLException {
+			PreparedStatement query = conn.prepareStatement("SELECT `playerid` FROM `plotmeDenied` WHERE `world` = ? AND `idX` = ? AND `idZ` = ?;");
+			query.setString(1, plotSet.getString(4));
+			query.setInt(2, plotSet.getInt(1));
+			query.setInt(3, plotSet.getInt(2));
+			return query.executeQuery();
+		}
+		
+		@Override
+		public byte[] getBytesFromIndex(ResultSet set, int index) throws SQLException {
+			return set.getBytes(index);
 		}
 		
 	};
@@ -556,22 +608,15 @@ enum PlotMeTableSetup {
 	public abstract byte[] getBytesFromIndex(ResultSet set, int index) throws SQLException;
 	
 	public boolean isCase(Connection conn) {
-		ResultSet set = null;
-		boolean ret = false;
 		try {
-			ret = (set = conn.getMetaData().getTables(null, null, getPlotMeTableName(), null)).next();
+			Statement stm = conn.createStatement();
+			ResultSet rs = stm.executeQuery(String.format("SELECT 1 FROM `%s` LIMIT 1;", getPlotMeTableName()));
+			rs.close();
+			stm.close();
+			return true;
 		} catch (SQLException e) {
-			SqlManager.logSqlExc("SQL Failed Table Check:", e);
-		} finally {
-			if (set != null) {
-				try {
-					set.close();
-				} catch (SQLException e) {
-					SqlManager.logSqlExc("SQL Exception on closing:", e);
-				}
-			}
+			return false;
 		}
-		return ret;
 	}
 	
 	public static PlotMeTableSetup getSetup(Connection conn) {

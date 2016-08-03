@@ -117,7 +117,7 @@ public class ParcelsApiTest {
 		assertEquals(fromWorld.offsetX, 2);
 		assertEquals(fromWorld.offsetZ, -3);
 		
-		SqlManager.initialise(connector, true);
+		SqlManager.initialise(connector, true, false);
 		
 		try {
 			
