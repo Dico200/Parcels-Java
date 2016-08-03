@@ -46,6 +46,7 @@ public class ParcelsPlugin extends JavaPlugin {
 	public void onEnable() {
 		saveDefaultConfig();
 		
+		WorldManager.loadSettingsFromConfig();
 		StorageManager.initialise();
 		ParcelCommands.register();
 		ParcelListener.register();
@@ -58,7 +59,7 @@ public class ParcelsPlugin extends JavaPlugin {
 	
 	@Override
 	public void onDisable() {
-		StorageManager.save();
+		//StorageManager.save(); 
 	}
 	
 }

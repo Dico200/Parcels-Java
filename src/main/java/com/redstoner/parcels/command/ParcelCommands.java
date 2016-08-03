@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bukkit.OfflinePlayer;
@@ -28,6 +29,7 @@ import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.Permissions;
 import com.redstoner.parcels.api.WorldManager;
+import com.redstoner.parcels.api.storage.StorageManager;
 import com.redstoner.utils.DuoObject;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Formatting;
@@ -41,7 +43,7 @@ public final class ParcelCommands {
 	private static final Map<Player, DuoObject<Parcel, Long>> clearQueue = new HashMap<>();
 	private static final long clearRequestExpireTime = 30000;
 	
-	private static final ParameterType<Coord> PARCEL_TYPE = new ParameterType<Coord>("Parcel", "the ID of a parcel") {
+	private static final ParameterType<Coord> PARCEL_PARAMETER_TYPE = new ParameterType<Coord>("Parcel", "the ID of a parcel") {
 
 		@Override
 		protected Coord handle(String input) {
@@ -59,7 +61,7 @@ public final class ParcelCommands {
 			
 	};
 	
-	public static void register() {	
+	public static void register() {
 		
 		CommandManager.register(PREFIX, new LambdaCommand("parcel", (sender, scape) -> "EXEC:CommandAction.DISPLAY_HELP") {{
 			setPermission("parcels.command");
@@ -71,6 +73,7 @@ public final class ParcelCommands {
 		
 		CommandManager.register(new ParcelCommand("parcel auto", ParcelRequirement.IN_WORLD,
 				(sender, scape) -> {
+					Validate.isTrue(StorageManager.connected, "You cannot claim parcels right now.");
 					ParcelWorld w = scape.getWorld();
 					Validate.isTrue(w.getOwned(sender).length < Permissions.getParcelLimit(sender), "You have enough plots for now");
 					Optional<Parcel> p = scape.getWorld().getNextUnclaimed();
@@ -111,6 +114,7 @@ public final class ParcelCommands {
 		
 		CommandManager.register(new ParcelCommand("parcel claim", ParcelRequirement.IN_PARCEL,
 				(sender, scape) -> {
+					Validate.isTrue(StorageManager.connected, "You cannot claim parcels right now.");
 					Parcel p = scape.getParcel();
 					Validate.isTrue(!p.isClaimed(), "This parcel is not available");		
 					ParcelWorld w = scape.getWorld();
@@ -167,8 +171,8 @@ public final class ParcelCommands {
 		CommandManager.register(new ParcelCommand("parcel allow", ParcelRequirement.IN_OWNED,
 				(sender, scape) -> {
 					OfflinePlayer allowed = scape.get("player");
-					Validate.isTrue(scape.getParcel().getAdded().add(allowed.getUniqueId(), true) &&
-							!scape.getParcel().getOwner().filter(owner -> owner.equals(allowed.getUniqueId())).isPresent(),
+					Validate.isTrue(!scape.getParcel().getOwner().filter(owner -> owner.equals(allowed.getUniqueId())).isPresent()
+							&& scape.getParcel().getAdded().add(allowed.getUniqueId(), true),
 							allowed.getName() + " is already allowed to build on this parcel");
 					return allowed.getName() + " is now allowed to build on this parcel";
 				}){{
@@ -304,6 +308,7 @@ public final class ParcelCommands {
 			setDescription("removes any data about this parcel");
 			setHelpInformation("removes any data about this parcel, it will be", "unowned, and noone will be allowed or banned.",
 					"This command will not clear this parcel");
+			setAliases("unclaim");
 		}});
 		
 		CommandManager.register(new ParcelCommand("parcel reset", ParcelRequirement.IN_OWNED,
@@ -332,7 +337,7 @@ public final class ParcelCommands {
 			setDescription("teleports to a parcel");
 			setHelpInformation("Teleports you or a target player", "to the parcel you specify by ID");
 			setAliases("teleport");
-			setParameters(new Parameter<Coord>("parcel", PARCEL_TYPE, "the parcel to teleport to"),
+			setParameters(new Parameter<Coord>("parcel", PARCEL_PARAMETER_TYPE, "the parcel to teleport to"),
 					new Parameter<Player>("target", ParameterType.PLAYER, "the player to teleport", false));
 		}});
 		
@@ -395,7 +400,7 @@ public final class ParcelCommands {
 				}){{
 			setDescription("swaps this parcel and its blocks with another");
 			setHelpInformation("Swaps this parcel's data and any other contents,", "such as blocks and entities, with the target parcel");
-			setParameters(new Parameter<Coord>("parcel", PARCEL_TYPE, "the parcel to swap with"));
+			setParameters(new Parameter<Coord>("parcel", PARCEL_PARAMETER_TYPE, "the parcel to swap with"));
 		}});
 		
 		CommandManager.register(new ParcelCommand("parcel random", ParcelRequirement.IN_WORLD, 
@@ -431,6 +436,22 @@ public final class ParcelCommands {
 			setHelpInformation("Changes the biome of this parcel to the requested one,");
 			setParameters(true, new Parameter<String>("biome", ParameterType.STRING, "the biome to set"));
 		}});
+		
+		CommandManager.register(new ParcelCommand("parcel tpworld", ParcelRequirement.NONE, 
+				(sender, scape) -> {
+					String name = scape.get("name");
+					Validate.isAuthorized(sender, "parcels.command.tpworld." + name);
+					sender.teleport(Validate.returnIfPresent(WorldManager.getWorld(name), "That parcel world does not exist").getWorld().getSpawnLocation());
+					return "Teleported you to " + name;
+				},
+				(sender, scape) -> {
+					return WorldManager.getWorlds().keySet().stream().collect(Collectors.toList());
+				}){{
+			setDescription("teleport to the given parcel world");
+			setHelpInformation("Teleports you to the requested parcel world.");
+			setParameters(new Parameter<String>("name", ParameterType.STRING, "the name of the world"));
+		}});
+		
 		
 		/* Template
 		CommandManager.register(new ParcelCommand("parcel ", ParcelRequirement.NONE, 

@@ -3,20 +3,17 @@ package com.redstoner.parcels.generation;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
-
-import com.redstoner.utils.Values;
 
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
-import org.bukkit.block.Block;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 
 import com.redstoner.parcels.api.ParcelWorldSettings;
+import com.redstoner.utils.Values;
 
 public class ParcelGenerator extends ChunkGenerator {
 	
@@ -43,12 +40,15 @@ public class ParcelGenerator extends ChunkGenerator {
 		int pathWidth = sectionSize - parcelSize;
 		this.makePathEdge = pathWidth > 4;
 		this.makePathMain = pathWidth > 2;
+		
+		this.defaultBiome = pws.defaultBiome;
 	}
 	
 	private final short floorId, wallId, pathMainId, pathEdgeId, fillId;
 	private final byte floorData, wallData, pathMainData, pathEdgeData, fillData;
 	private final int parcelSize, floorHeight, xOffset, zOffset, sectionSize, pathOffset;
 	private final boolean makePathMain, makePathEdge;
+	private final Biome defaultBiome;
 	
 	@Override
 	public Location getFixedSpawnLocation(World world, Random random) {
@@ -74,11 +74,23 @@ public class ParcelGenerator extends ChunkGenerator {
 		short[][] chunk = IntStream.range(0, 16).mapToObj(i -> new short[4096]).toArray(size -> new short[size][]);
 		
 		//[floor(y / 16)][y % 16 * 256 + z * 16 + x]
-		iterAll(chunkX, chunkZ, floorId, wallId, pathMainId, pathEdgeId, fillId, (c, type) -> {
-			chunk[c.y >> 4][((c.y & 0xF) << 8) | (c.z << 4) | c.x] = type;
+		iterAll(chunkX, chunkZ, floorId, wallId, pathMainId, pathEdgeId, fillId, new CoordAndTypeConsumer<Short>() {
+			
+			@Override
+			protected void accept(int x, int y, int z, Short type) {
+				chunk[y >> 4][((y & 0xF) << 8) | (z << 4) | x] = type;
+			}
+			
 		});
 		
+		for (int x = 0; x < 16; x++) {
+			for (int z = 0; z < 16; z++) {
+				biomeGrid.setBiome(x, z, defaultBiome);
+			}
+		}
+		
 		return chunk;
+		
 	}
 	
 	@Override
@@ -88,21 +100,22 @@ public class ParcelGenerator extends ChunkGenerator {
 			@SuppressWarnings("deprecation")
 			@Override
 			public void populate(World world, Random random, Chunk chunk) {
-				iterAll(chunk.getX(), chunk.getZ(), floorData, wallData, pathMainData, pathEdgeData, fillData, (c, type) -> {
-					if (c.y == 1) {
-						Block b = chunk.getBlock(c.x, c.y, c.z);
-						b.setData(type);
-						b.setBiome(Biome.JUNGLE);
-					} else {
-						chunk.getBlock(c.x, c.y, c.z).setData(type);
+				iterAll(chunk.getX(), chunk.getZ(), floorData, wallData, pathMainData, pathEdgeData, fillData, new CoordAndTypeConsumer<Byte>() {
+					
+					@Override
+					protected void accept(int x, int y, int z, Byte type) {
+						if (type != 0) {
+							chunk.getBlock(x, y, z).setData(type);
+						}
 					}
+					
 				});
 			}
 			
 		}});
 	}
 	
-	public <T> void iterAll(int chunkX, int chunkZ, T floor, T wall, T pathMain, T pathEdge, T fill, BiConsumer<Coord, T> forEach) {
+	public <T> void iterAll(int chunkX, int chunkZ, T floor, T wall, T pathMain, T pathEdge, T fill, CoordAndTypeConsumer<T> forEach) {
 		
 		//northwest chunk corner, with offset applied -> x/z
 		//The offset makes it believe it's generating for coordinates at offset back. Like nudging a graph: (x - offset)
@@ -133,23 +146,17 @@ public class ParcelGenerator extends ChunkGenerator {
 					type = wall;
 				}
 				
-				forEach.accept(new Coord(cX, height, cZ), type);
+				forEach.accept(cX, height, cZ, type);
 				for (y = 0; y < height; y++) {
-					forEach.accept(new Coord(cX, y, cZ), fill);
+					forEach.accept(cX, y, cZ, fill);
 				}
 			}
 		}
 	}
 }
 
-class Coord {
+abstract class CoordAndTypeConsumer<T> {
 	
-	Coord(int x, int y, int z) {
-		this.x = x;
-		this.y = y;
-		this.z = z;
-	}
+	protected abstract void accept(int x, int y, int z, T type);
 	
-	int x, y, z;
-
 }

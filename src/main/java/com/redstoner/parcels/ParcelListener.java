@@ -1,10 +1,13 @@
 package com.redstoner.parcels;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -21,7 +24,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.entity.minecart.ExplosiveMinecart;
-import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -36,6 +38,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityCreatePortalEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
@@ -45,6 +48,7 @@ import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -62,6 +66,7 @@ import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.Permissions;
 import com.redstoner.parcels.api.WorldManager;
+import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Formatting;
 import com.redstoner.utils.Optional;
 
@@ -98,6 +103,8 @@ public class ParcelListener implements Listener {
 				}
 			});
 		}, 100, 5);
+		
+		ParcelsPlugin.getInstance().getServer().getWorlds().forEach(this::enforceWorldSettingsIfApplicable);
 	}
 	
 	private static Location inventoryLocation(Inventory inv) {
@@ -111,40 +118,27 @@ public class ParcelListener implements Listener {
 		}
 	}
 	
-	private static void checkBuildEvent(Cancellable event, Block b, Player user) {
-		if (user.hasPermission(Permissions.ADMIN_BUILDANYWHERE))
-			return;
-		
-		
-		WorldManager.ifWorldPresent(b, (w, maybeP) -> {
-			if (!maybeP.filter(p -> p.canBuild(user) && w.isInParcel(b.getX(), b.getZ(), p.getX(), p.getZ())).isPresent()) {
-				event.setCancelled(true);
-			}
-		});	
-	}
-	
 	private static void checkPistonAction(BlockPistonEvent event, List<Block> affectedBlocks) {	
-		Optional<ParcelWorld> mWorld = WorldManager.getWorld(event.getBlock().getWorld());
-		if (!mWorld.isPresent())
+		Optional<ParcelWorld> maybeWorld = WorldManager.getWorld(event.getBlock().getWorld());
+		if (!maybeWorld.isPresent())
 			return;
-		
-		ParcelWorld world = mWorld.get();
-		for (Block block : affectedBlocks) {
-			if (!world.getParcelAt(block.getX(), block.getZ()).isPresent()) {
-				event.setCancelled(true);
-				return;
-			}
-		}
 		
 		BlockFace direction = event.getDirection();
-		Block other;
+		Set<Coord> affectedColumns = new HashSet<>();
 		for (Block block : affectedBlocks) {
-			other = block.getRelative(direction);
-			if (!affectedBlocks.contains(other) && !world.getParcelAt(other.getX(), other.getZ()).isPresent()) {
+			affectedColumns.add(Coord.of(block.getX(), block.getZ()));
+			block = block.getRelative(direction);
+			affectedColumns.add(Coord.of(block.getX(), block.getZ()));
+		}
+		
+		ParcelWorld world = maybeWorld.get();
+		
+		for (Coord coord : affectedColumns) {
+			if (!world.getParcelAt(coord.getX(), coord.getZ()).isPresent()) {
 				event.setCancelled(true);
-				return;
 			}
 		}
+		
 	}
 	
 	/*
@@ -171,21 +165,45 @@ public class ParcelListener implements Listener {
 	}
 	
 	/*
-	 * Prevents players from breaking blocks outside of parcels
+	 * Prevents players from breaking blocks outside of their parcels
+	 * Prevents containers from dropping their contents when broken, if configured
 	 */
 	@EventHandler(ignoreCancelled = true)
 	public void onBlockBreak(BlockBreakEvent event) {
+		
+		WorldManager.ifWorldPresent(event.getBlock(), (world, maybeParcel) -> {
+			
+			Player user = event.getPlayer();
+			
+			if (!user.hasPermission(Permissions.ADMIN_BUILDANYWHERE) && !maybeParcel.filter(p -> p.canBuild(user)).isPresent()) {
+				event.setCancelled(true);
+			} else if (!world.getSettings().dropEntityItems) {
+				BlockState state = event.getBlock().getState();
+				if (state instanceof InventoryHolder) {
+					((InventoryHolder) state).getInventory().clear();
+					state.update();
+				}
+			}
+			
+		});
 
-		checkBuildEvent(event, event.getBlock(), event.getPlayer());
 	}
 	
 	/*
-	 * Prevents players from placing blocks outside of parcels
+	 * Prevents players from placing blocks outside of their parcels
 	 */
 	@EventHandler(ignoreCancelled = true)
 	public void onBlockPlace(BlockPlaceEvent event) {
 
-		checkBuildEvent(event, event.getBlockPlaced(), event.getPlayer());
+		WorldManager.ifWorldPresent(event.getBlock(), (world, maybeParcel) -> {
+			
+			Player user = event.getPlayer();
+			
+			if (!user.hasPermission(Permissions.ADMIN_BUILDANYWHERE) && !maybeParcel.filter(p -> p.canBuild(user)).isPresent()) {
+				event.setCancelled(true);
+			}
+			
+		});
 	}
 	
 	/*
@@ -211,8 +229,7 @@ public class ParcelListener implements Listener {
 	 */
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	public void onExplosionPrime(ExplosionPrimeEvent event) {
-		System.out.println("ExplosionPrimeEvent");
-		
+
 		WorldManager.getWorld(event.getEntity().getLocation().getWorld()).filter(w -> w.getSettings().disableExplosions).ifPresent(() -> {
 			event.setRadius(0);
 		});
@@ -427,8 +444,12 @@ public class ParcelListener implements Listener {
 	public void onEntityChangeBlock(EntityChangeBlockEvent event) {
 
 		Entity e = event.getEntity();
-		if (WorldManager.getWorld(e.getWorld()).isPresent() && e.getType() == EntityType.ENDERMAN) {
-			event.setCancelled(true);
+		if (WorldManager.getWorld(e.getWorld()).isPresent()) {
+			if (e.getType() == EntityType.ENDERMAN) {
+				event.setCancelled(true);
+			} else if (e.getType() == EntityType.FALLING_BLOCK) {
+				entities.put(e, WorldManager.getParcelAt(e.getLocation()).orElse(null));
+			}
 		}
 	}
 	
@@ -535,11 +556,13 @@ public class ParcelListener implements Listener {
 	 */
 	@EventHandler
 	public void onWorldLoad(WorldLoadEvent event) {
-		WorldManager.getWorld(event.getWorld()).ifPresent(world -> {
-			World w = world.getWorld();
+		enforceWorldSettingsIfApplicable(event.getWorld());
+	}
+	
+	private void enforceWorldSettingsIfApplicable(World w) {
+		WorldManager.getWorld(w).ifPresent(world -> {
 			
 			if (world.getSettings().staticTimeDay) {
-				w.setGameRuleValue("doTileDrops", "false");
 				w.setGameRuleValue("doDaylightCycle", "false");
 				w.setTime(6000);
 			}
@@ -547,6 +570,8 @@ public class ParcelListener implements Listener {
 			if (world.getSettings().staticWeatherClear) {
 				resetWeather(w);
 			}
+			
+			w.setGameRuleValue("doTileDrops", Boolean.toString(world.getSettings().doTileDrops));
 		});
 	}
 	
@@ -594,18 +619,14 @@ public class ParcelListener implements Listener {
 	 */
 	@EventHandler 
 	public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-		System.out.println("[Parcels] Entitydamagebyentityevent");
 		
 		Entity damaged = event.getEntity();
 		
 		WorldManager.getWorld(damaged.getWorld()).ifPresent(world -> {
 			Entity damager = event.getDamager();
 			
-			System.out.println(damager.getClass().getName());
-			System.out.println(damager instanceof ExplosiveMinecart);
 			if (world.getSettings().disableExplosions && damager instanceof ExplosiveMinecart || damager instanceof Creeper) {
 				event.setCancelled(true);
-				System.out.println("[Parcels] Cancelled");
 				return;
 			}
 			
@@ -691,7 +712,7 @@ public class ParcelListener implements Listener {
 				
 				List<BlockState> blocks = event.getBlocks();
 				for (BlockState block : new ArrayList<>(blocks)) {
-					if (!world.getParcelAt(block.getBlock()).isPresent()) {
+					if (!world.getParcelAt(block.getBlock()).filter(p -> p == parcel).isPresent()) {
 						blocks.remove(block);
 					}
 				}
@@ -802,5 +823,36 @@ public class ParcelListener implements Listener {
 			}
 		});	
 	}
-
+	
+	/*
+	 * Prevents entities from dropping items upon death, if configured that way
+	 */
+	@EventHandler
+	public void onEntityDeath(EntityDeathEvent event) {
+		WorldManager.getWorld(event.getEntity().getWorld()).filter(world -> !world.getSettings().dropEntityItems).ifPresent(() -> {
+			event.getDrops().clear();
+			event.setDroppedExp(0);
+		});
+	}
+	
+	/*
+	 * Assigns players their default game mode upon entering the world
+	 */
+	@EventHandler
+	public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
+		
+		Player user = event.getPlayer();
+		
+		if (user.hasPermission(Permissions.ADMIN_BYPASS_GAMEMODE)) {
+			return;
+		}
+		
+		WorldManager.getWorld(user.getWorld()).ifPresent(world -> {
+			GameMode defaultMode = world.getSettings().gameMode;
+			if (defaultMode != null) {
+				user.setGameMode(defaultMode);
+			}
+		});
+		
+	}
 }

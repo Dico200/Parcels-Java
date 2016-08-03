@@ -1,8 +1,5 @@
 package com.redstoner.utils;
 
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-
 public class DuoObject<T, U> {
 	
 	public DuoObject(T v1, U v2) {
@@ -25,6 +22,23 @@ public class DuoObject<T, U> {
 		return String.format("(%s, %s)", v1, v2);
 	}
 	
+	@Override
+	public int hashCode() {
+		return 31 * (31 + ((v1 == null) ? 0 : v1.hashCode())) + ((v2 == null) ? 0 : v2.hashCode());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj instanceof DuoObject) {
+			DuoObject<?, ?> other = (DuoObject<?, ?>) obj;
+			return (v1 == other.v1 || (v1 != null && v1.equals(other.v1))) && (v2 == other.v2 || (v2 != null && v2.equals(other.v2)));
+		}
+		return false;
+	}
+
 	public static class Coord extends DuoObject<Integer, Integer> {
 		
 		public static Coord of(int x, int z) {
@@ -41,17 +55,6 @@ public class DuoObject<T, U> {
 		
 		public int getZ() {
 			return v2;
-		}
-		
-		@Override
-		public boolean equals(Object other) {
-			System.out.println("Coord.equals called");
-			if (other instanceof Coord) {
-				Coord otherC = (Coord) other;
-				System.out.println("Found other instance");
-				return otherC.v1 == v1 && otherC.v2 == v2;
-			}
-			return false;
 		}
 		
 	}
@@ -120,41 +123,5 @@ public class DuoObject<T, U> {
 		}
 		
 	}
-	
-	public static class TriConsumer<T, U, V> implements BiConsumer<T, DuoObject<U, V>> {
-		
-		BiConsumer<T, DuoObject<U, V>> cons;
-		
-		public TriConsumer(BiConsumer<T, DuoObject<U, V>> cons) {
-			this.cons = cons;
-		}
-		
-		@Override
-		public void accept(T t, DuoObject<U, V> u) {
-			cons.accept(t, u);
-		}
-		
-		public void accept(T t, U u, V v) {
-			accept(t, new DuoObject<U, V>(u, v));
-		}
-		
-	}
-	
-	public static class TriFunction<T, U, V, R> implements BiFunction<T, DuoObject<U, V>, R>{
-		
-		private BiFunction<T, DuoObject<U, V>, R> func;
-		
-		public TriFunction(BiFunction<T, DuoObject<U, V>, R> func) {
-			this.func = func;
-		}
 
-		@Override
-		public R apply(T t, DuoObject<U, V> u) {
-			return func.apply(t, u);
-		}
-		
-		public R apply(T t, U u, V v) {
-			return apply(t, new DuoObject<U, V>(u, v));
-		}
-	}
 }

@@ -7,6 +7,7 @@ import java.util.function.Predicate;
 
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.WorldCreator;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 
@@ -37,12 +38,12 @@ public final class WorldManager {
 	
 	public static boolean isInOtherWorldOrInParcel(Location loc, Predicate<Parcel> parcelTest) {
 		Optional<ParcelWorld> world = getWorld(loc.getWorld());
-		return !world.isPresent() || world.get().getParcelAt(loc.getBlockX(), loc.getBlockZ()).filter(parcelTest).isPresent();
+		return !world.filter(w -> w.getParcelAt(loc.getBlockX(), loc.getBlockZ()).filter(parcelTest).isPresent()).isPresent();
 	}
 	
 	public static boolean isInOtherWorldOrInParcel(Block b, Predicate<Parcel> parcelTest) {
 		Optional<ParcelWorld> world = getWorld(b.getWorld());
-		return !world.isPresent() || world.get().getParcelAt(b.getX(), b.getZ()).filter(parcelTest).isPresent();
+		return !world.filter(w -> w.getParcelAt(b.getX(), b.getZ()).filter(parcelTest).isPresent()).isPresent();
 	}
 	
 	private WorldManager() {}
@@ -55,7 +56,7 @@ public final class WorldManager {
 	//private static ParcelsPlugin plugin;
 	private static HashMap<String, ParcelWorld> worlds = new HashMap<>();
 	
-	private static void loadSettingsFromConfig() {
+	public static void loadSettingsFromConfig() {
 		ParcelsPlugin plugin = ParcelsPlugin.getInstance();
 		if (plugin == null) {
 			// Running test
@@ -73,9 +74,14 @@ public final class WorldManager {
 				worlds.put(worldName, new ParcelWorld(worldName, pws));
 			});
 		});
-	}
-	
-	static {
-		loadSettingsFromConfig();
+		
+		worlds.forEach((name, world) -> {
+			try {
+				world.getWorld();
+			} catch (Exception e) {
+				ParcelsPlugin.getInstance().getServer().createWorld(new WorldCreator(name).generator(world.getGenerator()))
+						.setSpawnLocation(world.getSettings().offsetX, world.getSettings().floorHeight, world.getSettings().offsetZ);
+			}
+		});
 	}
 }

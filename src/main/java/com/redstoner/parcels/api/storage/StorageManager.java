@@ -16,19 +16,19 @@ import com.redstoner.utils.sql.SQLiteConnector;
 
 public class StorageManager {
 	
-	public static boolean useMySQL;
+	public static boolean useMySQL = true;
+	public static boolean connected = false;
 	
 	public static void initialise() {
-		
-		FileConfiguration config = ParcelsPlugin.getInstance().getConfig();
-		useMySQL = config.getBoolean("storage.mysql");
-		
+
 		SQLConnector parcelsConnector = getParcelsConnector();
-		if (parcelsConnector == null) {
+		if (parcelsConnector == null || !parcelsConnector.isConnected()) {
 			ParcelsPlugin.log("[SEVERE] Failed to connect to parcels database. Aborting connection.");
 			return;
 		}
+		connected = true;
 		
+		FileConfiguration config = ParcelsPlugin.getInstance().getConfig();
 		if (config.getBoolean("import-plotme-settings.enabled")) {
 			config.set("import-plotme-settings.enabled", false);
 			ParcelsPlugin.getInstance().saveConfig();
@@ -77,34 +77,20 @@ public class StorageManager {
 		return true;		
 	}
 	
-	public static void save() {
-		save(StorageManager.useMySQL);
-	}
-	
-	public static void save(boolean useMySQL) {
-		if (useMySQL != StorageManager.useMySQL) {
-			ParcelsPlugin.getInstance().getConfig().set("storage.mysql", useMySQL);
-			if (useMySQL) {
-				ParcelsPlugin.log("Converting all storage to MySQL Database. This might take a little while.");		
-				SqlManager.saveAll(getParcelsConnector());
-			}
-		}
+	public static void save() {	
+		SqlManager.saveAll(getParcelsConnector());
 	}
 	
 	private static SQLConnector getParcelsConnector() {
 		ConfigurationSection conf = ParcelsPlugin.getInstance().getConfig().getConfigurationSection("storage");
 		if (conf == null)
 			return null;
-		
-		if (conf.getBoolean("mysql")) {		
-			String hostname = (hostname = conf.getString("hostname")) == null ? "localhost:3306" : hostname;
-			String database = (database = conf.getString("database")) == null ? "parcels" : database;
-			String username = (username = conf.getString("username")) == null ? "root" : username;
-			String password = (password = conf.getString("password")) == null ? "" : password;
-			return new MySQLConnector(hostname, database, username, password);		
-		} else {
-			return new SQLiteConnector(new File(ParcelsPlugin.getInstance().getDataFolder(), "parcels.db"));
-		}
+			
+		String hostname = (hostname = conf.getString("hostname")) == null ? "localhost:3306" : hostname;
+		String database = (database = conf.getString("database")) == null ? "parcels" : database;
+		String username = (username = conf.getString("username")) == null ? "root" : username;
+		String password = (password = conf.getString("password")) == null ? "" : password;
+		return new MySQLConnector(hostname, database, username, password);		
 	}
 	
 	private static SQLConnector getPlotMeConnector() {

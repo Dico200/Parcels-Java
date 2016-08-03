@@ -27,15 +27,21 @@ public abstract class SQLConnector {
 	
 	private static final ThreadGroup threadGroup = new ThreadGroup("SqlConnector");
 	
-	private Connection conn;
+	private Connection conn = null;
+	private boolean connected = false;
 	
 	public SQLConnector() {
 		connectors.add(this);
 	}
 	
+	public boolean isConnected() {
+		return connected;
+	}
+	
 	protected void openConn() {
 		try {
 			this.conn = createConnection();
+			this.connected = true;
 		} catch (SQLException e) {
 			if (e instanceof SQLTimeoutException) {
 				System.out.println("[ERROR] No response from the MySQL server");
@@ -59,13 +65,16 @@ public abstract class SQLConnector {
 	}
 	
 	public void syncConn(Consumer<Connection> toRun) {
-		toRun.accept(conn);
+		if (conn != null) {
+			toRun.accept(conn);
+		}
 	}
 	
 	public void closeConn() {
 		try {
 			conn.close();
 			conn = null;
+			connected = false;
 		} catch (SQLException e) {
 			System.out.println("Failed to close database connection.");
 		}

@@ -11,15 +11,25 @@ worlds:
   Parcels:
     # The amount of (active) parcels in each direction counting from the parcel with ID (0:0).
     parcel-axis-limit: 10
+
+    # The (default) game mode of players that enter the world
+    game-mode: CREATIVE
     
     # Whether to always keep the sun directly up there.
     static-time-day: true
     
     # Whether to keep the weather sunny.
     static-weather-clear: true
+
+    # Whether breaking containers or killing a mob or hanging entity should drop its items
+    drop-entity-items: false
+
+    # The value of the gamerule doTileDrops: whether breaking blocks should yield item drops
+    do-tile-drops: false
     
     interaction:
       # Whether to disable explosions in the world. If enabled, they will not destroy blocks or propel entities.
+      # TNT Minecarts form an exception. These will damage and propel nearby entities, unfortunately.
       disable-explosions: true
       
       # Whether to disable portal creation.
@@ -35,6 +45,10 @@ worlds:
       #- FLINT_AND_STEEL
     
     generator:
+      # The biome to use during the generation of the world.
+      # See https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/Biome.html for biome names.
+      default-biome: JUNGLE
+    
       # Type ID first, Data value second. Data values can be excluded.
       wall-type: '44:6'
       floor-type: '35:8'
@@ -69,6 +83,7 @@ import-plotme-settings:
   # You likely want these world names to be the same,
   # to keep the region data for plots. If they are, make
   # sure you have identical generator settings for your Parcel world.
+  # It only makes sense to do this if you copy the world itself.
   
   worlds:
     plotworld: Parcels

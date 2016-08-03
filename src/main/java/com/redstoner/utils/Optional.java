@@ -48,7 +48,7 @@ public class Optional<T> implements Serializable {
 	}
 	
 	public static <T> Optional<T> ofNullable(T value) {
-		return new Optional<>(value);
+		return value == null ? empty() : new Optional<>(value);
 	}
 	
 	private T value;

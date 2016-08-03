@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Biome;
 import org.bukkit.configuration.ConfigurationSection;
@@ -20,8 +21,11 @@ import com.redstoner.utils.Values;
 public class ParcelWorldSettings {
 	
 	public final int axisLimit;
+	public final GameMode gameMode;
 	public final boolean staticTimeDay;
 	public final boolean staticWeatherClear;
+	public final boolean dropEntityItems;
+	public final boolean doTileDrops;
 	
 	public final boolean disableExplosions;
 	public final boolean blockPortalCreation;
@@ -44,7 +48,8 @@ public class ParcelWorldSettings {
 	
 	public final BlockType ownerWallBlockType;
 	
-	private ParcelWorldSettings(int axisLimit, boolean staticTimeDay, boolean staticWeatherClear,
+	private ParcelWorldSettings(int axisLimit, GameMode gameMode, boolean staticTimeDay, boolean staticWeatherClear, 
+			boolean dropEntityItems, boolean doTileDrops,
 			
 			boolean disableExplosions, boolean blockPortalCreation, boolean blockMobSpawning, List<Material> itemsBlocked,
 			
@@ -52,8 +57,11 @@ public class ParcelWorldSettings {
 			int parcelSize, int pathSize, int floorHeight, int offsetX, int offsetZ, Biome defaultBiome) {
 		
 		this.axisLimit = axisLimit;
+		this.gameMode = gameMode;
 		this.staticTimeDay = staticTimeDay;
 		this.staticWeatherClear = staticWeatherClear;
+		this.dropEntityItems = dropEntityItems;
+		this.doTileDrops = doTileDrops;
 		
 		// INTERACTION
 		this.disableExplosions = disableExplosions;
@@ -82,8 +90,11 @@ public class ParcelWorldSettings {
 	private ParcelWorldSettings(CastingMap<String, Object> settings) {
 		this(
 			settings.getCasted("parcel-axis-limit"),
+			settings.getCasted("game-mode"),
 			settings.getCasted("static-time-day"),
 			settings.getCasted("static-weather-clear"),
+			settings.getCasted("drop-entity-items"),
+			settings.getCasted("do-tile-drops"),
 			
 			settings.getCasted("interaction.disable-explosions"),
 			settings.getCasted("interaction.block-portal-creation"),
@@ -108,6 +119,10 @@ public class ParcelWorldSettings {
 	public static ParcelWorldSettings parseMap(String worldName, Map<String, Object> input, ErrorPrinter errorPrinter) {
 		
 		ParcelWorldSettings parsed = null;
+		
+		if (worldName.length() > 32) {
+			errorPrinter.add("World names longer than 32 characters are not supported by Parcels.");
+		}
 
 		CastingMap<String, Object> settings = new CastingMap<>();
 		
@@ -115,12 +130,12 @@ public class ParcelWorldSettings {
 			
 			String excPrefix = "Option '" + key + "' ";
 			if (!input.containsKey(key)) {
-				errorPrinter.add(excPrefix + "is missing from your settings. Aborting generator.");
+				errorPrinter.add(excPrefix + "is missing from your settings. Aborting world.");
 			} else {			
 				try {
 					settings.put(key, function.apply(input.get(key)));
 				} catch (SettingParseException e) {
-					errorPrinter.add(excPrefix + "could not be parsed. Aborting generator.");
+					errorPrinter.add(excPrefix + "could not be parsed. Aborting world.");
 					errorPrinter.add("  Cause: " + e.getMessage());
 				}
 			}
@@ -182,6 +197,22 @@ public class ParcelWorldSettings {
 				}
 			};
 			
+			Function<Object, Object> parseGameMode = obj -> {
+				if (obj instanceof String) {
+					String query = ((String) obj).toUpperCase().replaceAll(" ", "_");
+					if (query.equals("NULL")) {
+						return null;
+					}
+					try {
+						return GameMode.valueOf(query);
+					} catch (IllegalArgumentException e) {
+						throw new SettingParseException("The game mode " + query + " does not exist."
+								+ "See https://hub.spigotmc.org/javadocs/spigot/org/bukkit/GameMode.html");
+					}
+				}
+				throw new SettingParseException("This must be the name of the game mode");
+			};
+			
 			Function<Object, Object> checkBoolean = obj -> {
 				if (obj instanceof Boolean) {
 					return obj;
@@ -214,12 +245,15 @@ public class ParcelWorldSettings {
 								+ "See https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/Biome.html");
 					}
 				}
-				throw new SettingParseException("This must be a name for the biome.");
+				throw new SettingParseException("This must be a name for the biome");
 			};
 			
 			put("parcel-axis-limit", checkInteger);
+			put("game-mode", parseGameMode);
 			put("static-time-day", checkBoolean);
 			put("static-weather-clear", checkBoolean);
+			put("drop-entity-items", checkBoolean);
+			put("do-tile-drops", checkBoolean);
 			
 			put("interaction.disable-explosions", checkBoolean);
 			put("interaction.block-portal-creation", checkBoolean);

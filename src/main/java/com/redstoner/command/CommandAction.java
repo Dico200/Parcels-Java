@@ -60,10 +60,13 @@ public enum CommandAction {
 
 		@Override
 		String execute(Command handler, CommandSender sender, String[] args) {
-			if (args.length == 0)
+			if (args.length == 0 || !args[0].toLowerCase().equals("help")) {
 				return handler.getHelpPage(sender, 1);
+			}
 			Integer page = parseInt(args[args.length - 1]);
-			if (page == null) page = 1;
+			if (page == null) {
+				page = 1;
+			}
 			Validate.isTrue(page > 0, "That page does not exist");
 			return handler.getHelpPage(sender, page);
 		}

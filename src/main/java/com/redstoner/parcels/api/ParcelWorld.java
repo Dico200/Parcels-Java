@@ -26,7 +26,6 @@ import com.redstoner.parcels.api.schematic.ParcelSchematic;
 import com.redstoner.parcels.api.schematic.Schematic;
 import com.redstoner.parcels.generation.ParcelGenerator;
 import com.redstoner.utils.DuoObject.Coord;
-import com.redstoner.utils.Formatting;
 import com.redstoner.utils.Optional;
 import com.redstoner.utils.UUIDUtil;
 import com.redstoner.utils.Values;
@@ -104,12 +103,12 @@ public class ParcelWorld {
 	
 	public void teleport(Player user, Parcel parcel) {
 		Coord home = getHomeCoord(parcel);
-		user.teleport(new Location(Bukkit.getWorld(name), home.getX(), settings.floorHeight + 1, home.getZ(), -90, 0));
+		user.teleport(new Location(getWorld(), home.getX(), settings.floorHeight + 1, home.getZ(), -90, 0));
 	}
 	
 	public Coord getHomeCoord(Parcel parcel) {
 		Coord NW = getBottomCoord(parcel);
-		return Coord.of(NW.getX() - 2, NW.getZ() + (settings.parcelSize - 1) / 2);
+		return Coord.of(NW.getX(), NW.getZ() + (settings.parcelSize - 1) / 2);
 	}
 	
 	public Coord getBottomCoord(Parcel parcel) {
@@ -253,9 +252,9 @@ public class ParcelWorld {
 				signBlock.setType(Material.WALL_SIGN);
 				signBlock.setData((byte) 4);
 				Sign sign = (Sign) signBlock.getState();
-				sign.setLine(0, String.format(Formatting.translateChars('&', "&9ID: (&e%s&b)"), parcel.getId()));
-				sign.setLine(2, Formatting.AQUA + "Owner:");
-				sign.setLine(3, Formatting.YELLOW + ownerName);
+				sign.setLine(0, "ID: " + parcel.getId());
+				sign.setLine(2, "Owner:");
+				sign.setLine(3, ownerName);
 				sign.update();
 				
 				skullBlock.setType(Material.SKULL);
