@@ -1,40 +1,50 @@
 package com.redstoner.parcels.command;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
 
-import com.redstoner.command.CommandException;
-import com.redstoner.command.LambdaCommand;
-import com.redstoner.command.SenderType;
-import com.redstoner.utils.Values;
-
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-public class ParcelCommand extends LambdaCommand {
+import com.redstoner.command.Command;
+import com.redstoner.command.CommandException;
+import com.redstoner.command.CommandScape;
+import com.redstoner.command.SenderType;
 
-	public ParcelCommand(String command, ParcelRequirement requirement,
-			BiFunction<Player, ParcelScape, String> executor,
-			BiFunction<Player, ParcelScape, List<String>> tabCompleter) {
-		super(command, (sender, scape) -> {
-				Player user = (Player) sender;
-				return executor.apply(user, new ParcelScape(user, scape, requirement));
-			}, (sender, scape) -> {
-				Player user = (Player) sender;
-				try {
-					return tabCompleter.apply(user, new ParcelScape(user, scape, requirement));
-				} catch (CommandException e) {
-					return new ArrayList<>();
-				}
-			}
-		);
-		Values.validate(executor != null && tabCompleter != null && requirement != null, "tabCompleter, executor and requirement may not be null");
+abstract class ParcelCommand extends Command {
+	
+	private final ParcelRequirement requirement;
+	
+	public ParcelCommand(String command, ParcelRequirement requirement) {
+		super(command);
+		checkNotNull(requirement);
+		this.requirement = requirement;
 		setSenderType(SenderType.PLAYER);
 	}
+
+	@Override
+	protected String execute(CommandSender sender, CommandScape scape) {
+		Player user = (Player) sender;
+		return execute(user, new ParcelScape(user, scape, requirement));
+	}
 	
-	public ParcelCommand(String command, ParcelRequirement requirement,
-			BiFunction<Player, ParcelScape, String> executor) {
-		this(command, requirement, executor, (sender, scape) -> scape.proposals());
+	@Override
+	protected List<String> tabComplete(CommandSender sender, CommandScape scape) {
+		Player user = (Player) sender;
+		try {
+			return tabComplete(user, new ParcelScape(user, scape, requirement));
+		} catch (CommandException e) {
+			return new ArrayList<>();
+		}
+		
+	}
+	
+	protected abstract String execute(Player sender, ParcelScape scape);
+	
+	protected List<String> tabComplete(Player sender, ParcelScape scape) {
+		return scape.proposals();
 	}
 
 }

@@ -1,5 +1,7 @@
 package com.redstoner.parcels.api;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +18,6 @@ import com.redstoner.utils.DuoObject.BlockType;
 import com.redstoner.utils.ErrorPrinter;
 import com.redstoner.utils.Maps.CastingMap;
 import com.redstoner.utils.Optional;
-import com.redstoner.utils.Values;
 
 public class ParcelWorldSettings {
 	
@@ -226,7 +227,7 @@ public class ParcelWorldSettings {
 				try {
 					return ((List<String>) obj).stream().map(v -> {
 						Material type = Material.getMaterial(v);
-						Values.checkNotNull(type, new SettingParseException(String.format("Material %s could not be parsed. "
+						checkNotNull(type, new SettingParseException(String.format("Material %s could not be parsed. "
 								+ "See https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html", v)));
 						return type;
 					}).collect(Collectors.toList());

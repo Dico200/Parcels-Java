@@ -43,11 +43,7 @@ public class Validate {
 	}
 	
 	public static <T> T returnIfPresent(Optional<T> maybe, String failMessage) {
-		try {
-			return maybe.get();
-		} catch (java.util.NoSuchElementException e) {
-			throw new CommandException(failMessage);
-		}
+		return maybe.orElseThrow(new CommandException(failMessage));
 	}
 	
 	private Validate() {

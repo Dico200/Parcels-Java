@@ -44,8 +44,8 @@ public class InputHandler extends org.bukkit.command.Command {
 		} catch (CommandException e) {
 			message = e.getMessage();
 			color = Messaging.EXCEPT;
-		} catch (ArgumentException e) {
-			Bukkit.getLogger().severe(String.format("Command '%s' threw ArgumentException: '%s'", parent.getId(), e.getMessage()));
+		} catch (ConfigException e) {
+			Bukkit.getLogger().severe(String.format("Command '%s' threw ConfigException: '%s'", parent.getId(), e.getMessage()));
 			e.printStackTrace();
 			return true;
 		}

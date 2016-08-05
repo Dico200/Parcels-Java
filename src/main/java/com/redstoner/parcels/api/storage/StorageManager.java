@@ -118,8 +118,7 @@ public class StorageManager {
 			username = (username = conf.getString("mySQLuname")) == null ? "root" : username;
 			password = (password = conf.getString("mySQLpass")) == null ? "" : password;
 			
-			ParcelsPlugin.log("Connecting to PlotMe's MySQL database with details:");
-			ParcelsPlugin.log(String.format("hostname = '%s', database = '%s', username = '%s', password = '%s'", hostname, database, username, password));
+			ParcelsPlugin.log("Connecting to PlotMe's MySQL database");
 			return new MySQLConnector(hostname, database, username, password);
 			
 		} else {

@@ -1,20 +1,19 @@
 package com.redstoner.parcels.command;
 
+import org.bukkit.entity.Player;
+
+import com.redstoner.command.CommandScape;
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.WorldManager;
-
-import com.redstoner.command.CommandScape;
 import com.redstoner.utils.Optional;
 
-import org.bukkit.entity.Player;
-
-public class ParcelScape extends CommandScape {
+class ParcelScape extends CommandScape {
 	
 	public ParcelScape(Player user, CommandScape scape, ParcelRequirement requirement) {
 		super(scape);
 		this.in = WorldManager.getWorld(user.getWorld());
-		this.at = in.flatMap(w -> w.getParcelAt(user.getLocation().getBlockX(), user.getLocation().getBlockZ()));
+		this.at = in.flatMap(w -> w.getParcelAt(user.getLocation()));
 		requirement.test(user, in, at);
 	}
 	

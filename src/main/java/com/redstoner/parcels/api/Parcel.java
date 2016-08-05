@@ -136,11 +136,13 @@ public class Parcel implements Serializable {
 		return String.format("%d:%d", x, z);
 	}
 	
+	@Override
 	public String toString() {
 		return String.format("parcel at (%s)", getId());
 	}
 	
 	public String getInfo() {
+		
 		// Key: The player, Value: Whether allowed or banned.
 		Map<UUID, Boolean> global = getGloballyAdded().map(PlayerMap::getMap).orElse(new HashMap<>());
 		Map<UUID, Boolean> local = getAdded().getMap();
@@ -150,23 +152,15 @@ public class Parcel implements Serializable {
 		Map<UUID, String> bannedPlayers = new LinkedHashMap<>();
 		
 		local.forEach((uuid, allowed) -> {
-			if (allowed) {
-				allowedPlayers.put(uuid, UUIDUtil.getName(uuid)); 
-			} else {
-				bannedPlayers.put(uuid, UUIDUtil.getName(uuid));
-			}
+			(allowed ? allowedPlayers : bannedPlayers).put(uuid, UUIDUtil.getName(uuid)); 
 		});
 		
 		global.forEach((uuid, allowed) -> {
-			if (allowed) {
-				allowedPlayers.put(uuid, "&a(G)&e" + UUIDUtil.getName(uuid));
-			} else {
-				bannedPlayers.put(uuid, "&a(G)&e" + UUIDUtil.getName(uuid));
-			}
+			(allowed ? allowedPlayers : bannedPlayers).put(uuid, "&a(G)&e" + UUIDUtil.getName(uuid));
 		});
 		
-		String allowedList = String.join("&b, ", allowedPlayers.values());
-		String bannedList = String.join("&b, ", bannedPlayers.values());
+		String allowedList = String.join("&b, &e", allowedPlayers.values());
+		String bannedList = String.join("&b, &e", bannedPlayers.values());
 		
 		return String.format("&bID: (&e%s&b) Owner: &e%s&b\nAllowed: &e%s&b\nBanned: &e%s", 
 				getId(), owner.map(UUIDUtil::getName).orElse(""), allowedList, bannedList);

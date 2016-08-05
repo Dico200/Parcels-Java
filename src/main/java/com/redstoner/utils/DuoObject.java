@@ -1,5 +1,7 @@
 package com.redstoner.utils;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class DuoObject<T, U> {
 	
 	public DuoObject(T v1, U v2) {
@@ -18,6 +20,7 @@ public class DuoObject<T, U> {
 		return v2;
 	}
 	
+	@Override
 	public String toString() {
 		return String.format("(%s, %s)", v1, v2);
 	}
@@ -94,7 +97,7 @@ public class DuoObject<T, U> {
 	public static class BlockType extends DuoObject<Short, Byte> {
 		
 		public static BlockType fromString(String s) throws NumberFormatException {
-			Values.checkNotNull(s);
+			checkNotNull(s);
 			String[] both = s.split(":");
 			String id;
 			String data = "0";

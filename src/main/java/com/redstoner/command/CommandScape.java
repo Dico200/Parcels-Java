@@ -1,5 +1,7 @@
 package com.redstoner.command;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -9,7 +11,6 @@ import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 
 import com.redstoner.utils.Optional;
-import com.redstoner.utils.Values;
 
 public class CommandScape {
 	
@@ -61,7 +62,7 @@ public class CommandScape {
 	}
 	
 	public List<String> proposals() {
-		Values.validate(proposals != null, "This is not a tab completer");
+		checkNotNull(proposals, new ConfigException("This is not a tab completer"));
 		return proposals;
 	}
 	
@@ -94,10 +95,10 @@ public class CommandScape {
 				try {
 					return (T) entry.getValue();
 				} catch (ClassCastException e) {
-					throw new ArgumentException("Wrong class type requested for parameter " + identifier + ": " + e.getMessage());
+					throw new ConfigException("Wrong class type requested for parameter " + identifier + ": " + e.getMessage());
 				}
 			}
 		}
-		throw new ArgumentException("Requested parameter does not exist: " + identifier);
+		throw new ConfigException("Requested parameter does not exist: " + identifier);
 	}
 }

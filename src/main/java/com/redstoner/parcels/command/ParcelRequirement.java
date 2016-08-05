@@ -12,7 +12,7 @@ import org.bukkit.entity.Player;
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.parcels.api.ParcelWorld;
 
-public enum ParcelRequirement {
+enum ParcelRequirement {
 	
 	NONE,
 	

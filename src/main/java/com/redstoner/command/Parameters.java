@@ -18,7 +18,7 @@ public class Parameters extends LinkedList<Parameter<?>>{
 		boolean lastRequired = true;
 		for (Parameter<?> param : params) {
 			if (!lastRequired && param.isRequired())
-				throw new ArgumentException("You cannot have a required parameter after one that is not required");
+				throw new ConfigException("You cannot have a required parameter after one that is not required");
 			lastRequired = param.isRequired();
 			
 			param.setIndex(i);

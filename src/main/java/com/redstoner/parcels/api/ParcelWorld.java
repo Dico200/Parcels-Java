@@ -149,6 +149,10 @@ public class ParcelWorld {
 	
 	public void reset(Parcel parcel) {
 		parcel.dispose();
+		clear(parcel);
+	}
+	
+	public void clear(Parcel parcel) {
 		clearBlocks(parcel);
 		removeEntities(parcel);
 	}

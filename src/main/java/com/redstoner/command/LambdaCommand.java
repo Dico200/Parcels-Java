@@ -1,11 +1,11 @@
 package com.redstoner.command;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 import java.util.function.BiFunction;
 
 import org.bukkit.command.CommandSender;
-
-import com.redstoner.utils.Values;
 
 public class LambdaCommand extends Command {
 	
@@ -19,8 +19,8 @@ public class LambdaCommand extends Command {
 	public LambdaCommand(String command, BiFunction<CommandSender, CommandScape, String> executor, 
 			BiFunction<CommandSender, CommandScape, List<String>> tabCompleter) {
 		super(command);
-		Values.validate(executor != null, "executor may not be null");
-		Values.validate(tabCompleter != null, "tabCompleter may not be null");
+		checkNotNull(executor, new ConfigException("executor may not be null"));
+		checkNotNull(tabCompleter, new ConfigException("tabCompleter may not be null"));
 		this.executor = executor;
 		this.tabCompleter = tabCompleter;
 	}

@@ -1,5 +1,6 @@
 package com.redstoner.command;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
@@ -16,8 +17,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
-
-import com.redstoner.utils.Values;
 
 public abstract class ParameterType<T> {
 	
@@ -46,7 +45,7 @@ public abstract class ParameterType<T> {
 	}
 	
 	protected String exceptionMessage() {
-		Values.validate(this.message != null, new ArgumentException("No exception message can be thrown if there is no requirement"));
+		checkArgument(this.message != null, new ConfigException("No exception message can be thrown if there is no requirement"));
 		return message;
 	}
 	

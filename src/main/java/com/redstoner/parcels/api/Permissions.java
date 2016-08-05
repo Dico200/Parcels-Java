@@ -10,6 +10,7 @@ public class Permissions {
 	public static final String
 			PARCEL_COMMAND = "parcels.command",
 			PARCEL_HOME_OTHERS = "parcels.command.home.others",
+			PARCEL_RANDOM_SPECIFIC = "parcels.command.random.specific",
 			ADMIN_BUILDANYWHERE = "parcels.admin.buildanywhere",
 			ADMIN_BYPASS = "parcels.admin.bypass.ban",
 			ADMIN_BYPASS_GAMEMODE = "parcels.admin.bypass.gamemode",

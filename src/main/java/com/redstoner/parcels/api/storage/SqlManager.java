@@ -1,6 +1,8 @@
 package com.redstoner.parcels.api.storage;
 
-import java.nio.ByteBuffer;
+import static com.redstoner.utils.UUIDUtil.fromByteArray;
+import static com.redstoner.utils.UUIDUtil.toByteArray;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,8 +19,6 @@ import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.WorldManager;
 import com.redstoner.utils.ErrorPrinter;
 import com.redstoner.utils.sql.SQLConnector;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 public class SqlManager {
 	
@@ -129,7 +129,7 @@ public class SqlManager {
 				
 				byte[] owner = parcels.getBytes(4);
 				if (owner != null) {
-					parcel.setOwnerIgnoreSQL(toUUID(owner));
+					parcel.setOwnerIgnoreSQL(fromByteArray(owner));
 				}
 				
 				parcel.getSettings().setAllowsInteractInputsIgnoreSQL(parcels.getInt(5) != 0);
@@ -141,7 +141,7 @@ public class SqlManager {
 				
 				Map<UUID, Boolean> addedPlayers = parcel.getAdded().getMap();
 				while (added.next()) {
-					addedPlayers.put(toUUID(added.getBytes(1)), added.getInt(2) != 0);
+					addedPlayers.put(fromByteArray(added.getBytes(1)), added.getInt(2) != 0);
 				}
 				added.close();
 			}
@@ -165,16 +165,6 @@ public class SqlManager {
 			logSqlExc("An exception occurred while retrieving globally added players", e);
 		}
 	}
-
-	static byte[] toBytes(UUID uuid) {
-		return ByteBuffer.wrap(new byte[16]).putLong(uuid.getMostSignificantBits()).putLong(uuid.getLeastSignificantBits()).array();
-    }
-
-	private static UUID toUUID(byte[] arr) {
-		checkArgument(arr.length == 16, "Illegal byte[] length");
-		ByteBuffer buffer = ByteBuffer.wrap(arr);
-		return new UUID(buffer.getLong(), buffer.getLong());
-	}
 	
 	protected static void logSqlExc(String header, SQLException e) {
 		ParcelsPlugin.log(header);
@@ -189,7 +179,7 @@ public class SqlManager {
 	public static void setOwner(String world, int px, int pz, UUID owner) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				setOwner(conn, getId(conn, world, px, pz), owner == null ? null : toBytes(owner));
+				setOwner(conn, getId(conn, world, px, pz), owner == null ? null : toByteArray(owner));
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while setting owner for a parcel", e);
 			}
@@ -231,7 +221,7 @@ public class SqlManager {
 	public static void addPlayer(String world, int px, int pz, UUID player, boolean allowed) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				addPlayer(conn, getId(conn, world, px, pz), toBytes(player), allowed);
+				addPlayer(conn, getId(conn, world, px, pz), toByteArray(player), allowed);
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while adding a player to a parcel", e);
 			}
@@ -241,7 +231,7 @@ public class SqlManager {
 	public static void removePlayer(String world, int px, int pz, UUID player) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				removePlayer(conn, getId(conn, world, px, pz), toBytes(player));
+				removePlayer(conn, getId(conn, world, px, pz), toByteArray(player));
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while removing a player from a parcel", e);
 			}
@@ -261,7 +251,7 @@ public class SqlManager {
 	public static void addGlobalPlayer(UUID player, UUID added, boolean allowed) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				addGlobalPlayer(conn, toBytes(player), toBytes(added), allowed);
+				addGlobalPlayer(conn, toByteArray(player), toByteArray(added), allowed);
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while globally adding a player to someone's parcels", e);
 			}
@@ -271,7 +261,7 @@ public class SqlManager {
 	public static void removeGlobalPlayer(UUID player, UUID removed) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				removeGlobalPlayer(conn, toBytes(player), toBytes(removed));
+				removeGlobalPlayer(conn, toByteArray(player), toByteArray(removed));
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while removing a globally added player from someone's parcels", e);
 			}
@@ -281,7 +271,7 @@ public class SqlManager {
 	public static void removeAllGlobalPlayers(UUID player) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				removeAllGlobalPlayers(conn, toBytes(player));
+				removeAllGlobalPlayers(conn, toByteArray(player));
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while removing all globally added players from someone's parcels", e);
 			}
@@ -395,10 +385,10 @@ public class SqlManager {
 						int x = parcel.getX();
 						int z = parcel.getZ();
 						if (parcel.getOwner().isPresent()) {
-							setOwner(conn, getId(conn, worldName, x, z), toBytes(parcel.getOwner().get()));
+							setOwner(conn, getId(conn, worldName, x, z), toByteArray(parcel.getOwner().get()));
 						}
 						for (Map.Entry<UUID, Boolean> added : parcel.getAdded().getMap().entrySet()) {
-							addPlayer(conn, getId(conn, worldName, x, z), toBytes(added.getKey()), added.getValue());
+							addPlayer(conn, getId(conn, worldName, x, z), toByteArray(added.getKey()), added.getValue());
 						}
 					}
 				}
@@ -446,23 +436,35 @@ public class SqlManager {
 					parcelsSmt.close();
 					
 					while (plotSet.next()) {
-
-						int parcelId = getId(parcelsConn, worldNameTo, plotSet.getInt(1) - 1, plotSet.getInt(2) - 1);	
-						setOwner(parcelsConn, parcelId, setup.getBytesFromIndex(plotSet, 3));
+						
+						byte[] owner = setup.getBytesFromIndex(plotSet, 3);
+						if (owner == null) {
+							continue;
+						}
+						
+						final int parcelId = getId(parcelsConn, worldNameTo, plotSet.getInt(1) - 1, plotSet.getInt(2) - 1);
+						setOwner(parcelsConn, parcelId, owner);
 						
 						// Import allowed players
-						ResultSet allowedSet = setup.getAllowed(plotMeConn, plotSet);				
+						ResultSet allowedSet = setup.getAllowed(plotMeConn, plotSet);
+						byte[] player;
 						while (allowedSet.next()) {
-							addPlayer(parcelsConn, parcelId, setup.getBytesFromIndex(allowedSet, 1), true);
+							player = setup.getBytesFromIndex(allowedSet, 1);
+							if (player != null) {
+								addPlayer(parcelsConn, parcelId, player, true);
+							}
 						}
 						allowedSet.close();
 						
-						// Import denied players
-						ResultSet deniedSet = setup.getDenied(plotMeConn, plotSet);					
-						while (deniedSet.next()) {
-							addPlayer(parcelsConn, parcelId, setup.getBytesFromIndex(deniedSet, 1), false);
+						// Import banned players
+						ResultSet bannedSet = setup.getBanned(plotMeConn, plotSet);
+						while (bannedSet.next()) {
+							player = setup.getBytesFromIndex(bannedSet, 1);
+							if (player != null) {
+								addPlayer(parcelsConn, parcelId, player, false);
+							}
 						}
-						deniedSet.close();
+						bannedSet.close();			
 						
 					}
 					plotSet.close();
@@ -506,7 +508,7 @@ enum PlotMeTableSetup {
 		}
 		
 		@Override
-		public ResultSet getDenied(Connection conn, ResultSet plotSet) throws SQLException {
+		public ResultSet getBanned(Connection conn, ResultSet plotSet) throws SQLException {
 			PreparedStatement query = conn.prepareStatement("SELECT `player` FROM `plotmecore_denied` WHERE `plot_id` = ?;");
 			query.setInt(1, plotSet.getInt(4));
 			return query.executeQuery();
@@ -514,7 +516,8 @@ enum PlotMeTableSetup {
 
 		@Override
 		public byte[] getBytesFromIndex(ResultSet set, int index) throws SQLException {
-			return SqlManager.toBytes(UUID.fromString(set.getString(index)));
+			String uuid = set.getString(index);
+			return uuid == null ? null : toByteArray(UUID.fromString(uuid));
 		}
 		
 	},
@@ -543,7 +546,7 @@ enum PlotMeTableSetup {
 		}
 		
 		@Override
-		public ResultSet getDenied(Connection conn, ResultSet plotSet) throws SQLException {
+		public ResultSet getBanned(Connection conn, ResultSet plotSet) throws SQLException {
 			PreparedStatement query = conn.prepareStatement("SELECT `playerid` FROM `plotmedenied` WHERE `world` = ? AND `idX` = ? AND `idZ` = ?;");
 			query.setString(1, plotSet.getString(4));
 			query.setInt(2, plotSet.getInt(1));
@@ -582,7 +585,7 @@ enum PlotMeTableSetup {
 		}
 		
 		@Override
-		public ResultSet getDenied(Connection conn, ResultSet plotSet) throws SQLException {
+		public ResultSet getBanned(Connection conn, ResultSet plotSet) throws SQLException {
 			PreparedStatement query = conn.prepareStatement("SELECT `playerid` FROM `plotmeDenied` WHERE `world` = ? AND `idX` = ? AND `idZ` = ?;");
 			query.setString(1, plotSet.getString(4));
 			query.setInt(2, plotSet.getInt(1));
@@ -603,7 +606,7 @@ enum PlotMeTableSetup {
 	
 	public abstract ResultSet getAllowed(Connection conn, ResultSet plotSet) throws SQLException;
 	
-	public abstract ResultSet getDenied(Connection conn, ResultSet plotSet) throws SQLException;
+	public abstract ResultSet getBanned(Connection conn, ResultSet plotSet) throws SQLException;
 	
 	public abstract byte[] getBytesFromIndex(ResultSet set, int index) throws SQLException;
 	
