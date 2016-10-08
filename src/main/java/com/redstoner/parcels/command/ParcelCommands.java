@@ -33,26 +33,6 @@ import com.redstoner.utils.UUIDUtil;
 
 public final class ParcelCommands {
 	
-	static final String PREFIX = "Parcels";
-	
-	private static final ParameterType<Coord> PARCEL_PARAMETER_TYPE = new ParameterType<Coord>("Parcel", "the ID of a parcel") {
-
-		@Override
-		protected Coord handle(String input) {
-			String[] both = input.split(":");
-			Validate.isTrue(both.length == 2, exceptionMessage());
-			int x, z;
-			try {
-				x = Integer.parseInt(both[0]);
-				z = Integer.parseInt(both[1]);
-			} catch (NumberFormatException e) {
-				throw new CommandException(exceptionMessage());
-			}
-			return Coord.of(x, z);
-		}
-			
-	};
-	
 	public static void register() {
 		
 		CommandManager.register(PREFIX, PARCEL);
@@ -84,6 +64,26 @@ public final class ParcelCommands {
 		
 		ConfirmableRequest.registerConfirmationListener();
 	}
+	
+	static final String PREFIX = "Parcels";
+	
+	private static final ParameterType<Coord> PARCEL_PARAMETER_TYPE = new ParameterType<Coord>("Parcel", "the ID of a parcel") {
+
+		@Override
+		protected Coord handle(String input) {
+			String[] both = input.split(":");
+			Validate.isTrue(both.length == 2, exceptionMessage());
+			int x, z;
+			try {
+				x = Integer.parseInt(both[0]);
+				z = Integer.parseInt(both[1]);
+			} catch (NumberFormatException e) {
+				throw new CommandException(exceptionMessage());
+			}
+			return Coord.of(x, z);
+		}
+			
+	};
 	
 	private static final Command PARCEL = new Command("parcel") {
 		{

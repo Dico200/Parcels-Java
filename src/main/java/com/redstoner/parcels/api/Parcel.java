@@ -143,26 +143,33 @@ public class Parcel implements Serializable {
 	
 	public String getInfo() {
 		
-		// Key: The player, Value: Whether allowed or banned.
-		Map<UUID, Boolean> global = getGloballyAdded().map(PlayerMap::getMap).orElse(new HashMap<>());
-		Map<UUID, Boolean> local = getAdded().getMap();
-		
 		// Key: The player, Value: The name.
 		Map<UUID, String> allowedPlayers = new LinkedHashMap<>();
 		Map<UUID, String> bannedPlayers = new LinkedHashMap<>();
 		
-		local.forEach((uuid, allowed) -> {
+		getAdded().getMap().forEach((uuid, allowed) -> {
 			(allowed ? allowedPlayers : bannedPlayers).put(uuid, UUIDUtil.getName(uuid)); 
 		});
 		
-		global.forEach((uuid, allowed) -> {
+		getGloballyAdded().map(PlayerMap::getMap).orElse(new HashMap<>()).forEach((uuid, allowed) -> {
 			(allowed ? allowedPlayers : bannedPlayers).put(uuid, "&a(G)&e" + UUIDUtil.getName(uuid));
 		});
 		
-		String allowedList = String.join("&b, &e", allowedPlayers.values());
-		String bannedList = String.join("&b, &e", bannedPlayers.values());
+		String allowedList;
+		if (allowedPlayers.isEmpty()) {
+			allowedList = "";
+		} else {
+			allowedList = "&b\nAllowed: &e" + String.join("&b, &e", allowedPlayers.values());
+		}
 		
-		return String.format("&bID: (&e%s&b) Owner: &e%s&b\nAllowed: &e%s&b\nBanned: &e%s", 
+		String bannedList;
+		if (bannedPlayers.isEmpty()) {
+			bannedList = "";
+		} else {
+			bannedList = "&b\nBanned: &e" + String.join("&b, &e", bannedPlayers.values());
+		}
+		
+		return String.format("&bID: (&e%s&b) Owner: &e%s%s%s", 
 				getId(), owner.map(UUIDUtil::getName).orElse(""), allowedList, bannedList);
 	}
 
