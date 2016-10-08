@@ -3,6 +3,7 @@ package com.redstoner.utils;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -15,7 +16,15 @@ public class UUIDUtil {
 	}
 	
 	public static byte[] toByteArray(UUID uuid) {
-		return ByteBuffer.wrap(new byte[16]).putLong(uuid.getMostSignificantBits()).putLong(uuid.getLeastSignificantBits()).array();
+		return uuid == null ? null : ByteBuffer.wrap(new byte[16]).putLong(uuid.getMostSignificantBits()).putLong(uuid.getLeastSignificantBits()).array();
+	}
+	
+	public static String bytesToString(byte[] array) {
+		return array == null ? null : new String(array, StandardCharsets.UTF_8);
+	}
+	
+	public static String toBytesAsString(UUID uuid) {
+		return bytesToString(toByteArray(uuid));
 	}
 	
 	public static UUID fromByteArray(byte[] array) {

@@ -1,7 +1,9 @@
 package com.redstoner.parcels.api.storage;
 
+import static com.redstoner.utils.UUIDUtil.bytesToString;
 import static com.redstoner.utils.UUIDUtil.fromByteArray;
 import static com.redstoner.utils.UUIDUtil.toByteArray;
+import static com.redstoner.utils.UUIDUtil.toBytesAsString;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -111,7 +113,7 @@ public class SqlManager {
 		}
 		
 		try {
-			PreparedStatement query = conn.prepareStatement(PARCELS_QUERY);
+			PreparedStatement query = conn.prepareStatement(PARCELS_QUERY, ResultSet.CONCUR_UPDATABLE);
 			query.setString(1, worldName);
 			ResultSet parcels = query.executeQuery();
 			
@@ -146,7 +148,7 @@ public class SqlManager {
 				added.close();
 			}
 			parcels.close();
-			
+			query.close();
 		} catch (SQLException e) {
 			logSqlExc(String.format("[SEVERE] Error occurred while loading data for world '%s'", worldName), e);
 		}
@@ -179,7 +181,7 @@ public class SqlManager {
 	public static void setOwner(String world, int px, int pz, UUID owner) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				setOwner(conn, getId(conn, world, px, pz), owner == null ? null : toByteArray(owner));
+				setOwner(conn, getId(conn, world, px, pz), toBytesAsString(owner));
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while setting owner for a parcel", e);
 			}
@@ -221,7 +223,7 @@ public class SqlManager {
 	public static void addPlayer(String world, int px, int pz, UUID player, boolean allowed) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				addPlayer(conn, getId(conn, world, px, pz), toByteArray(player), allowed);
+				addPlayer(conn, getId(conn, world, px, pz), toBytesAsString(player), allowed);
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while adding a player to a parcel", e);
 			}
@@ -231,7 +233,7 @@ public class SqlManager {
 	public static void removePlayer(String world, int px, int pz, UUID player) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				removePlayer(conn, getId(conn, world, px, pz), toByteArray(player));
+				removePlayer(conn, getId(conn, world, px, pz), toBytesAsString(player));
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while removing a player from a parcel", e);
 			}
@@ -251,7 +253,7 @@ public class SqlManager {
 	public static void addGlobalPlayer(UUID player, UUID added, boolean allowed) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				addGlobalPlayer(conn, toByteArray(player), toByteArray(added), allowed);
+				addGlobalPlayer(conn, toBytesAsString(player), toBytesAsString(added), allowed);
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while globally adding a player to someone's parcels", e);
 			}
@@ -261,7 +263,7 @@ public class SqlManager {
 	public static void removeGlobalPlayer(UUID player, UUID removed) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				removeGlobalPlayer(conn, toByteArray(player), toByteArray(removed));
+				removeGlobalPlayer(conn, toBytesAsString(player), toBytesAsString(removed));
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while removing a globally added player from someone's parcels", e);
 			}
@@ -271,16 +273,16 @@ public class SqlManager {
 	public static void removeAllGlobalPlayers(UUID player) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				removeAllGlobalPlayers(conn, toByteArray(player));
+				removeAllGlobalPlayers(conn, toBytesAsString(player));
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while removing all globally added players from someone's parcels", e);
 			}
 		});
 	}
 	
-	private static void setOwner(Connection conn, int id, byte[] owner) throws SQLException {
+	private static void setOwner(Connection conn, int id, String owner) throws SQLException {
 		PreparedStatement update = conn.prepareStatement(SET_OWNER_UPDATE);
-		update.setBytes(1, owner);
+		update.setString(1, owner);
 		update.setInt(2, id);
 		update.executeUpdate();
 		update.close();
@@ -294,19 +296,19 @@ public class SqlManager {
 		update.close();
 	}
 	
-	private static void addPlayer(Connection conn, int id, byte[] player, boolean allowed) throws SQLException {
+	private static void addPlayer(Connection conn, int id, String player, boolean allowed) throws SQLException {
 		PreparedStatement update = conn.prepareStatement(PARCEL_ADD_PLAYER_UPDATE);
 		update.setInt(1, id);
-		update.setBytes(2, player);
+		update.setString(2, player);
 		update.setBoolean(3, allowed);
 		update.executeUpdate();
 		update.close();
 	}
 	
-	private static void removePlayer(Connection conn, int id, byte[] player) throws SQLException {
+	private static void removePlayer(Connection conn, int id, String player) throws SQLException {
 		PreparedStatement update = conn.prepareStatement(PARCEL_REMOVE_PLAYER_UPDATE);
 		update.setInt(1, id);
-		update.setBytes(2, player);
+		update.setString(2, player);
 		update.executeUpdate();
 		update.close();
 	}
@@ -317,26 +319,26 @@ public class SqlManager {
 		update.executeUpdate();
 	}
 	
-	private static void addGlobalPlayer(Connection conn, byte[] player, byte[] added, boolean allowed) throws SQLException {
+	private static void addGlobalPlayer(Connection conn, String player, String added, boolean allowed) throws SQLException {
 		PreparedStatement update = conn.prepareStatement(GLOBAL_ADD_PLAYER_UPDATE);
-		update.setBytes(1, player);
-		update.setBytes(2, added);
+		update.setString(1, player);
+		update.setString(2, added);
 		update.setInt(3, allowed ? 1 : 0);
 		update.executeUpdate();
 		update.close();
 	}
 	
-	private static void removeGlobalPlayer(Connection conn, byte[] player, byte[] removed) throws SQLException {
+	private static void removeGlobalPlayer(Connection conn, String player, String removed) throws SQLException {
 		PreparedStatement update = conn.prepareStatement(GLOBAL_REMOVE_PLAYER_UPDATE);
-		update.setBytes(1, player);
-		update.setBytes(2, removed);
+		update.setString(1, player);
+		update.setString(2, removed);
 		update.executeUpdate();
 		update.close();
 	}
 	
-	private static void removeAllGlobalPlayers(Connection conn, byte[] player) throws SQLException {
+	private static void removeAllGlobalPlayers(Connection conn, String player) throws SQLException {
 		PreparedStatement update = conn.prepareStatement(GLOBAL_CLEAR_PLAYERS_UPDATE);
-		update.setBytes(1, player);
+		update.setString(1, player);
 		update.executeUpdate();
 		update.close();
 	}
@@ -385,10 +387,10 @@ public class SqlManager {
 						int x = parcel.getX();
 						int z = parcel.getZ();
 						if (parcel.getOwner().isPresent()) {
-							setOwner(conn, getId(conn, worldName, x, z), toByteArray(parcel.getOwner().get()));
+							setOwner(conn, getId(conn, worldName, x, z), toBytesAsString(parcel.getOwner().get()));
 						}
 						for (Map.Entry<UUID, Boolean> added : parcel.getAdded().getMap().entrySet()) {
-							addPlayer(conn, getId(conn, worldName, x, z), toByteArray(added.getKey()), added.getValue());
+							addPlayer(conn, getId(conn, worldName, x, z), toBytesAsString(added.getKey()), added.getValue());
 						}
 					}
 				}
@@ -443,7 +445,7 @@ public class SqlManager {
 						}
 						
 						final int parcelId = getId(parcelsConn, worldNameTo, plotSet.getInt(1) - 1, plotSet.getInt(2) - 1);
-						setOwner(parcelsConn, parcelId, owner);
+						setOwner(parcelsConn, parcelId, bytesToString(owner));
 						
 						// Import allowed players
 						ResultSet allowedSet = setup.getAllowed(plotMeConn, plotSet);
@@ -451,7 +453,7 @@ public class SqlManager {
 						while (allowedSet.next()) {
 							player = setup.getBytesFromIndex(allowedSet, 1);
 							if (player != null) {
-								addPlayer(parcelsConn, parcelId, player, true);
+								addPlayer(parcelsConn, parcelId, bytesToString(player), true);
 							}
 						}
 						allowedSet.close();
@@ -461,7 +463,7 @@ public class SqlManager {
 						while (bannedSet.next()) {
 							player = setup.getBytesFromIndex(bannedSet, 1);
 							if (player != null) {
-								addPlayer(parcelsConn, parcelId, player, false);
+								addPlayer(parcelsConn, parcelId, bytesToString(player), false);
 							}
 						}
 						bannedSet.close();			
@@ -612,10 +614,11 @@ enum PlotMeTableSetup {
 	
 	public boolean isCase(Connection conn) {
 		try {
-			Statement stm = conn.createStatement();
-			ResultSet rs = stm.executeQuery(String.format("SELECT 1 FROM `%s` LIMIT 1;", getPlotMeTableName()));
+			PreparedStatement pstm = conn.prepareStatement("SELECT 1 FROM ? LIMIT 1;");
+			pstm.setString(1, getPlotMeTableName());
+			ResultSet rs = pstm.executeQuery();
 			rs.close();
-			stm.close();
+			pstm.close();
 			return true;
 		} catch (SQLException e) {
 			return false;
