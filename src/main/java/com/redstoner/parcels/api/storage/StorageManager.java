@@ -3,10 +3,9 @@ package com.redstoner.parcels.api.storage;
 import java.io.File;
 import java.util.Arrays;
 
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.plugin.Plugin;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.utils.ErrorPrinter;
@@ -93,11 +92,15 @@ public class StorageManager {
 	}
 	
 	private static SQLConnector getPlotMeConnector() {
-		Plugin plotMe = Bukkit.getPluginManager().getPlugin("PlotMe");
-		if (plotMe == null)
-			return null;
 		
-		ConfigurationSection conf = plotMe.getConfig();
+		File plotMeFolder = new File(String.join(File.separator, ParcelsPlugin.getInstance().getDataFolder().getAbsolutePath(), "..", "PlotMe"));
+		
+		File configFile = new File(plotMeFolder, "config.yml");
+		if (!configFile.exists()) {
+			return null;
+		}
+		
+		FileConfiguration conf = YamlConfiguration.loadConfiguration(configFile);
 		if (conf.getBoolean("usemySQL")) {
 			String hostname;
 			String database;
@@ -122,7 +125,7 @@ public class StorageManager {
 			return new MySQLConnector(hostname, database, username, password);
 			
 		} else {
-			return new SQLiteConnector(new File(plotMe.getDataFolder(), "plots.db"));
+			return new SQLiteConnector(new File(plotMeFolder, "plots.db"));
 		}
 	}
 

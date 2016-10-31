@@ -16,7 +16,7 @@ public class Maps {
 	
 	public static <K, V> Map<K, V> putAll(Map<K, V> map, K[] keys, V[] values) {
 		if (keys.length != values.length)
-			throw new UnsupportedOperationException();
+			throw new IllegalArgumentException();
 		for (int i = 0; i < keys.length; i++) {
 			map.put(keys[i], values[i]);
 		}

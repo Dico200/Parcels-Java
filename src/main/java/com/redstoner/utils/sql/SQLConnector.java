@@ -15,14 +15,7 @@ public abstract class SQLConnector {
 	private static final List<SQLConnector> connectors = new ArrayList<>();
 	
 	public static void closeAllConnections() {
-		connectors.forEach(c -> {
-			try {
-				if (!c.conn.isClosed()) c.conn.close();
-			} catch (SQLException e) {
-				System.out.println("[com.redstoner.utils.SQLConnector] Failed to close a database connection");
-				e.printStackTrace();
-			}
-		});
+		connectors.forEach(SQLConnector::closeConn);
 	}
 	
 	private static final ThreadGroup threadGroup = new ThreadGroup("SqlConnector");
@@ -72,6 +65,8 @@ public abstract class SQLConnector {
 	
 	public void closeConn() {
 		try {
+			if (!conn.getAutoCommit())
+				conn.commit();
 			conn.close();
 			conn = null;
 			connected = false;

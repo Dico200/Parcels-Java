@@ -2,8 +2,8 @@ package com.redstoner.utils.sql;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 public class MySQLConnector extends SQLConnector {
 	
@@ -20,10 +20,11 @@ public class MySQLConnector extends SQLConnector {
 	@Override
 	public Connection createConnection() throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:mysql://" + hostname, username, password);
-		Statement stm = conn.createStatement();
-		stm.executeUpdate(String.format("CREATE DATABASE IF NOT EXISTS `%s`", database));
-		stm.executeUpdate(String.format("USE `%s`", database));
-		stm.close();
+		PreparedStatement pstm = conn.prepareStatement("CREATE DATABASE IF NOT EXISTS ?; USE ?;");
+		pstm.setString(1, database);
+		pstm.setString(2, database);
+		pstm.executeUpdate();
+		pstm.close();
 		return conn;
 	}
 	

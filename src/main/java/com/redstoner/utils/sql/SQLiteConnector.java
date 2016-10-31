@@ -25,7 +25,7 @@ public class SQLiteConnector extends SQLConnector {
 	@Override
 	public Connection createConnection() throws SQLException {
 		DriverManager.registerDriver(new org.sqlite.JDBC());
-		return DriverManager.getConnection("jdbc:sqlite:" + sqlFile.getPath());
+		return DriverManager.getConnection("jdbc:sqlite:" + sqlFile.getAbsolutePath());
 	}
 	
 	@Override
