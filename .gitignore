@@ -22,3 +22,8 @@ build/
 
 #Exported
 bin/
+
+# IntelliJ
+.iml
+.idea/
+classes/
