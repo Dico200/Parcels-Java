@@ -5,14 +5,6 @@ import org.bukkit.command.CommandSender;
 
 public class Messaging {
 
-    static void print(String s) {
-        System.out.println(s);
-    }
-
-    public static void main(String[] args) {
-        print(Formatting.translateChars('&', "&4&c&f&h"));
-    }
-
     public static final Formatting SUCCESS = Formatting.GREEN;
     public static final Formatting EXCEPT = Formatting.YELLOW;
 

@@ -2,7 +2,7 @@ package com.redstoner.utils;
 
 public class Formatting {
 
-    private static final char FORMAT_CHAR = '\u00a7';
+    public static final char FORMAT_CHAR = '\u00a7';
     private static final char UNDEFINED = '\0';
 
     public static final Formatting
@@ -48,6 +48,7 @@ public class Formatting {
         boolean needsFormatChar = formatChar != UNDEFINED;
 
         char[] formats = new char[6];
+        // just make sure it's not the same as formatChar
         char previous = (formatChar == 'a') ? 'b' : 'a';
 
         for (char c : input.toLowerCase().toCharArray()) {
@@ -107,7 +108,7 @@ public class Formatting {
         StringBuilder format = new StringBuilder();
         for (char c : formats) {
             if (c != UNDEFINED)
-                format.append(String.valueOf(FORMAT_CHAR) + c);
+                format.append(FORMAT_CHAR).append(c);
             else break;
         }
         this.format = format.toString();

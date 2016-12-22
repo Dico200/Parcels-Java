@@ -38,7 +38,7 @@ public abstract class Command extends Hierarchy<Command> {
         return scape.proposals();
     }
 
-    private final void doSenderChecks(CommandSender sender) {
+    private void doSenderChecks(CommandSender sender) {
         senderType.check(sender);
 
         if (permission != null && !permission.isEmpty()) {
@@ -87,9 +87,9 @@ public abstract class Command extends Hierarchy<Command> {
         setPermission("$PARENT$.$COMMAND$");
         setSenderType(SenderType.EITHER);
         setDescription("");
-        setHelpInformation(new String[]{});
-        setAliases(new String[]{});
-        setParameters(new Parameter<?>[]{});
+        setHelpInformation();
+        setAliases();
+        setParameters();
         setOnHelpRequest(CommandAction.DISPLAY_HELP);
         setOnSyntaxRequest(CommandAction.DISPLAY_SYNTAX);
     }
@@ -124,7 +124,7 @@ public abstract class Command extends Hierarchy<Command> {
     }
 
     protected final String collectPath(int layerFrom) {
-        String[] prev = Arrays.copyOfRange(getPath(), layerFrom, getLayer() - 1);
+        CharSequence[] prev = Arrays.copyOfRange(getPath(), layerFrom, getLayer() - 1);
         return String.format("%s %s", String.join(" ", prev), getId());
     }
 
@@ -167,7 +167,7 @@ public abstract class Command extends Hierarchy<Command> {
     }
 
     /**
-     * @param helpInformation Lines to print when help is requested. Comes down to a very detailed description.
+     * @param lines Lines to print when help is requested. Comes down to a very detailed description.
      * @default empty string[]
      */
     protected final void setHelpInformation(String... lines) {

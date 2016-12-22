@@ -5,18 +5,12 @@ import com.redstoner.parcels.api.list.SqlPlayerMap;
 import com.redstoner.parcels.api.storage.SqlManager;
 import com.redstoner.parcels.api.storage.StorageManager;
 import com.redstoner.utils.DuoObject.Coord;
-import com.redstoner.utils.Optional;
 import com.redstoner.utils.UUIDUtil;
 import org.bukkit.OfflinePlayer;
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-public class Parcel implements Serializable {
-    private static final long serialVersionUID = -7252413358120772747L;
+public class Parcel {
 
     private final ParcelWorld world;
     private Optional<UUID> owner;
@@ -63,7 +57,7 @@ public class Parcel implements Serializable {
     }
 
     public boolean setOwnerIgnoreSQL(UUID owner) {
-        if (this.owner.equals(owner))
+        if (this.owner.filter(x -> x.equals(owner)).isPresent())
             return false;
         this.owner = Optional.ofNullable(owner);
         return true;

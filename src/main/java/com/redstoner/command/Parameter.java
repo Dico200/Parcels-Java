@@ -9,6 +9,8 @@ public class Parameter<T> {
     private String description;
     private boolean required;
     private int index;
+    private boolean hasDefault;
+    private T defaultValue;
 
     public Parameter(String name, ParameterType<T> type, String description, boolean required) {
         this.name = name;
@@ -16,10 +18,17 @@ public class Parameter<T> {
         this.description = description;
         this.required = required;
         this.index = 0;
+        hasDefault = false;
     }
 
     public Parameter(String name, ParameterType<T> type, String description) {
         this(name, type, description, true);
+    }
+
+    public Parameter(String name, ParameterType<T> type, String description, T defaultValue) {
+        this(name, type, description, true);
+        hasDefault = true;
+        this.defaultValue = defaultValue;
     }
 
     String getName() {
@@ -44,6 +53,8 @@ public class Parameter<T> {
 
     public T accept(String input) {
         if (input == null || input.isEmpty()) {
+            if (hasDefault)
+                return defaultValue;
             if (required)
                 throw new CommandException("EXEC:CommandAction.DISPLAY_SYNTAX");
             return null;
@@ -53,6 +64,14 @@ public class Parameter<T> {
         } catch (CommandException e) {
             throw new CommandException(e.getMessage().replace("$ARG$", name).replace("$DESC$", description));
         }
+    }
+
+    public boolean isHasDefault() {
+        return hasDefault;
+    }
+
+    public T getDefaultValue() {
+        return defaultValue;
     }
 
     public List<String> complete(String input) {

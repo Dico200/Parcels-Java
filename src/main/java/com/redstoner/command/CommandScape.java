@@ -1,7 +1,5 @@
 package com.redstoner.command;
 
-import com.redstoner.utils.Optional;
-
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.BiPredicate;
@@ -14,7 +12,7 @@ public class CommandScape {
     private final List<String> proposals;
     private final HashMap<Parameter<?>, Object> parsed;
 
-    public CommandScape(Parameters params, String[] original, List<String> proposals) {
+    public CommandScape(String[] original, List<String> proposals) {
         this.original = original;
         this.parsed = null;
         this.proposals = proposals;
@@ -85,7 +83,10 @@ public class CommandScape {
 
     @SuppressWarnings("unchecked")
     private <T, U> T get(BiPredicate<Parameter<?>, U> filter, U identifier) {
-        assert parsed != null : new UnsupportedOperationException();
+        if (parsed == null) {
+            throw new UnsupportedOperationException("This CommandScape is for completions only. Suggested completions " +
+                    "are found through my .proposals() method. Parameters are not parsed.");
+        }
         for (Entry<Parameter<?>, Object> entry : parsed.entrySet()) {
             if (filter.test(entry.getKey(), identifier)) {
                 try {

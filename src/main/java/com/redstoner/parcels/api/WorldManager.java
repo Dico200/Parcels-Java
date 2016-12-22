@@ -1,7 +1,6 @@
 package com.redstoner.parcels.api;
 
 import com.redstoner.parcels.ParcelsPlugin;
-import com.redstoner.utils.Optional;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
@@ -9,6 +8,7 @@ import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;

@@ -6,7 +6,6 @@ import com.redstoner.parcels.api.schematic.ParcelSchematic;
 import com.redstoner.parcels.api.schematic.Schematic;
 import com.redstoner.parcels.generation.ParcelGenerator;
 import com.redstoner.utils.DuoObject.Coord;
-import com.redstoner.utils.Optional;
 import com.redstoner.utils.UUIDUtil;
 import com.redstoner.utils.Values;
 import org.bukkit.*;
@@ -17,6 +16,7 @@ import org.bukkit.entity.Player;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
@@ -239,7 +239,10 @@ public class ParcelWorld {
         Block signBlock = world.getBlockAt(bx - 2, settings.floorHeight + 1, bz - 1);
         Block skullBlock = world.getBlockAt(bx - 1, settings.floorHeight + 2, bz - 1);
         Bukkit.getScheduler().runTask(ParcelsPlugin.getInstance(), () -> {
-            parcel.getOwner().ifPresentOrElse(owner -> {
+
+            Optional<UUID> optOwner = parcel.getOwner();
+            if (optOwner.isPresent()) {
+                UUID owner = optOwner.get();
                 String ownerName = UUIDUtil.getName(owner);
 
                 wallBlock.setTypeIdAndData(settings.ownerWallBlockType.getId(), settings.ownerWallBlockType.getData(), false);
@@ -258,11 +261,12 @@ public class ParcelWorld {
                 skull.setOwner(ownerName);
                 skull.setRotation(BlockFace.WEST);
                 skull.update();
-            }, () -> {
+
+            } else {
                 wallBlock.setTypeIdAndData(settings.wallType.getId(), settings.wallType.getData(), false);
                 signBlock.setTypeIdAndData(0, (byte) 0, false);
                 skullBlock.setTypeIdAndData(0, (byte) 0, false);
-            });
+            }
         });
     }
 

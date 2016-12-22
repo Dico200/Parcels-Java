@@ -1,9 +1,10 @@
 package com.redstoner.command;
 
-import com.redstoner.utils.Optional;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
+
+import java.util.Optional;
 
 public class Validate {
 
@@ -42,7 +43,7 @@ public class Validate {
     }
 
     public static <T> T returnIfPresent(Optional<T> maybe, String failMessage) {
-        return maybe.orElseThrow(new CommandException(failMessage));
+        return maybe.orElseThrow(() -> new CommandException(failMessage));
     }
 
     private Validate() {

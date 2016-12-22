@@ -60,19 +60,19 @@ public class HelpWriter {
         }
         int onThisPage = getCommandsDisplayed(page);
 
-        Command[] cmds = handler.getChildren().stream().filter(child -> child.accepts(sender)).toArray(size -> new Command[size]);
+        Command[] cmds = handler.getChildren().stream().filter(child -> child.accepts(sender)).toArray(Command[]::new);
         int layer = handler.getLayer();
         String[] cmdsToDisplay = Arrays.stream(Arrays.copyOfRange(cmds, Math.min(cmdsDisplayed, cmds.length), Math.min(cmdsDisplayed + onThisPage, cmds.length)))
-                .map(c -> String.format(SUBCOMMAND_FORMAT, command, c.collectPath(layer), c.getDescription())).toArray(size -> new String[size]);
+                .map(c -> String.format(SUBCOMMAND_FORMAT, command, c.collectPath(layer), c.getDescription())).toArray(String[]::new);
 
         if (helpToDisplay.length == 0 && cmdsToDisplay.length == 0) {
             return String.format(NOT_A_PAGE_FORMAT, page, command);
         }
 
         for (String s : helpToDisplay)
-            message.append('\n' + s);
+            message.append('\n').append(s);
         for (String s : cmdsToDisplay)
-            message.append('\n' + s);
+            message.append('\n').append(s);
 
         message.append(String.format(FOOTER_FORMAT, command, page + 1));
 
@@ -89,7 +89,7 @@ public class HelpWriter {
     }
 
     void addSubcommandHeader() {
-        if (!helpMessage[helpMessage.length - 1].equals(SUBCOMMAND_HEADER)) {
+        if (helpMessage.length == 0 || !helpMessage[helpMessage.length - 1].equals(SUBCOMMAND_HEADER)) {
             helpMessage = Arrays.copyOfRange(helpMessage, 0, helpMessage.length + 1);
             helpMessage[helpMessage.length - 1] = SUBCOMMAND_HEADER;
         }

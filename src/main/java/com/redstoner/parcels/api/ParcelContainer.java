@@ -32,7 +32,7 @@ public class ParcelContainer implements Serializable {
             Parcel[] row = parcels[i];
             ParcelsPlugin.debug(String.join(" ", (CharSequence[]) Arrays.stream(row)
                     .map(parcel -> parcel.isClaimed() ? "D" : "x")
-                    .toArray(size -> new String[size])));
+                    .toArray(String[]::new)));
         }
     }
 
@@ -62,7 +62,7 @@ public class ParcelContainer implements Serializable {
     }
 
     protected boolean isClaimedAt(int x, int z) {
-        return isWithinBoundaryAt(x, z) ? getParcelAt(x, z).isClaimed() : false;
+        return isWithinBoundaryAt(x, z) && getParcelAt(x, z).isClaimed();
     }
 
     protected boolean isWithinBoundaryAt(int x, int z) {

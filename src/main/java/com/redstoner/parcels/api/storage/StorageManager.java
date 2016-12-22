@@ -116,7 +116,7 @@ public class StorageManager {
             }
             String[] split = hostname.split("/");
             database = split[split.length - 1];
-            hostname = String.join("/", Arrays.copyOfRange(split, 0, split.length - 1));
+            hostname = String.join("/", (CharSequence[]) Arrays.copyOfRange(split, 0, split.length - 1));
             username = (username = conf.getString("mySQLuname")) == null ? "root" : username;
             password = (password = conf.getString("mySQLpass")) == null ? "" : password;
 

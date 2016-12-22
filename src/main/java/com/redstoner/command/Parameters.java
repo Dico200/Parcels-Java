@@ -28,7 +28,7 @@ public class Parameters extends LinkedList<Parameter<?>> {
     }
 
     public String syntax() {
-        return String.join(" ", (CharSequence[]) stream().map(param -> param.syntax()).toArray(size -> new String[size]));
+        return String.join(" ", (CharSequence[]) stream().map(Parameter::syntax).toArray(String[]::new));
     }
 
     public CommandScape toScape(String[] args) {
@@ -36,7 +36,7 @@ public class Parameters extends LinkedList<Parameter<?>> {
     }
 
     public CommandScape toScape(String[] args, List<String> proposals) {
-        return new CommandScape(this, args, proposals);
+        return new CommandScape(args, proposals);
     }
 
     public List<String> complete(String[] args) {
@@ -44,7 +44,7 @@ public class Parameters extends LinkedList<Parameter<?>> {
         return i < size() && i >= 0 ? get(i).complete(args[i]) : new ArrayList<>();
     }
 
-    protected boolean repeatsLastParameter() {
+    public boolean repeatsLastParameter() {
         return repeatLastParameter;
     }
 

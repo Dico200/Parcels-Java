@@ -7,7 +7,6 @@ import com.redstoner.parcels.api.Permissions;
 import com.redstoner.parcels.api.WorldManager;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.Formatting;
-import com.redstoner.utils.Optional;
 import org.bukkit.*;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
@@ -31,10 +30,7 @@ import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -52,7 +48,7 @@ public class ParcelListener implements Listener {
         entities = new ConcurrentHashMap<>();
 
 		/*\
-		 * Tracks entities. If the entity is dead, they are removed from the list.
+         * Tracks entities. If the entity is dead, they are removed from the list.
 		 * If the entity is found to have left the parcel it was created in, it will be removed from the world and from the list.
 		 * If it is still in the parcel it was created in, and it is on the ground, it is removed from the list.
 		 * 
@@ -118,15 +114,16 @@ public class ParcelListener implements Listener {
         if (!user.hasPermission(Permissions.ADMIN_BYPASS)) {
             Location to = event.getTo();
             WorldManager.getWorld(to.getWorld()).ifPresent(world -> {
-                world.getParcelAt(to.getBlockX(), to.getBlockZ()).filter(parcel -> parcel.isBanned(user)).ifPresent(() -> {
+                if (world.getParcelAt(to.getBlockX(), to.getBlockZ()).filter(parcel -> parcel.isBanned(user)).isPresent()) {
                     Location from = event.getFrom();
-                    world.getParcelAt(from.getBlockX(), from.getBlockZ()).ifPresentOrElse(parcel -> {
-                        world.teleport(user, parcel);
+                    Optional<Parcel> optParcel = world.getParcelAt(from.getBlockX(), from.getBlockZ());
+                    if (optParcel.isPresent()) {
+                        world.teleport(user, optParcel.get());
                         Messaging.send(user, "Parcels", Formatting.YELLOW, "You are banned from this parcel");
-                    }, () -> {
+                    } else {
                         event.setTo(event.getFrom());
-                    });
-                });
+                    }
+                }
             });
         }
     }
@@ -197,9 +194,9 @@ public class ParcelListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onExplosionPrime(ExplosionPrimeEvent event) {
 
-        WorldManager.getWorld(event.getEntity().getLocation().getWorld()).filter(w -> w.getSettings().disableExplosions).ifPresent(() -> {
+        if (WorldManager.getWorld(event.getEntity().getLocation().getWorld()).filter(w -> w.getSettings().disableExplosions).isPresent()) {
             event.setRadius(0);
-        });
+        }
     }
 
     /*
@@ -209,10 +206,9 @@ public class ParcelListener implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onEntityExplode(EntityExplodeEvent event) {
 
-        WorldManager.getWorld(event.getLocation().getWorld()).filter(w -> w.getSettings().disableExplosions).ifPresent(world -> {
+        if (WorldManager.getWorld(event.getLocation().getWorld()).filter(w -> w.getSettings().disableExplosions).isPresent()) {
             event.setCancelled(true);
-        });
-
+        }
     }
 
     /*
@@ -426,7 +422,9 @@ public class ParcelListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onEntityCreatePortal(EntityCreatePortalEvent event) {
 
-        WorldManager.getWorld(event.getEntity().getWorld()).filter(world -> world.getSettings().blockPortalCreation).ifPresent(() -> event.setCancelled(true));
+        if (WorldManager.getWorld(event.getEntity().getWorld()).filter(world -> world.getSettings().blockPortalCreation).isPresent()) {
+            event.setCancelled(true);
+        }
     }
 
     /*
@@ -443,7 +441,6 @@ public class ParcelListener implements Listener {
         if (!WorldManager.isInOtherWorldOrInParcel(event.getItemDrop().getLocation(), p -> p.canBuild(user) || p.getSettings().allowsInteractInventory())) {
             event.setCancelled(true);
         }
-
     }
 
     /*
@@ -549,7 +546,9 @@ public class ParcelListener implements Listener {
     public void onEntitySpawn(EntitySpawnEvent event) {
 
         Entity e = event.getEntity();
-        WorldManager.getWorld(e.getWorld()).filter(world -> e instanceof LivingEntity && world.getSettings().blockMobSpawning).ifPresent(() -> event.setCancelled(true));
+        if (WorldManager.getWorld(e.getWorld()).filter(world -> e instanceof LivingEntity && world.getSettings().blockMobSpawning).isPresent()) {
+            event.setCancelled(true);
+        }
     }
 
     /*
@@ -669,8 +668,9 @@ public class ParcelListener implements Listener {
 
         WorldManager.getWorld(event.getLocation().getWorld()).ifPresent(world -> {
 
-            world.getParcelAt(event.getLocation()).ifPresentOrElse(parcel -> {
-
+            Optional<Parcel> optParcel = world.getParcelAt(event.getLocation());
+            if (optParcel.isPresent()) {
+                Parcel parcel = optParcel.get();
                 Player user = event.getPlayer();
                 if (!user.hasPermission(Permissions.ADMIN_BUILDANYWHERE) && !parcel.canBuild(user)) {
                     event.setCancelled(true);
@@ -683,9 +683,10 @@ public class ParcelListener implements Listener {
                         blocks.remove(block);
                     }
                 }
-            }, () -> {
+
+            } else {
                 event.setCancelled(true);
-            });
+            }
 
         });
     }
@@ -796,10 +797,10 @@ public class ParcelListener implements Listener {
      */
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
-        WorldManager.getWorld(event.getEntity().getWorld()).filter(world -> !world.getSettings().dropEntityItems).ifPresent(() -> {
+        if (WorldManager.getWorld(event.getEntity().getWorld()).filter(world -> !world.getSettings().dropEntityItems).isPresent()) {
             event.getDrops().clear();
             event.setDroppedExp(0);
-        });
+        }
     }
 
     /*
