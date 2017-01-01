@@ -21,11 +21,10 @@ import io.dico.dicore.command.Messaging;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.plugin.Plugin;
 
-public class WorldEditListener implements Listener {
+public class WorldEditListener {
 
     public static void register(Plugin worldEdit) {
         if (worldEdit instanceof WorldEditPlugin) {

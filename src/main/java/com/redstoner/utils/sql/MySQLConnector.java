@@ -3,7 +3,10 @@ package com.redstoner.utils.sql;
 import gnu.trove.set.TCharSet;
 import gnu.trove.set.hash.TCharHashSet;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class MySQLConnector extends SQLConnector {
 

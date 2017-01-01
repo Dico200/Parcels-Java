@@ -12,6 +12,7 @@ import org.bukkit.plugin.Plugin;
 
 public class ParcelsPlugin extends DicoPlugin {
     private static ParcelsPlugin instance = null;
+
     public static ParcelsPlugin getInstance() {
         return instance;
     }

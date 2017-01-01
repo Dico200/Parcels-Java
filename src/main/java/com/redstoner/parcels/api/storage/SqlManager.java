@@ -182,7 +182,7 @@ public class SqlManager {
     }
 
 	/* Setting template
-	public static void setAllowInteract(String world, int px, int pz, boolean enabled) {
+    public static void setAllowInteract(String world, int px, int pz, boolean enabled) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
 				setBooleanParcelSetting(conn, world, px, pz, SET_ALLOW_INTERACT_, enabled);

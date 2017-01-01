@@ -19,7 +19,6 @@ import org.bukkit.block.BlockState;
 import org.bukkit.entity.*;
 import org.bukkit.entity.minecart.ExplosiveMinecart;
 import org.bukkit.event.Event;
-import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
@@ -39,7 +38,7 @@ import java.util.*;
 import static org.bukkit.event.EventPriority.HIGHEST;
 import static org.bukkit.event.EventPriority.NORMAL;
 
-public final class ParcelListener implements Listener {
+public final class ParcelListener {
     private int ignoreWeatherChanges;
     private final Map<Entity, Parcel> entities;
 
@@ -101,8 +100,7 @@ public final class ParcelListener implements Listener {
                     iterator.remove();
                 }
                 Parcel parcel = WorldManager.getParcelAt(entity.getLocation()).orElse(null);
-                if (parcel.hasBlockVisitors())
-                if (parcel != entry.getValue()) {
+                if (!parcel.hasBlockVisitors() && parcel != entry.getValue()) {
                     entity.remove();
                     iterator.remove();
                 }
@@ -232,9 +230,9 @@ public final class ParcelListener implements Listener {
 
     /*
      * Prevents creepers and tnt minecarts from exploding if explosions are disabled
-     * Doesn't prevent breaking item frames ._. pls spigot, call event before item frames die
      */
     private void onEntityExplode(EntityExplodeEvent event) {
+        entities.remove(event.getEntity());
         Location loc = event.getEntity().getLocation();
         WorldManager.getWorld(loc.getWorld()).ifPresent(world -> {
             if (world.getSettings().disableExplosions || world.getParcelAt(loc).filter(Parcel::hasBlockVisitors).isPresent()) {
@@ -806,6 +804,7 @@ public final class ParcelListener implements Listener {
      * Prevents entities from dropping items upon death, if configured that way
      */
     private void onEntityDeath(EntityDeathEvent event) {
+        entities.remove(event.getEntity());
         if (WorldManager.getWorld(event.getEntity().getWorld()).filter(world -> !world.getSettings().dropEntityItems).isPresent()) {
             event.getDrops().clear();
             event.setDroppedExp(0);
