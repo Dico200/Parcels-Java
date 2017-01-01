@@ -9,7 +9,7 @@ storage:
 
 block-visitor:
   pause-ticks: 1
-  work-millis: 20
+  work-millis: 40
 
 worlds:
   Parcels:

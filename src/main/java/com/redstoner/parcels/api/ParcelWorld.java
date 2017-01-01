@@ -1,16 +1,13 @@
 package com.redstoner.parcels.api;
 
 import com.redstoner.parcels.ParcelsPlugin;
-import com.redstoner.parcels.api.list.PlayerMap;
 import com.redstoner.parcels.api.schematic.Schematic;
-import com.redstoner.parcels.api.schematic.SchematicBlock;
 import com.redstoner.parcels.generation.ParcelGenerator;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.UUIDUtil;
 import com.redstoner.utils.Values;
 import io.dico.dicore.util.generator.Generator;
 import io.dico.dicore.util.generator.SimpleGenerator;
-import io.dico.dicore.util.task.IteratorTask;
 import org.bukkit.*;
 import org.bukkit.block.*;
 import org.bukkit.entity.Entity;
@@ -162,6 +159,38 @@ public class ParcelWorld {
         return builder.build();
     }
 
+    public Iterator<Block> getBlockIterator(Parcel parcel) {
+        return new Iterator<Block>() {
+            World world = getWorld();
+
+            final Coord NW = getBottomCoord(parcel);
+            final int x0 = NW.getX();
+            final int z0 = NW.getZ();
+            final int parcelSize = settings.parcelSize;
+            final int max = parcelSize * parcelSize * 256;
+            int blockId = 0;
+
+            @Override
+            public boolean hasNext() {
+                return blockId < max;
+            }
+
+            @Override
+            public Block next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                int blockId = this.blockId++;
+                int y = blockId % 256;
+                blockId /= 256;
+                int z = z0 + (blockId % parcelSize);
+                blockId /= parcelSize;
+                int x = x0 + blockId;
+                return world.getBlockAt(x, y, z);
+            }
+        };
+    }
+
     public Generator<Block> getAllBlocks(Parcel parcel) {
         // this queries the world for blocks "asynchronously" but getBlockAt is thread safe
         // because it simply returns a new instance of Block
@@ -185,103 +214,6 @@ public class ParcelWorld {
 
             }
         };
-    }
-
-    public void swap(Parcel parcel1, Parcel parcel2, Runnable onFinish) {
-        if (parcel1.getWorld() != this || parcel2.getWorld() != this) {
-            throw new IllegalArgumentException("Invalid world");
-        }
-        final int dx = (parcel2.getX() - parcel1.getX()) * settings.sectionSize;
-        final int dz = (parcel2.getZ() - parcel1.getZ()) * settings.sectionSize;
-        if (dx == 0 && dz == 0) {
-            return;
-        }
-
-        Map<SchematicBlock, Boolean> attachables = new LinkedHashMap<>();
-
-        parcel2.incrementBlockVisitors();
-        new BlockVisitor(parcel1) {
-            @Override
-            protected boolean process(Block first) {
-                Block second = first.getRelative(dx, 0, dz);
-                SchematicBlock firstSchem = new SchematicBlock(first);
-                SchematicBlock secondSchem = new SchematicBlock(second);
-
-                if (Schematic.ATTACHABLE_MATERIALS.contains(first.getType())) {
-                    attachables.put(firstSchem, true);
-                    if (Schematic.ATTACHABLE_MATERIALS.contains(second.getType())) {
-                        attachables.put(secondSchem, false);
-                    } else {
-                        secondSchem.paste(world, -dx, 0, -dz);
-                    }
-                } else {
-                    if (Schematic.ATTACHABLE_MATERIALS.contains(second.getType())) {
-                        attachables.put(secondSchem, false);
-                    } else {
-                        secondSchem.paste(world, -dx, 0, -dz);
-                    }
-                    firstSchem.paste(world, dx, 0, dz);
-                }
-                return true;
-            }
-
-            @Override
-            protected void finished(boolean early) {
-                parcel2.decrementBlockVisitors();
-                new IteratorTask<Map.Entry<SchematicBlock, Boolean>>(attachables.entrySet()) {
-                    @Override
-                    protected boolean process(Map.Entry<SchematicBlock, Boolean> entry) {
-                        if (entry.getValue()) {
-                            entry.getKey().paste(world, dx, 0, dz);
-                        } else {
-                            entry.getKey().paste(world, -dx, 0, -dz);
-                        }
-                        return true;
-                    }
-
-                    @Override
-                    protected void onFinish(boolean early) {
-                        onFinish.run();
-                    }
-                }.start(ParcelsPlugin.getInstance(), BlockVisitor.getPause(), BlockVisitor.getPause(), BlockVisitor.getWorkTime());
-            }
-        }.start();
-
-        UUID owner1 = parcel1.getOwner().orElse(null);
-        parcel1.setOwner(parcel2.getOwner().orElse(null));
-        parcel2.setOwner(owner1);
-
-        PlayerMap<Boolean> added1 = parcel1.getAdded();
-        PlayerMap<Boolean> added2 = parcel2.getAdded();
-        Map<UUID, Boolean> map1 = new HashMap<>(added1.getMap());
-        added1.clear();
-        added2.getMap().forEach(added1::add);
-        added2.clear();
-        map1.forEach(added2::add);
-
-        ParcelSettings settings1 = parcel1.getSettings();
-        ParcelSettings settings2 = parcel2.getSettings();
-        boolean allowsInteractLever = settings1.allowsInteractInputs();
-        boolean allowsInteractInventory = settings1.allowsInteractInventory();
-        settings1.setAllowsInteractInputs(settings2.allowsInteractInputs());
-        settings1.setAllowsInteractInventory(settings2.allowsInteractInventory());
-        settings2.setAllowsInteractInputs(allowsInteractLever);
-        settings2.setAllowsInteractInventory(allowsInteractInventory);
-    }
-
-    private void processAttachables(World world, Set<SchematicBlock> attachables, int dx, int dz, Runnable onFinish) {
-        new IteratorTask<SchematicBlock>(attachables) {
-            @Override
-            protected boolean process(SchematicBlock block) {
-                block.paste(world, dx, 0, dz);
-                return true;
-            }
-
-            @Override
-            protected void onFinish(boolean early) {
-                onFinish.run();
-            }
-        }.start(ParcelsPlugin.getInstance(), BlockVisitor.getPause(), BlockVisitor.getPause(), BlockVisitor.getWorkTime());
     }
 
     public Collection<Entity> getEntities(Parcel parcel) {

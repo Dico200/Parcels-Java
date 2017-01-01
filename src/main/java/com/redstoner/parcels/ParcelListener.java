@@ -559,10 +559,14 @@ public final class ParcelListener implements Listener {
      * Prevents mobs (living entities) from spawning if that is disabled for that world in the config.
      */
     private void onEntitySpawn(EntitySpawnEvent event) {
-        Entity e = event.getEntity();
-        if (e instanceof LivingEntity && WorldManager.getWorld(e.getWorld()).filter(world -> world.getSettings().blockMobSpawning).isPresent()) {
-            event.setCancelled(true);
-        }
+        Location loc = event.getEntity().getLocation();
+        WorldManager.getWorld(loc.getWorld()).ifPresent(world -> {
+            if (event.getEntity() instanceof Creature && world.getSettings().blockMobSpawning) {
+                event.setCancelled(true);
+            } else if (world.getParcelAt(loc).filter(Parcel::hasBlockVisitors).isPresent()) {
+                event.setCancelled(true);
+            }
+        });
     }
 
     /*

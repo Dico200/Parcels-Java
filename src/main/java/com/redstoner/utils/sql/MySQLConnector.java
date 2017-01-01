@@ -32,7 +32,8 @@ public class MySQLConnector extends SQLConnector {
     public Connection createConnection() throws SQLException {
         Connection conn = DriverManager.getConnection("jdbc:mysql://" + hostname, username, password);
         try (Statement sm = conn.createStatement()) {
-            sm.execute("CREATE DATABASE IF NOT EXISTS " + database + "; USE " + database + ";");
+            sm.execute("CREATE DATABASE IF NOT EXISTS " + database + ';');
+            sm.execute("USE " + database + ';');
         }
         return conn;
     }

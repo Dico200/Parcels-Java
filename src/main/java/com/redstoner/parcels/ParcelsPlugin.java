@@ -28,6 +28,7 @@ public class ParcelsPlugin extends DicoPlugin {
         instance = this;
         setDebugging(true);
         saveDefaultConfig();
+        getConfig().options().copyDefaults(true);
 
         WorldManager.loadSettingsFromConfig();
         StorageManager.initialise();

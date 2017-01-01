@@ -469,6 +469,7 @@ public final class ParcelCommands {
 
         @Override
         protected String execute(Player sender, ParcelScape scape) {
+            Validate.isTrue(!scape.getParcel().hasBlockVisitors(), "This parcel is currently under construction");
             ConfirmableRequest.file(sender, scape.getParcel(), null, ConfirmableRequest.RequestType.RESET);
             return Formatting.BLUE + "If you really want to reset this parcel, use /pconfirm within 30 seconds.";
         }
@@ -483,6 +484,7 @@ public final class ParcelCommands {
 
         @Override
         protected String execute(Player sender, ParcelScape scape) {
+            Validate.isTrue(!scape.getParcel().hasBlockVisitors(), "This parcel is currently under construction");
             ConfirmableRequest.file(sender, scape.getParcel(), null, ConfirmableRequest.RequestType.CLEAR);
             return Formatting.BLUE + "If you really want to clear this parcel, use /pconfirm within 30 seconds.";
         }
@@ -498,8 +500,10 @@ public final class ParcelCommands {
 
         @Override
         protected String execute(Player sender, ParcelScape scape) {
+            Validate.isTrue(!scape.getParcel().hasBlockVisitors(), "This parcel is currently under construction");
             Coord coord = scape.get("parcel");
             Parcel parcel2 = Validate.returnIfPresent(scape.getWorld().getParcelAtID(coord.getX(), coord.getZ()), "The target parcel does not exist");
+            Validate.isTrue(!parcel2.hasBlockVisitors(), "That parcel is currently under construction");
             ConfirmableRequest.file(sender, scape.getParcel(), parcel2, ConfirmableRequest.RequestType.SWAP);
             return Formatting.BLUE + "If you really want to swap these parcels, use /pconfirm within 30 seconds.";
         }
