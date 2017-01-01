@@ -155,7 +155,7 @@ public class ParcelWorldSettings {
     }
 
     public static Optional<ParcelWorldSettings> parseSettings(ConfigurationSection worlds, String worldName) {
-        ErrorPrinter errorPrinter = new ErrorPrinter(s -> ParcelsPlugin.log(s),
+        ErrorPrinter errorPrinter = new ErrorPrinter(ParcelsPlugin.getInstance()::error,
                 String.format("Exception(s) occurred while loading settings for world '%s':", worldName));
 
         ParcelWorldSettings parsed = null;
@@ -288,13 +288,13 @@ public class ParcelWorldSettings {
                 return wallType;
         }
     }
-}
 
-class SettingParseException extends RuntimeException {
-    private static final long serialVersionUID = 1L;
+    private static class SettingParseException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
 
-    public SettingParseException(String message) {
-        super(message);
+        public SettingParseException(String message) {
+            super(message);
+        }
+
     }
-
 }

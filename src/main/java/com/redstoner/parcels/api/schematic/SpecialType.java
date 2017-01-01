@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-abstract class SpecialType<T> {
+public abstract class SpecialType<T> {
 
     public static Consumer<BlockState> getConverter(BlockState state) {
         for (SpecialType<?> special : SPECIAL) {

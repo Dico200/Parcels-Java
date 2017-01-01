@@ -1,28 +1,24 @@
 package com.redstoner.parcels.api;
 
 import com.redstoner.parcels.ParcelsPlugin;
-import com.redstoner.parcels.api.list.PlayerMap;
-import com.redstoner.parcels.api.schematic.ParcelSchematic;
 import com.redstoner.parcels.api.schematic.Schematic;
 import com.redstoner.parcels.generation.ParcelGenerator;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.UUIDUtil;
 import com.redstoner.utils.Values;
+import io.dico.dicore.util.generator.Generator;
+import io.dico.dicore.util.generator.SimpleGenerator;
 import org.bukkit.*;
 import org.bukkit.block.*;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
 
 public class ParcelWorld {
-
+    private World world;
     private ParcelContainer parcels;
     private ParcelGenerator generator;
     private ParcelWorldSettings settings;
@@ -48,9 +44,13 @@ public class ParcelWorld {
     }
 
     public World getWorld() {
-        World result = Bukkit.getWorld(name);
-        if (result == null)
-            throw new NullPointerException("World name not found in bukkit");
+        World result = world;
+        if (result == null) {
+            result = world = Bukkit.getWorld(name);
+            if (result == null) {
+                throw new NullPointerException("World " + name + " does not appear to be loaded");
+            }
+        }
         return result;
     }
 
@@ -114,7 +114,7 @@ public class ParcelWorld {
     }
 
     public Parcel[] getOwned(OfflinePlayer user) {
-        return parcels.stream().filter(p -> p.isOwner(user)).toArray(size -> new Parcel[size]);
+        return parcels.stream().filter(p -> p.isOwner(user)).toArray(Parcel[]::new);
     }
 
     public Optional<Parcel> getNextUnclaimed() {
@@ -138,16 +138,6 @@ public class ParcelWorld {
         this.parcels = new ParcelContainer(this, settings.axisLimit);
     }
 
-    public void reset(Parcel parcel) {
-        parcel.dispose();
-        clear(parcel);
-    }
-
-    public void clear(Parcel parcel) {
-        clearBlocks(parcel);
-        removeEntities(parcel);
-    }
-
     public Stream<Block> getBlocks(Parcel parcel) {
         Builder<Block> builder = Stream.builder();
 
@@ -169,63 +159,67 @@ public class ParcelWorld {
         return builder.build();
     }
 
-    @SuppressWarnings("deprecation")
-    public void clearBlocks(Parcel parcel) {
+    public Iterator<Block> getBlockIterator(Parcel parcel) {
+        return new Iterator<Block>() {
+            World world = getWorld();
 
-        short fillId = settings.fillType.getId();
-        byte fillData = settings.fillType.getData();
-        short floorId = settings.floorType.getId();
-        byte floorData = settings.floorType.getData();
-        int floorHeight = settings.floorHeight;
+            final Coord NW = getBottomCoord(parcel);
+            final int x0 = NW.getX();
+            final int z0 = NW.getZ();
+            final int parcelSize = settings.parcelSize;
+            final int max = parcelSize * parcelSize * 256;
+            int blockId = 0;
 
-        getBlocks(parcel).forEach(block -> {
-            int y = block.getY();
-            if (y < floorHeight) {
-                block.setTypeId(fillId);
-                block.setData(fillData);
-            } else if (y == floorHeight) {
-                block.setTypeId(floorId);
-                block.setData(floorData);
-            } else if (y > floorHeight) {
-                block.setTypeId(0);
-                block.setData((byte) 0);
+            @Override
+            public boolean hasNext() {
+                return blockId < max;
             }
-        });
+
+            @Override
+            public Block next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                int blockId = this.blockId++;
+                int y = blockId % 256;
+                blockId /= 256;
+                int z = z0 + (blockId % parcelSize);
+                blockId /= parcelSize;
+                int x = x0 + blockId;
+                return world.getBlockAt(x, y, z);
+            }
+        };
     }
 
-    public void swap(Parcel parcel1, Parcel parcel2) {
-        ParcelSchematic.load(this, parcel1).swapWith(ParcelSchematic.load(this, parcel2));
+    public Generator<Block> getAllBlocks(Parcel parcel) {
+        // this queries the world for blocks "asynchronously" but getBlockAt is thread safe
+        // because it simply returns a new instance of Block
+        return new SimpleGenerator<Block>() {
+            @Override
+            protected void run() {
+                World world = getWorld();
 
-        UUID owner1 = parcel1.getOwner().orElse(null);
-        parcel1.setOwner(parcel2.getOwner().orElse(null));
-        parcel2.setOwner(owner1);
+                Coord NW = getBottomCoord(parcel);
+                int x0 = NW.getX();
+                int z0 = NW.getZ();
 
-        PlayerMap<Boolean> added1 = parcel1.getAdded();
-        PlayerMap<Boolean> added2 = parcel2.getAdded();
-        Map<UUID, Boolean> map1 = new HashMap<>(added1.getMap());
-        added1.clear();
-        added2.getMap().forEach((player, value) -> added1.add(player, value));
-        added2.clear();
-        map1.forEach((player, value) -> added2.add(player, value));
+                int x, z, y;
+                for (x = x0; x < x0 + settings.parcelSize; x++) {
+                    for (z = z0; z < z0 + settings.parcelSize; z++) {
+                        for (y = 0; y < 256; y++) {
+                            yield(world.getBlockAt(x, y, z));
+                        }
+                    }
+                }
 
-        ParcelSettings settings1 = parcel1.getSettings();
-        ParcelSettings settings2 = parcel2.getSettings();
-        boolean allowsInteractLever = settings1.allowsInteractInputs();
-        boolean allowsInteractInventory = settings1.allowsInteractInventory();
-        settings1.setAllowsInteractInputs(settings2.allowsInteractInputs());
-        settings1.setAllowsInteractInventory(settings2.allowsInteractInventory());
-        settings2.setAllowsInteractInputs(allowsInteractLever);
-        settings2.setAllowsInteractInventory(allowsInteractInventory);
+            }
+        };
     }
 
-    private Stream<Entity> getEntities(Parcel parcel) {
+    public Collection<Entity> getEntities(Parcel parcel) {
         World world = getWorld();
         Coord NW = getBottomCoord(parcel);
         return Schematic.getContainedEntities(world, NW.getX(), 0, NW.getZ(), NW.getX() + settings.parcelSize, 255, NW.getZ() + settings.parcelSize);
-    }
-
-    public void removeEntities(Parcel parcel) {
-        getEntities(parcel).filter(entity -> entity.getType() != EntityType.PLAYER).forEach(Entity::remove);
     }
 
     @SuppressWarnings("deprecation")

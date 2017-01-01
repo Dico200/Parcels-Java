@@ -7,16 +7,12 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
 
 public class Schematic {
-
     private static int absolute(int i) {
         return i < 0 ? -i : i;
     }
@@ -29,12 +25,13 @@ public class Schematic {
         return y < x ? y : x;
     }
 
-    public static Stream<Entity> getContainedEntities(World w, int x1, int y1, int z1, int x2, int y2, int z2) {
+    public static Collection<Entity> getContainedEntities(World w, int x1, int y1, int z1, int x2, int y2, int z2) {
         return w.getNearbyEntities(new Location(w, average(x1, x2), average(y1, y2), average(z1, z2)),
-                absolute(x2 - x1) / 2.0, absolute(y2 - y1) / 2.0, absolute(z2 - z1) / 2.0).stream();
+                absolute(x2 - x1) / 2.0, absolute(y2 - y1) / 2.0, absolute(z2 - z1) / 2.0);
     }
 
     private static final Comparator<Block> ATTACHABLE;
+    public static final Set<Material> ATTACHABLE_MATERIALS;
 
     private final World world;
     private final int x0, y0, z0;
@@ -65,7 +62,7 @@ public class Schematic {
         }
 
         this.blocks = blocks.build().sorted(ATTACHABLE).map(SchematicBlock::new).toArray(SchematicBlock[]::new);
-        this.entities = getContainedEntities(world, x1, y1, z1, x2, y2, z2).filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
+        this.entities = getContainedEntities(world, x1, y1, z1, x2, y2, z2).stream().filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
     }
 
     public int getX0() {
@@ -99,89 +96,77 @@ public class Schematic {
 
     static {
 
-        ATTACHABLE = new Comparator<Block>() {
+        ATTACHABLE_MATERIALS = EnumSet.of(
+                Material.ACACIA_DOOR,
+                Material.ACTIVATOR_RAIL,
+                Material.BIRCH_DOOR,
+                Material.BROWN_MUSHROOM,
+                Material.CACTUS,
+                Material.CAKE_BLOCK,
+                Material.CARPET,
+                Material.CARROT,
+                Material.COCOA,
+                Material.CROPS,
+                Material.DARK_OAK_DOOR,
+                Material.DEAD_BUSH,
+                Material.DETECTOR_RAIL,
+                Material.DIODE_BLOCK_OFF,
+                Material.DIODE_BLOCK_ON,
+                Material.DOUBLE_PLANT,
+                Material.DRAGON_EGG,
+                Material.FIRE,
+                Material.FLOWER_POT,
+                Material.GOLD_PLATE,
+                Material.IRON_DOOR_BLOCK,
+                Material.IRON_PLATE,
+                Material.IRON_TRAPDOOR,
+                Material.JUNGLE_DOOR,
+                Material.LADDER,
+                Material.LEVER,
+                Material.LONG_GRASS,
+                Material.MELON_STEM,
+                Material.NETHER_WARTS,
+                //Material.PISTON_BASE,
+                //Material.PISTON_EXTENSION,
+                //Material.PISTON_MOVING_PIECE,
+                //Material.PISTON_STICKY_BASE,
+                Material.PORTAL,
+                Material.POTATO,
+                Material.POWERED_RAIL,
+                Material.PUMPKIN_STEM,
+                Material.RAILS,
+                Material.REDSTONE_COMPARATOR_OFF,
+                Material.REDSTONE_COMPARATOR_ON,
+                Material.REDSTONE_TORCH_OFF,
+                Material.REDSTONE_TORCH_ON,
+                Material.REDSTONE_WIRE,
+                Material.RED_MUSHROOM,
+                Material.RED_ROSE,
+                Material.SAPLING,
+                Material.SIGN_POST,
+                Material.SNOW,
+                Material.SPRUCE_DOOR,
+                Material.STANDING_BANNER,
+                Material.STONE_BUTTON,
+                Material.STONE_PLATE,
+                Material.SUGAR_CANE_BLOCK,
+                Material.TORCH,
+                Material.TRAP_DOOR,
+                Material.TRIPWIRE,
+                Material.TRIPWIRE_HOOK,
+                Material.VINE,
+                Material.WALL_BANNER,
+                Material.WALL_SIGN,
+                Material.WATER_LILY,
+                Material.WOOD_BUTTON,
+                Material.WOODEN_DOOR, //The item is WOOD_DOOR
+                Material.WOOD_PLATE,
+                Material.YELLOW_FLOWER
+        );
 
-            private final Set<Material> attachables;
-
-            @Override
-            public int compare(Block b1, Block b2) {
-                boolean c1 = attachables.contains(b1.getType());
-                return c1 == attachables.contains(b2.getType()) ? 0 : c1 ? 1 : -1;
-            }
-
-            {
-                attachables = new HashSet<Material>() {
-                    private static final long serialVersionUID = 1L;
-
-                    {
-                        add(Material.ACACIA_DOOR);
-                        add(Material.ACTIVATOR_RAIL);
-                        add(Material.BIRCH_DOOR);
-                        add(Material.BROWN_MUSHROOM);
-                        add(Material.CACTUS);
-                        add(Material.CAKE_BLOCK);
-                        add(Material.CARPET);
-                        add(Material.CARROT);
-                        add(Material.COCOA);
-                        add(Material.CROPS);
-                        add(Material.DARK_OAK_DOOR);
-                        add(Material.DEAD_BUSH);
-                        add(Material.DETECTOR_RAIL);
-                        add(Material.DIODE_BLOCK_OFF);
-                        add(Material.DIODE_BLOCK_ON);
-                        add(Material.DOUBLE_PLANT);
-                        add(Material.DRAGON_EGG);
-                        add(Material.FIRE);
-                        add(Material.FLOWER_POT);
-                        add(Material.GOLD_PLATE);
-                        add(Material.IRON_DOOR_BLOCK);
-                        add(Material.IRON_PLATE);
-                        add(Material.IRON_TRAPDOOR);
-                        add(Material.JUNGLE_DOOR);
-                        add(Material.LADDER);
-                        add(Material.LEVER);
-                        add(Material.LONG_GRASS);
-                        add(Material.MELON_STEM);
-                        add(Material.NETHER_WARTS);
-                        //add(Material.PISTON_BASE);
-                        //add(Material.PISTON_EXTENSION);
-                        //add(Material.PISTON_MOVING_PIECE);
-                        //add(Material.PISTON_STICKY_BASE);
-                        add(Material.PORTAL);
-                        add(Material.POTATO);
-                        add(Material.POWERED_RAIL);
-                        add(Material.PUMPKIN_STEM);
-                        add(Material.RAILS);
-                        add(Material.REDSTONE_COMPARATOR_OFF);
-                        add(Material.REDSTONE_COMPARATOR_ON);
-                        add(Material.REDSTONE_TORCH_OFF);
-                        add(Material.REDSTONE_TORCH_ON);
-                        add(Material.REDSTONE_WIRE);
-                        add(Material.RED_MUSHROOM);
-                        add(Material.RED_ROSE);
-                        add(Material.SAPLING);
-                        add(Material.SIGN_POST);
-                        add(Material.SNOW);
-                        add(Material.SPRUCE_DOOR);
-                        add(Material.STANDING_BANNER);
-                        add(Material.STONE_BUTTON);
-                        add(Material.STONE_PLATE);
-                        add(Material.SUGAR_CANE_BLOCK);
-                        add(Material.TORCH);
-                        add(Material.TRAP_DOOR);
-                        add(Material.TRIPWIRE);
-                        add(Material.TRIPWIRE_HOOK);
-                        add(Material.VINE);
-                        add(Material.WALL_BANNER);
-                        add(Material.WALL_SIGN);
-                        add(Material.WATER_LILY);
-                        add(Material.WOOD_BUTTON);
-                        add(Material.WOODEN_DOOR); //The item is WOOD_DOOR
-                        add(Material.WOOD_PLATE);
-                        add(Material.YELLOW_FLOWER);
-                    }
-                };
-            }
+        ATTACHABLE = (b1, b2) -> {
+            boolean c1 = ATTACHABLE_MATERIALS.contains(b1.getType());
+            return c1 == ATTACHABLE_MATERIALS.contains(b2.getType()) ? 0 : c1 ? 1 : -1;
         };
     }
 }

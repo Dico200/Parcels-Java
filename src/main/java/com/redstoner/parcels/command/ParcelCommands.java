@@ -1,11 +1,10 @@
 package com.redstoner.parcels.command;
 
-import com.redstoner.command.*;
 import com.redstoner.parcels.api.*;
 import com.redstoner.parcels.api.storage.StorageManager;
 import com.redstoner.utils.DuoObject.Coord;
-import com.redstoner.utils.Formatting;
 import com.redstoner.utils.UUIDUtil;
+import io.dico.dicore.command.*;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Biome;
 import org.bukkit.command.CommandSender;
@@ -19,10 +18,14 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public final class ParcelCommands {
+    private final String prefix;
 
-    public static void register() {
+    public ParcelCommands(String prefix) {
+        this.prefix = prefix;
+    }
 
-        CommandManager.register(PREFIX, PARCEL);
+    public void register() {
+        CommandManager.register(prefix, PARCEL);
         CommandManager.register(PARCEL_AUTO);
         CommandManager.register(PARCEL_INFO);
         CommandManager.register(PARCEL_HOME);
@@ -48,13 +51,9 @@ public final class ParcelCommands {
         CommandManager.register(PARCEL_RANDOM);
         CommandManager.register(PARCEL_SETBIOME);
         CommandManager.register(PARCEL_TPWORLD);
-
-        ConfirmableRequest.registerConfirmationListener();
     }
 
-    static final String PREFIX = "Parcels";
-
-    private static final ParameterType<Coord> PARCEL_PARAMETER_TYPE = new ParameterType<Coord>("Parcel", "the ID of a parcel") {
+    private final ParameterType<Coord> PARCEL_PARAMETER_TYPE = new ParameterType<Coord>("Parcel", "the ID of a parcel") {
 
         @Override
         protected Coord handle(String input) {
@@ -72,7 +71,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL = new Command("parcel") {
+    private final Command PARCEL = new Command("parcel") {
         {
             setPermission(Permissions.PARCEL_COMMAND);
             setDescription("manages your parcels");
@@ -88,7 +87,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_AUTO = new ParcelCommand("parcel auto", ParcelRequirement.IN_WORLD) {
+    private final Command PARCEL_AUTO = new ParcelCommand("parcel auto", ParcelRequirement.IN_WORLD) {
         {
             setDescription("sets you up with a fresh, unclaimed parcel");
             setHelpInformation("Finds the unclaimed parcel nearest to origin,", "and gives it to you");
@@ -108,7 +107,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_INFO = new ParcelCommand("parcel info", ParcelRequirement.IN_PARCEL) {
+    private final Command PARCEL_INFO = new ParcelCommand("parcel info", ParcelRequirement.IN_PARCEL) {
         {
             setDescription("displays information about this parcel");
             setHelpInformation("Displays general information", "about the parcel you're on");
@@ -124,7 +123,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_HOME = new ParcelCommand("parcel home", ParcelRequirement.IN_WORLD) {
+    private final Command PARCEL_HOME = new ParcelCommand("parcel home", ParcelRequirement.IN_WORLD) {
         {
             setDescription("teleports you to parcels");
             setHelpInformation("Teleports you to your parcels,", "unless another player was specified.", "You can specify an index number if you have", "more than one parcel");
@@ -154,7 +153,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_CLAIM = new ParcelCommand("parcel claim", ParcelRequirement.IN_PARCEL) {
+    private final Command PARCEL_CLAIM = new ParcelCommand("parcel claim", ParcelRequirement.IN_PARCEL) {
         {
             setDescription("claims this parcel");
             setHelpInformation("If this parcel is unowned, makes you the owner");
@@ -173,7 +172,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_OPTION = new ParcelCommand("parcel option", ParcelRequirement.IN_WORLD) {
+    private final Command PARCEL_OPTION = new ParcelCommand("parcel option", ParcelRequirement.IN_WORLD) {
         {
             setDescription("changes interaction options for this parcel");
             setHelpInformation("Sets whether players who are not allowed to", "build here can interact with certain things.");
@@ -187,7 +186,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_OPTION_INPUTS = new ParcelCommand("parcel option inputs", ParcelRequirement.IN_PARCEL) {
+    private final Command PARCEL_OPTION_INPUTS = new ParcelCommand("parcel option inputs", ParcelRequirement.IN_PARCEL) {
         {
             setDescription("allows using inputs");
             setHelpInformation("Sets whether players who are not allowed to", "build here can use levers, buttons," + "pressure plates, tripwire or redstone ore");
@@ -210,7 +209,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_OPTION_INVENTORY = new ParcelCommand("parcel option inventory", ParcelRequirement.IN_PARCEL) {
+    private final Command PARCEL_OPTION_INVENTORY = new ParcelCommand("parcel option inventory", ParcelRequirement.IN_PARCEL) {
         {
             setDescription("allows editing inventories");
             setHelpInformation("Sets whether players who are not allowed to", "build here can interact with inventories");
@@ -233,7 +232,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_ALLOW = new ParcelCommand("parcel allow", ParcelRequirement.IN_OWNED) {
+    private final Command PARCEL_ALLOW = new ParcelCommand("parcel allow", ParcelRequirement.IN_OWNED) {
         {
             setDescription("allows a player to build on this parcel");
             setHelpInformation("Allows a player to build on this parcel");
@@ -254,7 +253,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_DISALLOW = new ParcelCommand("parcel disallow", ParcelRequirement.IN_OWNED) {
+    private final Command PARCEL_DISALLOW = new ParcelCommand("parcel disallow", ParcelRequirement.IN_OWNED) {
         {
             setDescription("disallows a player to build on this parcel");
             setHelpInformation("Disallows a player to build on this parcel,", "they won't be allowed to anymore");
@@ -272,7 +271,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_BAN = new ParcelCommand("parcel ban", ParcelRequirement.IN_OWNED) {
+    private final Command PARCEL_BAN = new ParcelCommand("parcel ban", ParcelRequirement.IN_OWNED) {
         {
             setDescription("bans a player from this parcel");
             setHelpInformation("Bans a player from this parcel,", "making them unable to enter");
@@ -293,7 +292,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_UNBAN = new ParcelCommand("parcel unban", ParcelRequirement.IN_OWNED) {
+    private final Command PARCEL_UNBAN = new ParcelCommand("parcel unban", ParcelRequirement.IN_OWNED) {
         {
             setDescription("unbans a player from this parcel");
             setHelpInformation("Unbans a player from this parcel,", "they will be able to enter it again");
@@ -310,7 +309,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_GLOBAL = new ParcelCommand("parcel global", ParcelRequirement.NONE) {
+    private final Command PARCEL_GLOBAL = new ParcelCommand("parcel global", ParcelRequirement.NONE) {
         {
             setDescription("manages your globally added players");
             setHelpInformation("Manages the players who you trust or want", "banned from all the parcels you own.");
@@ -325,7 +324,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_GLOBAL_ALLOW = new ParcelCommand("parcel global allow", ParcelRequirement.NONE) {
+    private final Command PARCEL_GLOBAL_ALLOW = new ParcelCommand("parcel global allow", ParcelRequirement.NONE) {
         {
             setDescription("Globally allows a player to build on your parcels");
             setHelpInformation("Globally allows a player to build on all", "the parcels that you own.");
@@ -343,7 +342,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_GLOBAL_DISALLOW = new ParcelCommand("parcel global disallow", ParcelRequirement.NONE) {
+    private final Command PARCEL_GLOBAL_DISALLOW = new ParcelCommand("parcel global disallow", ParcelRequirement.NONE) {
         {
             setDescription("Globally disallows a player to build on your parcels");
             setHelpInformation("Globally disallows a player to build on", "the parcels that you own.",
@@ -362,7 +361,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_GLOBAL_BAN = new ParcelCommand("parcel global ban", ParcelRequirement.NONE) {
+    private final Command PARCEL_GLOBAL_BAN = new ParcelCommand("parcel global ban", ParcelRequirement.NONE) {
         {
             setDescription("Globally bans a player from your parcels");
             setHelpInformation("Globally bans a player from all the parcels", "that you own, making them unable to enter.");
@@ -380,7 +379,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_GLOBAL_UNBAN = new ParcelCommand("parcel global unban", ParcelRequirement.NONE) {
+    private final Command PARCEL_GLOBAL_UNBAN = new ParcelCommand("parcel global unban", ParcelRequirement.NONE) {
         {
             setDescription("Globally unbans a player from your parcels");
             setHelpInformation("Globally unbans a player from all the parcels", "that you own, they can enter again.",
@@ -399,7 +398,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_SETOWNER = new ParcelCommand("parcel setowner", ParcelRequirement.IN_PARCEL) {
+    private final Command PARCEL_SETOWNER = new ParcelCommand("parcel setowner", ParcelRequirement.IN_PARCEL) {
         {
             setDescription("sets the owner of this parcel");
             setHelpInformation("Sets a new owner for this parcel,", "the owner has rights to manage it.");
@@ -422,7 +421,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_DISPOSE = new ParcelCommand("parcel dispose", ParcelRequirement.IN_OWNED) {
+    private final Command PARCEL_DISPOSE = new ParcelCommand("parcel dispose", ParcelRequirement.IN_OWNED) {
         {
             setDescription("removes any data about this parcel");
             setHelpInformation("removes any data about this parcel, it will be", "unowned, and noone will be allowed or banned.", "This command will not clear this parcel");
@@ -437,7 +436,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_TP = new ParcelCommand("parcel tp", ParcelRequirement.IN_WORLD) {
+    private final Command PARCEL_TP = new ParcelCommand("parcel tp", ParcelRequirement.IN_WORLD) {
         {
             setDescription("teleports to a parcel");
             setHelpInformation("Teleports you or a target player", "to the parcel you specify by ID");
@@ -456,13 +455,13 @@ public final class ParcelCommands {
             String format = "%s teleported %s to the " + p.toString();
             if (target == sender)
                 return String.format(format, "You", "yourself");
-            Messaging.send(target, PREFIX, Messaging.SUCCESS, String.format(format, sender.getName(), "you"));
+            Messaging.send(target, prefix, Messaging.SUCCESS, String.format(format, sender.getName(), "you"));
             return String.format(format, "you", target.getName());
         }
 
     };
 
-    private static final Command PARCEL_RESET = new ParcelCommand("parcel reset", ParcelRequirement.IN_OWNED) {
+    private final Command PARCEL_RESET = new ParcelCommand("parcel reset", ParcelRequirement.IN_OWNED) {
         {
             setDescription("clears and disposes this parcel");
             setHelpInformation("Clears and disposes this parcel,", "see /parcel clear and /parcel dispose");
@@ -470,13 +469,14 @@ public final class ParcelCommands {
 
         @Override
         protected String execute(Player sender, ParcelScape scape) {
+            Validate.isTrue(!scape.getParcel().hasBlockVisitors(), "This parcel is currently under construction");
             ConfirmableRequest.file(sender, scape.getParcel(), null, ConfirmableRequest.RequestType.RESET);
             return Formatting.BLUE + "If you really want to reset this parcel, use /pconfirm within 30 seconds.";
         }
 
     };
 
-    private static final Command PARCEL_CLEAR = new ParcelCommand("parcel clear", ParcelRequirement.IN_OWNED) {
+    private final Command PARCEL_CLEAR = new ParcelCommand("parcel clear", ParcelRequirement.IN_OWNED) {
         {
             setDescription("clears this parcel");
             setHelpInformation("Clears this parcel, resetting all of its blocks", "and removing all entities inside");
@@ -484,13 +484,14 @@ public final class ParcelCommands {
 
         @Override
         protected String execute(Player sender, ParcelScape scape) {
+            Validate.isTrue(!scape.getParcel().hasBlockVisitors(), "This parcel is currently under construction");
             ConfirmableRequest.file(sender, scape.getParcel(), null, ConfirmableRequest.RequestType.CLEAR);
             return Formatting.BLUE + "If you really want to clear this parcel, use /pconfirm within 30 seconds.";
         }
 
     };
 
-    private static final Command PARCEL_SWAP = new ParcelCommand("parcel swap", ParcelRequirement.IN_PARCEL) {
+    private final Command PARCEL_SWAP = new ParcelCommand("parcel swap", ParcelRequirement.IN_PARCEL) {
         {
             setDescription("swaps this parcel and its blocks with another");
             setHelpInformation("Swaps this parcel's data and any other contents,", "such as blocks and entities, with the target parcel");
@@ -499,15 +500,17 @@ public final class ParcelCommands {
 
         @Override
         protected String execute(Player sender, ParcelScape scape) {
+            Validate.isTrue(!scape.getParcel().hasBlockVisitors(), "This parcel is currently under construction");
             Coord coord = scape.get("parcel");
             Parcel parcel2 = Validate.returnIfPresent(scape.getWorld().getParcelAtID(coord.getX(), coord.getZ()), "The target parcel does not exist");
+            Validate.isTrue(!parcel2.hasBlockVisitors(), "That parcel is currently under construction");
             ConfirmableRequest.file(sender, scape.getParcel(), parcel2, ConfirmableRequest.RequestType.SWAP);
             return Formatting.BLUE + "If you really want to swap these parcels, use /pconfirm within 30 seconds.";
         }
 
     };
 
-    private static final Command PARCEL_RANDOM = new ParcelCommand("parcel random", ParcelRequirement.IN_WORLD) {
+    private final Command PARCEL_RANDOM = new ParcelCommand("parcel random", ParcelRequirement.IN_WORLD) {
         {
             setDescription("teleports you to a random parcel");
             setHelpInformation("Teleports you to a random parcel in your current world", "to check it out");
@@ -529,7 +532,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_SETBIOME = new ParcelCommand("parcel setbiome", ParcelRequirement.IN_OWNED) {
+    private final Command PARCEL_SETBIOME = new ParcelCommand("parcel setbiome", ParcelRequirement.IN_OWNED) {
         {
             setDescription("changes the biome of this parcel");
             setHelpInformation("Changes the biome of this parcel to the requested one,");
@@ -555,7 +558,7 @@ public final class ParcelCommands {
 
     };
 
-    private static final Command PARCEL_TPWORLD = new ParcelCommand("parcel tpworld", ParcelRequirement.NONE) {
+    private final Command PARCEL_TPWORLD = new ParcelCommand("parcel tpworld", ParcelRequirement.NONE) {
         {
             setDescription("teleport to the given parcel world");
             setHelpInformation("Teleports you to the requested parcel world.");
@@ -576,7 +579,4 @@ public final class ParcelCommands {
         }
 
     };
-
-    private ParcelCommands() {
-    }
 }

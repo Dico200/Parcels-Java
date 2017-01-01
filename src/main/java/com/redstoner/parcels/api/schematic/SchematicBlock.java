@@ -8,7 +8,7 @@ import org.bukkit.inventory.InventoryHolder;
 
 import java.util.function.Consumer;
 
-class SchematicBlock {
+public class SchematicBlock {
 
     private final int x, y, z;
     private final int typeId;
@@ -55,7 +55,7 @@ class SchematicBlock {
                 converter.accept(state);
                 state.update();
             } catch (ClassCastException e) {
-                ParcelsPlugin.debug("Failed to update a block properly in swap");
+                ParcelsPlugin.getInstance().debug("Failed to update a block properly in swap");
             }
         }
     }

@@ -12,25 +12,24 @@ public class ParcelContainer implements Serializable {
     private static final long serialVersionUID = -2960464067977890792L;
 
     static ParcelContainer resize(ParcelContainer container, ParcelWorld world, int newLimit) {
-
         ParcelContainer result = new ParcelContainer(world, newLimit);
         container.stream().forEach(parcel -> {
             int x = parcel.getX();
             int z = parcel.getZ();
-            if (result.isWithinBoundaryAt(x, z))
+            if (result.isWithinBoundaryAt(x, z)) {
                 result.setParcelAt(x, z, parcel);
-            else
-                ParcelsPlugin.log("WARN: " + parcel.toString() + " could not be fitted in the new size");
+            } else {
+                ParcelsPlugin.getInstance().info("WARNING: " + parcel.toString() + " could not be fitted in the new size");
+            }
         });
 
         return result;
-
     }
 
     public void print() {
         for (int i = parcels.length - 1; i >= 0; i--) {
             Parcel[] row = parcels[i];
-            ParcelsPlugin.debug(String.join(" ", (CharSequence[]) Arrays.stream(row)
+            ParcelsPlugin.getInstance().debug(String.join(" ", (CharSequence[]) Arrays.stream(row)
                     .map(parcel -> parcel.isClaimed() ? "D" : "x")
                     .toArray(String[]::new)));
         }
@@ -104,7 +103,7 @@ public class ParcelContainer implements Serializable {
     }
 
     void setParcelAt(int x, int z, Parcel parcel) {
-        ParcelsPlugin.log("Setting parcel");
+        ParcelsPlugin.getInstance().debug("Setting parcel");
         atX(parcels, x)[axisLimit + z] = parcel;
     }
 

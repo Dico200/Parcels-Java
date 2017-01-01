@@ -1,51 +1,66 @@
 package com.redstoner.parcels;
 
-import com.redstoner.command.Messaging;
 import com.redstoner.parcels.api.Permissions;
 import com.redstoner.parcels.api.WorldManager;
-import com.redstoner.utils.Formatting;
-import com.redstoner.utils.OneTimeRunner;
 import com.sk89q.worldedit.EditSession.Stage;
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.Vector2D;
+import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.blocks.BaseBlock;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.event.extent.EditSessionEvent;
 import com.sk89q.worldedit.extension.platform.Actor;
 import com.sk89q.worldedit.extent.AbstractDelegateExtent;
+import com.sk89q.worldedit.util.eventbus.EventHandler;
 import com.sk89q.worldedit.util.eventbus.EventHandler.Priority;
 import com.sk89q.worldedit.util.eventbus.Subscribe;
 import com.sk89q.worldedit.world.biome.BaseBiome;
+import io.dico.dicore.command.Formatting;
+import io.dico.dicore.command.Messaging;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.plugin.Plugin;
 
-public class WorldEditListener implements Listener {
+public class WorldEditListener {
 
     public static void register(Plugin worldEdit) {
         if (worldEdit instanceof WorldEditPlugin) {
-            WorldEditListener listener = new WorldEditListener();
-            ((WorldEditPlugin) worldEdit).getWorldEdit().getEventBus().register(listener);
-            Bukkit.getPluginManager().registerEvents(listener, ParcelsPlugin.getInstance());
+            new WorldEditListener().register(((WorldEditPlugin) worldEdit).getWorldEdit());
         }
+    }
+
+    private void register(WorldEdit worldEdit) {
+        worldEdit.getEventBus().subscribe(EditSessionEvent.class, new EventHandler(Priority.VERY_EARLY) {
+            @Override
+            public void dispatch(Object o) throws Exception {
+                onEditSession((EditSessionEvent) o);
+            }
+
+            @Override
+            public int hashCode() {
+                return 0;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                return false;
+            }
+        });
+        ParcelsPlugin.getInstance().getRegistrator().registerListener(PlayerCommandPreprocessEvent.class,
+                EventPriority.NORMAL, true, this::onPlayerCommandPreprocess);
     }
 
     @Subscribe(priority = Priority.VERY_EARLY)
     public void onEditSession(EditSessionEvent event) {
-
         if (event.getWorld() == null) {
             return;
         }
 
         WorldManager.getWorld(event.getWorld().getName()).ifPresent(world -> {
-
-            Stage stage = event.getStage();
-            if (stage != Stage.BEFORE_CHANGE && stage != Stage.BEFORE_HISTORY) {
+            if (event.getStage() == Stage.BEFORE_REORDER) {
                 return;
             }
 
@@ -60,15 +75,15 @@ public class WorldEditListener implements Listener {
             }
 
             event.setExtent(new AbstractDelegateExtent(event.getExtent()) {
-
-                private OneTimeRunner messageSender = new OneTimeRunner(() -> {
-                    Messaging.send(user, "Parcels", Formatting.YELLOW, "You can't use WorldEdit there");
-                });
+                private boolean messageSent = false;
 
                 private boolean canBuild(int x, int z) {
                     if (world.getParcelAt(x, z).filter(p -> p.canBuild(user)).isPresent())
                         return true;
-                    messageSender.run();
+                    if (!messageSent) {
+                        messageSent = true;
+                        Messaging.send(user, ParcelsPlugin.getInstance().getName(), Formatting.YELLOW, "You can't use WorldEdit there");
+                    }
                     return false;
                 }
 
@@ -94,8 +109,7 @@ public class WorldEditListener implements Listener {
      *
      * I tried catching with WorldEdit's CommandEvent, but that doesn't seem to respond to cancellation.
      */
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-    public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event) {
+    private void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event) {
         String[] split = event.getMessage().split(" ");
         if (split.length >= 2 && split[0].substring(1).equalsIgnoreCase("up")) {
             Player user = event.getPlayer();
@@ -104,7 +118,7 @@ public class WorldEditListener implements Listener {
 
             WorldManager.getWorld(user.getWorld()).ifPresent(world -> {
                 if (!world.getParcelAt(user.getLocation()).filter(p -> p.canBuild(user)).isPresent()) {
-                    Messaging.send(event.getPlayer(), "Parcels", Formatting.YELLOW, "You can't use WorldEdit there");
+                    Messaging.send(event.getPlayer(), ParcelsPlugin.getInstance().getName(), Formatting.YELLOW, "You can't use WorldEdit there");
                     event.setCancelled(true);
                 }
             });
