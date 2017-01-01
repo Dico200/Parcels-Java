@@ -48,37 +48,37 @@ public final class ParcelListener implements Listener {
         entities = new HashMap<>();
     }
 
-    public void register(Registrator registrator) {
-        registrator.registerListener(PlayerMoveEvent.class, NORMAL, true, this::onPlayerMove);
-        registrator.registerListener(BlockBreakEvent.class, NORMAL, true, this::onBlockBreak);
-        registrator.registerListener(BlockPlaceEvent.class, NORMAL, true, this::onBlockPlace);
-        registrator.registerListener(BlockPistonExtendEvent.class, NORMAL, true, this::onBlockPistonExtend);
-        registrator.registerListener(BlockPistonRetractEvent.class, NORMAL, true, this::onBlockPistonRetract);
-        registrator.registerListener(ExplosionPrimeEvent.class, NORMAL, true, this::onExplosionPrime);
-        registrator.registerListener(EntityExplodeEvent.class, NORMAL, true, this::onEntityExplode);
-        registrator.registerListener(BlockFromToEvent.class, NORMAL, true, this::onBlockFromTo);
-        registrator.registerListener(PlayerInteractEvent.class, NORMAL, true, this::onPlayerInteract);
-        registrator.registerListener(PlayerInteractEntityEvent.class, NORMAL, true, this::onPlayerInteractEntity);
-        registrator.registerListener(EntityChangeBlockEvent.class, NORMAL, true, this::onEntityChangeBlock);
-        registrator.registerListener(EntityCreatePortalEvent.class, NORMAL, true, this::onEntityCreatePortal);
-        registrator.registerListener(PlayerDropItemEvent.class, NORMAL, true, this::onPlayerDropItem);
-        registrator.registerListener(PlayerPickupItemEvent.class, NORMAL, true, this::onPlayerPickupItem);
-        registrator.registerListener(InventoryClickEvent.class, NORMAL, true, this::onInventoryClick);
-        registrator.registerListener(WeatherChangeEvent.class, NORMAL, this::onWeatherChange);
-        registrator.registerListener(WorldLoadEvent.class, NORMAL, true, this::onWorldLoad);
-        registrator.registerListener(EntitySpawnEvent.class, NORMAL, true, this::onEntitySpawn);
-        registrator.registerListener(VehicleMoveEvent.class, NORMAL, this::onVehicleMove);
-        registrator.registerListener(EntityDamageByEntityEvent.class, NORMAL, this::onEntityDamageByEntity);
-        registrator.registerListener(HangingBreakEvent.class, NORMAL, true, this::onHangingBreak);
-        registrator.registerListener(HangingBreakByEntityEvent.class, NORMAL, true, this::onHangingBreakByEntity);
-        registrator.registerListener(HangingPlaceEvent.class, NORMAL, true, this::onHangingPlace);
-        registrator.registerListener(StructureGrowEvent.class, NORMAL, true, this::onStructureGrow);
-        registrator.registerListener(BlockDispenseEvent.class, NORMAL, this::onBlockDispense);
-        registrator.registerListener(ItemSpawnEvent.class, HIGHEST, true, this::onItemSpawn);
-        registrator.registerListener(EntityTeleportEvent.class, NORMAL, true, this::onEntityTeleport);
-        registrator.registerListener(ProjectileLaunchEvent.class, NORMAL, true, this::onProjectileLaunch);
-        registrator.registerListener(EntityDeathEvent.class, NORMAL, this::onEntityDeath);
-        registrator.registerListener(PlayerChangedWorldEvent.class, NORMAL, this::onPlayerChangedWorld);
+    public void register(Registrator r) {
+        r.registerListener(PlayerMoveEvent.class, NORMAL, true, this::onPlayerMove);
+        r.registerListener(BlockBreakEvent.class, NORMAL, true, this::onBlockBreak);
+        r.registerListener(BlockPlaceEvent.class, NORMAL, true, this::onBlockPlace);
+        r.registerListener(BlockPistonExtendEvent.class, NORMAL, true, this::onBlockPistonExtend);
+        r.registerListener(BlockPistonRetractEvent.class, NORMAL, true, this::onBlockPistonRetract);
+        r.registerListener(ExplosionPrimeEvent.class, NORMAL, true, this::onExplosionPrime);
+        r.registerListener(EntityExplodeEvent.class, NORMAL, true, this::onEntityExplode);
+        r.registerListener(BlockFromToEvent.class, NORMAL, true, this::onBlockFromTo);
+        r.registerListener(PlayerInteractEvent.class, NORMAL, true, this::onPlayerInteract);
+        r.registerListener(PlayerInteractEntityEvent.class, NORMAL, true, this::onPlayerInteractEntity);
+        r.registerListener(EntityChangeBlockEvent.class, NORMAL, true, this::onEntityChangeBlock);
+        r.registerListener(EntityCreatePortalEvent.class, NORMAL, true, this::onEntityCreatePortal);
+        r.registerListener(PlayerDropItemEvent.class, NORMAL, true, this::onPlayerDropItem);
+        r.registerListener(PlayerPickupItemEvent.class, NORMAL, true, this::onPlayerPickupItem);
+        r.registerListener(InventoryClickEvent.class, NORMAL, true, this::onInventoryClick);
+        r.registerListener(WeatherChangeEvent.class, NORMAL, this::onWeatherChange);
+        r.registerListener(WorldLoadEvent.class, NORMAL, true, this::onWorldLoad);
+        r.registerListener(EntitySpawnEvent.class, NORMAL, true, this::onEntitySpawn);
+        r.registerListener(VehicleMoveEvent.class, NORMAL, this::onVehicleMove);
+        r.registerListener(EntityDamageByEntityEvent.class, NORMAL, this::onEntityDamageByEntity);
+        r.registerListener(HangingBreakEvent.class, NORMAL, true, this::onHangingBreak);
+        r.registerListener(HangingBreakByEntityEvent.class, NORMAL, true, this::onHangingBreakByEntity);
+        r.registerListener(HangingPlaceEvent.class, NORMAL, true, this::onHangingPlace);
+        r.registerListener(StructureGrowEvent.class, NORMAL, true, this::onStructureGrow);
+        r.registerListener(BlockDispenseEvent.class, NORMAL, this::onBlockDispense);
+        r.registerListener(ItemSpawnEvent.class, HIGHEST, true, this::onItemSpawn);
+        r.registerListener(EntityTeleportEvent.class, NORMAL, true, this::onEntityTeleport);
+        r.registerListener(ProjectileLaunchEvent.class, NORMAL, true, this::onProjectileLaunch);
+        r.registerListener(EntityDeathEvent.class, NORMAL, this::onEntityDeath);
+        r.registerListener(PlayerChangedWorldEvent.class, NORMAL, this::onPlayerChangedWorld);
     }
 
     /*
@@ -271,7 +271,7 @@ public final class ParcelListener implements Listener {
             Optional<Parcel> clickedP = clickedB == null ? Optional.empty() : world.getParcelAt(clickedB.getX(), clickedB.getZ());
 
             if (clickedP.filter(p -> p.isBanned(user)).isPresent()) {
-                Messaging.send(user, "Parcels", Formatting.RED, "You cannot interact with parcels you're banned from");
+                Messaging.send(user, ParcelsPlugin.getInstance().getName(), Formatting.RED, "You cannot interact with parcels you're banned from");
                 event.setCancelled(true);
                 return;
             }
@@ -301,7 +301,7 @@ public final class ParcelListener implements Listener {
                         case TRAPPED_CHEST:
                             //case REDSTONE_ORE:
                             if (!hasAdminPerm && !clickedP.filter(p -> p.canBuild(user) || p.getSettings().allowsInteractInputs()).isPresent()) {
-                                Messaging.send(user, "Parcels", Formatting.YELLOW, "You cannot use inputs in this parcel");
+                                Messaging.send(user, ParcelsPlugin.getInstance().getName(), Formatting.YELLOW, "You cannot use inputs in this parcel");
                                 event.setCancelled(true);
                                 return;
                             }
@@ -334,7 +334,7 @@ public final class ParcelListener implements Listener {
 
                                 if (bedHead.getType() == Material.BED_BLOCK && bedHead.getData() > 7 && (bedHead.getBiome() == Biome.HELL || bedHead.getBiome() == Biome.SKY)) {
                                     event.setCancelled(true);
-                                    Messaging.send(user, "Parcels", Formatting.YELLOW, "You cannot use this bed because it would explode");
+                                    Messaging.send(user, ParcelsPlugin.getInstance().getName(), Formatting.YELLOW, "You cannot use this bed because it would explode");
                                     return;
                                 }
                             }
@@ -349,7 +349,7 @@ public final class ParcelListener implements Listener {
                     if (event.hasItem()) {
                         Material item = event.getItem().getType();
                         if (world.getSettings().blockedItems.contains(event.getItem().getType())) {
-                            Messaging.send(user, "Parcels", Formatting.YELLOW, "That item is disabled in this world");
+                            Messaging.send(user, ParcelsPlugin.getInstance().getName(), Formatting.YELLOW, "That item is disabled in this world");
                             event.setCancelled(true);
                             return;
                         } else if (!hasAdminPerm && !clickedP.filter(p -> p.canBuild(user)).isPresent()) {
@@ -582,7 +582,7 @@ public final class ParcelListener implements Listener {
                     vehicle.eject();
                     if (passenger.getType() == EntityType.PLAYER) {
                         vehicle.eject();
-                        Messaging.send(passenger, "Parcels", Formatting.RED, "Your ride ends here");
+                        Messaging.send(passenger, ParcelsPlugin.getInstance().getName(), Formatting.RED, "Your ride ends here");
                     } else {
                         passenger.remove();
                     }

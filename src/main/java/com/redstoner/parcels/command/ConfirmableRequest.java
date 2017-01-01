@@ -95,7 +95,7 @@ public class ConfirmableRequest {
         protected abstract void executeRequest(ConfirmableRequest request);
 
         private void execute(ConfirmableRequest request) {
-            Messaging.send(request.player, "Parcels", Formatting.BLUE, participlePresent() + ", hang tight...");
+            Messaging.send(request.player, prefix, Formatting.BLUE, participlePresent() + ", hang tight...");
             request.executionStartTime = System.currentTimeMillis();
             executeRequest(request);
         }
