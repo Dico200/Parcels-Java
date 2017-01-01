@@ -2,9 +2,7 @@ package com.redstoner.parcels.generation;
 
 import com.redstoner.parcels.api.ParcelWorldSettings;
 import com.redstoner.utils.Values;
-import org.bukkit.Chunk;
-import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Biome;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
@@ -12,7 +10,6 @@ import org.bukkit.generator.ChunkGenerator;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.IntStream;
 
 public class ParcelGenerator extends ChunkGenerator {
 
@@ -48,6 +45,7 @@ public class ParcelGenerator extends ChunkGenerator {
     private final int parcelSize, floorHeight, xOffset, zOffset, sectionSize, pathOffset;
     private final boolean makePathMain, makePathEdge;
     private final Biome defaultBiome;
+    private final Server server = Bukkit.getServer();
 
     @Override
     public Location getFixedSpawnLocation(World world, Random random) {
@@ -65,21 +63,34 @@ public class ParcelGenerator extends ChunkGenerator {
 	*/
 
     @Override
+    public ChunkData generateChunkData(World world, Random random, int chunkX, int chunkZ, BiomeGrid biomeGrid) {
+        ChunkData result = server.createChunkData(world);
+
+        iterAll(chunkX, chunkZ, floorId, wallId, pathMainId, pathEdgeId, fillId, (x, y, z, type) -> {
+            result.setBlock(x, y, z, type, (byte) 0);
+        });
+
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                biomeGrid.setBiome(x, z, defaultBiome);
+            }
+        }
+
+        return result;
+    }
+
+    /*
+    @Override
     public short[][] generateExtBlockSections(World world, Random random, int chunkX, int chunkZ, BiomeGrid biomeGrid) {
 
         //Bool.validate(floorHeight <= world.getMaxHeight(), "The floor level may not be higher than the world's maximum height");
         //Bool.validate(world.getMaxHeight() >> 4 == 0, "The world's max height must be a multiple of 16");
 
-        short[][] chunk = IntStream.range(0, 16).mapToObj(i -> new short[4096]).toArray(size -> new short[size][]);
+        short[][] chunk = IntStream.range(0, 16).mapToObj(i -> new short[4096]).toArray(short[][]::new);
 
         //[floor(y / 16)][y % 16 * 256 + z * 16 + x]
-        iterAll(chunkX, chunkZ, floorId, wallId, pathMainId, pathEdgeId, fillId, new CoordAndTypeConsumer<Short>() {
-
-            @Override
-            protected void accept(int x, int y, int z, Short type) {
-                chunk[y >> 4][((y & 0xF) << 8) | (z << 4) | x] = type;
-            }
-
+        iterAll(chunkX, chunkZ, floorId, wallId, pathMainId, pathEdgeId, fillId, (x, y, z, type) -> {
+            chunk[y >> 4][((y & 0xF) << 8) | (z << 4) | x] = type;
         });
 
         for (int x = 0; x < 16; x++) {
@@ -89,8 +100,8 @@ public class ParcelGenerator extends ChunkGenerator {
         }
 
         return chunk;
-
     }
+    */
 
     @Override
     public List<BlockPopulator> getDefaultPopulators(World world) {
@@ -99,22 +110,18 @@ public class ParcelGenerator extends ChunkGenerator {
             @SuppressWarnings("deprecation")
             @Override
             public void populate(World world, Random random, Chunk chunk) {
-                iterAll(chunk.getX(), chunk.getZ(), floorData, wallData, pathMainData, pathEdgeData, fillData, new CoordAndTypeConsumer<Byte>() {
 
-                    @Override
-                    protected void accept(int x, int y, int z, Byte type) {
-                        if (type != 0) {
-                            chunk.getBlock(x, y, z).setData(type);
-                        }
+                iterAll(chunk.getX(), chunk.getZ(), floorData, wallData, pathMainData, pathEdgeData, fillData, (x, y, z, type) -> {
+                    if (type != 0) {
+                        chunk.getBlock(x, y, z).setData(type);
                     }
-
                 });
             }
 
         }});
     }
 
-    public <T> void iterAll(int chunkX, int chunkZ, T floor, T wall, T pathMain, T pathEdge, T fill, CoordAndTypeConsumer<T> forEach) {
+    private <T> void iterAll(int chunkX, int chunkZ, T floor, T wall, T pathMain, T pathEdge, T fill, CoordAndTypeConsumer<T> forEach) {
 
         //northwest chunk corner, with offset applied -> x/z
         //The offset makes it believe it's generating for coordinates at offset back. Like nudging a graph: (x - offset)
@@ -152,10 +159,11 @@ public class ParcelGenerator extends ChunkGenerator {
             }
         }
     }
+
+    private interface CoordAndTypeConsumer<T> {
+
+        void accept(int x, int y, int z, T type);
+
+    }
 }
 
-abstract class CoordAndTypeConsumer<T> {
-
-    protected abstract void accept(int x, int y, int z, T type);
-
-}

@@ -38,6 +38,10 @@ public class WorldEditListener implements Listener {
     @Subscribe(priority = Priority.VERY_EARLY)
     public void onEditSession(EditSessionEvent event) {
 
+        if (event.getWorld() == null) {
+            return;
+        }
+
         WorldManager.getWorld(event.getWorld().getName()).ifPresent(world -> {
 
             Stage stage = event.getStage();

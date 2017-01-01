@@ -54,7 +54,7 @@ abstract class SpecialType<T> {
 
                     @Override
                     Consumer<BlockState> createConverter(InventoryHolder origin) {
-                        ItemStack[] contents = Arrays.stream(origin.getInventory().getContents()).map(this::copyStack).toArray(size -> new ItemStack[size]);
+                        ItemStack[] contents = Arrays.stream(origin.getInventory().getContents()).map(this::copyStack).toArray(ItemStack[]::new);
                         return state -> ((InventoryHolder) state).getInventory().setContents(contents);
                     }
 
