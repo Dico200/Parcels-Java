@@ -11,7 +11,6 @@ import org.bukkit.OfflinePlayer;
 import java.util.*;
 
 public class Parcel {
-
     private final ParcelWorld world;
     private Optional<UUID> owner;
 
@@ -19,6 +18,7 @@ public class Parcel {
     private final PlayerMap<Boolean> added;
     private final ParcelSettings settings;
     private final int x, z;
+    private int blockVisitors = 0;
 
     public Parcel(ParcelWorld world, int x, int z) {
         this.world = world;
@@ -46,6 +46,22 @@ public class Parcel {
             }
 
         };
+    }
+
+    public void incrementBlockVisitors() {
+        blockVisitors++;
+    }
+
+    public void decrementBlockVisitors() {
+        if (blockVisitors > 0) {
+            blockVisitors--;
+        } else {
+            blockVisitors = 0;
+        }
+    }
+
+    public boolean hasBlockVisitors() {
+        return blockVisitors != 0;
     }
 
     public ParcelWorld getWorld() {
@@ -79,7 +95,7 @@ public class Parcel {
     }
 
     public boolean canBuild(OfflinePlayer user) {
-        return isOwner(user) || isAllowed(user);
+        return blockVisitors == 0 && (isOwner(user) || isAllowed(user));
     }
 
     public int getX() {

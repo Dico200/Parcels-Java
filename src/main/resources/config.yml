@@ -7,6 +7,10 @@ storage:
   username: 'username'
   password: 'password'
 
+block-visitor:
+  pause-ticks: 1
+  work-millis: 20
+
 worlds:
   Parcels:
     # The amount of (active) parcels in each direction counting from the parcel with ID (0:0).

@@ -8,14 +8,20 @@ import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class WorldManager {
+    private static ParcelWorld mainWorld;
 
-    public static HashMap<String, ParcelWorld> getWorlds() {
+    public static ParcelWorld getMainWorld() {
+        return mainWorld;
+    }
+
+    public static Map<String, ParcelWorld> getWorlds() {
         return worlds;
     }
 
@@ -25,6 +31,15 @@ public final class WorldManager {
 
     public static Optional<ParcelWorld> getWorld(World w) {
         return getWorld(w.getName());
+    }
+
+    public static boolean isWorldPresent(String world, Predicate<ParcelWorld> predicate) {
+        ParcelWorld pworld = worlds.get(world);
+        return pworld != null && predicate.test(pworld);
+    }
+
+    public static boolean isWorldPresent(World world, Predicate<ParcelWorld> predicate) {
+        return isWorldPresent(world.getName(), predicate);
     }
 
     public static void ifWorldPresent(Block b, BiConsumer<ParcelWorld, Optional<Parcel>> present) {
@@ -46,6 +61,7 @@ public final class WorldManager {
     }
 
     private WorldManager() {
+        throw new UnsupportedOperationException();
     }
 
     private static <T> T get(String world, Function<ParcelWorld, T> function) {
@@ -65,23 +81,29 @@ public final class WorldManager {
 
         ConfigurationSection worldsConfig = plugin.getConfig().getConfigurationSection("worlds");
         if (worldsConfig == null) {
-            ParcelsPlugin.log("Failed to find your world's settings in config.");
+            ParcelsPlugin.getInstance().info("Failed to find your world's settings in config.");
             return;
         }
 
-        worldsConfig.getKeys(false).forEach(worldName -> {
-            ParcelWorldSettings.parseSettings(worldsConfig, worldName).ifPresent(pws -> {
-                worlds.put(worldName, new ParcelWorld(worldName, pws));
-            });
-        });
+        boolean first = true;
+        for (String worldName : worldsConfig.getKeys(false)) {
+            Optional<ParcelWorldSettings> settingsOptional = ParcelWorldSettings.parseSettings(worldsConfig, worldName);
+            if (settingsOptional.isPresent()) {
+                ParcelWorld world = new ParcelWorld(worldName, settingsOptional.get());
+                worlds.put(worldName, world);
+                if (first) {
+                    first = false;
+                    mainWorld = world;
+                }
 
-        worlds.forEach((name, world) -> {
-            try {
-                world.getWorld();
-            } catch (Exception e) {
-                ParcelsPlugin.getInstance().getServer().createWorld(new WorldCreator(name).generator(world.getGenerator()))
-                        .setSpawnLocation(world.getSettings().offsetX, world.getSettings().floorHeight, world.getSettings().offsetZ);
+                try {
+                    world.getWorld();
+                } catch (NullPointerException e) {
+                    World created = new WorldCreator(worldName).generator(world.getGenerator()).createWorld();
+                    Location spawn = world.getGenerator().getFixedSpawnLocation(world.getWorld(), null);
+                    created.setSpawnLocation(spawn.getBlockX(), spawn.getBlockY(), spawn.getBlockZ());
+                }
             }
-        });
+        }
     }
 }

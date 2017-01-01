@@ -13,11 +13,11 @@ public class ParcelSettings {
     private boolean allowsInteractInventory = false;
 
     public boolean allowsInteractInputs() {
-        return allowsInteractInputs;
+        return allowsInteractInputs && !parcel.hasBlockVisitors();
     }
 
     public boolean allowsInteractInventory() {
-        return allowsInteractInventory;
+        return allowsInteractInventory && !parcel.hasBlockVisitors();
     }
 
     public boolean setAllowsInteractInputs(boolean enabled) {

@@ -1,9 +1,9 @@
 package com.redstoner.parcels.command;
 
-import com.redstoner.command.Command;
-import com.redstoner.command.CommandException;
-import com.redstoner.command.CommandScape;
-import com.redstoner.command.SenderType;
+import io.dico.dicore.command.Command;
+import io.dico.dicore.command.CommandException;
+import io.dico.dicore.command.CommandScape;
+import io.dico.dicore.command.SenderType;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 

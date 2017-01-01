@@ -1,26 +1,22 @@
 package com.redstoner.parcels.api;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.api.fake.FakeServer;
 import com.redstoner.parcels.api.storage.SqlManager;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.ErrorPrinter;
 import com.redstoner.utils.sql.MySQLConnector;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class ParcelsApiTest {
 	
@@ -68,7 +64,7 @@ public class ParcelsApiTest {
 				put("interaction.disable-explosions", true);
 				put("interaction.block-portal-creation", true);
 				put("interaction.block-mob-spawning", true);
-				put("interaction.items-blocked", Arrays.asList(new String[]{"FLINT_AND_STEEL"}));
+				put("interaction.items-blocked", Collections.singletonList("FLINT_AND_STEEL"));
 				
 				put("generator.wall-type", "35:6");
 				put("generator.floor-type", "24:1");
@@ -84,7 +80,7 @@ public class ParcelsApiTest {
 			
 		};
 		
-		ErrorPrinter errorPrinter = new ErrorPrinter(s -> ParcelsPlugin.log(s),
+		ErrorPrinter errorPrinter = new ErrorPrinter(ParcelsPlugin.getInstance()::error,
 				String.format("Exception(s) occurred while loading settings for world '%s':", worldName));
 		
 		ParcelWorldSettings parsedSettings = ParcelWorldSettings.parseMap(worldName, settings, errorPrinter);
@@ -101,7 +97,7 @@ public class ParcelsApiTest {
 		assertEquals(fromWorld.disableExplosions, true);
 		assertEquals(fromWorld.blockPortalCreation, true);
 		assertEquals(fromWorld.blockMobSpawning, true);
-		assertEquals(fromWorld.blockedItems, Arrays.asList(new Material[]{Material.FLINT_AND_STEEL}));
+		assertEquals(fromWorld.blockedItems, Collections.singletonList(Material.FLINT_AND_STEEL));
 		assertEquals(fromWorld.wallType.getId(), 35);
 		assertEquals(fromWorld.wallType.getData(), 6);
 		assertEquals(fromWorld.floorType.getId(), 24);
@@ -206,9 +202,7 @@ public class ParcelsApiTest {
 		SqlManager.setAllowInteractInventory(worldName, parcel.getX(), parcel.getZ(), true);
 		
 		sleepThread();
-		connector.asyncConn(conn -> {
-			SqlManager.loadAllFromDatabase(conn);
-		});
+		connector.asyncConn(SqlManager::loadAllFromDatabase);
 		sleepThread();
 		
 		// New object because the container was reset. (by the test only)
@@ -228,9 +222,7 @@ public class ParcelsApiTest {
 		SqlManager.setAllowInteractInventory(worldName, parcel.getX(), parcel.getZ(), false);
 		
 		sleepThread();
-		connector.asyncConn(conn -> {
-			SqlManager.loadAllFromDatabase(conn);
-		});
+		connector.asyncConn(SqlManager::loadAllFromDatabase);
 		sleepThread();
 		
 		parcel = world.getParcelByID(idx, idz);

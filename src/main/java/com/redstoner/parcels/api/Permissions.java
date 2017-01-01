@@ -45,7 +45,7 @@ public class Permissions {
         try {
             return Integer.parseInt(suffix);
         } catch (NumberFormatException e) {
-            ParcelsPlugin.log(String.format("[ERROR] %s has permission '%s'. The suffix "
+            ParcelsPlugin.getInstance().error(String.format("%s has permission '%s'. The suffix "
                     + "can not be parsed to an integer (or *).", user.getName(), permission));
             return DEFAULT_PARCEL_LIMIT;
         }

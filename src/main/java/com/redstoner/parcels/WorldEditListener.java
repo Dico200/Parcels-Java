@@ -1,9 +1,7 @@
 package com.redstoner.parcels;
 
-import com.redstoner.command.Messaging;
 import com.redstoner.parcels.api.Permissions;
 import com.redstoner.parcels.api.WorldManager;
-import com.redstoner.utils.Formatting;
 import com.redstoner.utils.OneTimeRunner;
 import com.sk89q.worldedit.EditSession.Stage;
 import com.sk89q.worldedit.Vector;
@@ -17,6 +15,8 @@ import com.sk89q.worldedit.extent.AbstractDelegateExtent;
 import com.sk89q.worldedit.util.eventbus.EventHandler.Priority;
 import com.sk89q.worldedit.util.eventbus.Subscribe;
 import com.sk89q.worldedit.world.biome.BaseBiome;
+import io.dico.dicore.command.Formatting;
+import io.dico.dicore.command.Messaging;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

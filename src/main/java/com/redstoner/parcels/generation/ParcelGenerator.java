@@ -53,15 +53,6 @@ public class ParcelGenerator extends ChunkGenerator {
         return new Location(world, xOffset + fix, floorHeight + 1, zOffset + fix);
     }
 
-	/*
-	public ChunkData generateChunkData(World world, Random random, int chunkX, int chunkZ, BiomeGrid biomeGrid) {
-		ChunkData chunk = createChunkData(world);
-		
-		return null;
-		
-	}
-	*/
-
     @Override
     public ChunkData generateChunkData(World world, Random random, int chunkX, int chunkZ, BiomeGrid biomeGrid) {
         ChunkData result = server.createChunkData(world);

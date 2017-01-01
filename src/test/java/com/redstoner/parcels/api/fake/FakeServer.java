@@ -9,17 +9,13 @@ import com.earth2me.essentials.Essentials;
 import com.earth2me.essentials.EssentialsPlayerListener;
 import com.earth2me.essentials.craftbukkit.FakeWorld;
 import com.redstoner.parcels.api.ParcelsApiTest;
-
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-import java.util.logging.Logger;
-
 import org.bukkit.*;
 import org.bukkit.Warning.WarningState;
 import org.bukkit.World.Environment;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarFlag;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.PluginCommand;
@@ -39,15 +35,7 @@ import org.bukkit.permissions.Permissible;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
-import org.bukkit.plugin.EventExecutor;
-import org.bukkit.plugin.InvalidDescriptionException;
-import org.bukkit.plugin.InvalidPluginException;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginLoader;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.RegisteredListener;
-import org.bukkit.plugin.ServicesManager;
-import org.bukkit.plugin.UnknownDependencyException;
+import org.bukkit.plugin.*;
 import org.bukkit.plugin.messaging.Messenger;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -55,6 +43,13 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scheduler.BukkitWorker;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.util.CachedServerIcon;
+
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.logging.Logger;
 
 
 public class FakeServer implements Server
@@ -930,12 +925,6 @@ public class FakeServer implements Server
 	}
 
 	@Override
-	public boolean useExactLoginLocation()
-	{
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	@Override
 	public int getTicksPerAnimalSpawns()
 	{
 		throw new UnsupportedOperationException("Not supported yet.");
@@ -1344,6 +1333,20 @@ public class FakeServer implements Server
 		}
 	}
 
+	@Override
+	public Player[] _INVALID_getOnlinePlayers() {
+		return new Player[0];
+	}
+
+	@Override
+	public Merchant createMerchant(String s) {
+		return null;
+	}
+
+	@Override
+	public BossBar createBossBar(String s, BarColor barColor, BarStyle barStyle, BarFlag... barFlags) {
+		return null;
+	}
 
 	@Override
 	public ChunkData createChunkData(World arg0) {

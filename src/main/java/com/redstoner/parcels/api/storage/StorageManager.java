@@ -21,7 +21,7 @@ public class StorageManager {
 
         SQLConnector parcelsConnector = getParcelsConnector();
         if (parcelsConnector == null || !parcelsConnector.isConnected()) {
-            ParcelsPlugin.log("[SEVERE] Failed to connect to parcels database. Aborting connection.");
+            ParcelsPlugin.getInstance().error("Failed to connect to parcels database. Aborting connection.");
             return;
         }
         connected = true;
@@ -39,7 +39,7 @@ public class StorageManager {
 
     private static boolean importPlotMeSettings(SQLConnector parcelsConnector) {
 
-        ErrorPrinter errorPrinter = new ErrorPrinter(s -> ParcelsPlugin.log(s),
+        ErrorPrinter errorPrinter = new ErrorPrinter(ParcelsPlugin.getInstance()::error,
                 "Error occurred while attempting to import plotme settings:",
                 "Next time you try to import plotme settings, make sure to set enabled to true again.");
 
@@ -58,7 +58,7 @@ public class StorageManager {
             return false;
         }
 
-        ParcelsPlugin.log("Starting import from plotme database. This may take a while. Preferably, don't use the parcel world in the meantime.");
+        ParcelsPlugin.getInstance().info("Starting import from plotme database. This may take a while. Preferably, don't use the parcel world in the meantime.");
         worlds.getValues(false).forEach((worldFrom, obj) -> {
 
             if (!(obj instanceof String)) {
@@ -120,7 +120,7 @@ public class StorageManager {
             username = (username = conf.getString("mySQLuname")) == null ? "root" : username;
             password = (password = conf.getString("mySQLpass")) == null ? "" : password;
 
-            ParcelsPlugin.log("Connecting to PlotMe's MySQL database");
+            ParcelsPlugin.getInstance().info("Connecting to PlotMe's MySQL database");
             return new MySQLConnector(hostname, database, username, password);
 
         } else {

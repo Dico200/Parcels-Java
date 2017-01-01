@@ -97,7 +97,7 @@ public class SqlManager {
     private static void loadFromDatabase(Connection conn, String worldName, boolean resetContainer) {
         ParcelWorld world = WorldManager.getWorld(worldName).orElse(null);
         if (world == null) {
-            ParcelsPlugin.debug(String.format("Couldn't find ParcelWorld instance for world by name '%s'", worldName));
+            ParcelsPlugin.getInstance().debug(String.format("Couldn't find ParcelWorld instance for world by name '%s'", worldName));
             return;
         }
 
@@ -118,7 +118,7 @@ public class SqlManager {
 
                 if (parcel == null) {
                     parcels.deleteRow();
-                    ParcelsPlugin.debug(String.format("Deleted parcel at %s,%s from database", px, pz));
+                    ParcelsPlugin.getInstance().debug(String.format("Deleted parcel at %s,%s from database", px, pz));
                     continue;
                 }
 
@@ -162,13 +162,13 @@ public class SqlManager {
     }
 
     protected static void logSqlExc(String header, SQLException e) {
-        ParcelsPlugin.log(header);
-        ParcelsPlugin.log("Error code: " + e.getErrorCode());
-        ParcelsPlugin.log("SQL State: " + e.getSQLState());
-        ParcelsPlugin.log("Details: " + e.getMessage());
-        ParcelsPlugin.log("---------------- Start Stack ----------------");
+        ParcelsPlugin.getInstance().error(header);
+        ParcelsPlugin.getInstance().error("Error code: " + e.getErrorCode());
+        ParcelsPlugin.getInstance().error("SQL State: " + e.getSQLState());
+        ParcelsPlugin.getInstance().error("Details: " + e.getMessage());
+        ParcelsPlugin.getInstance().error("---------------- Start Stack ----------------");
         e.printStackTrace();
-        ParcelsPlugin.log("----------------  End Stack  ----------------");
+        ParcelsPlugin.getInstance().error("----------------  End Stack  ----------------");
     }
 
     public static void setOwner(String world, int px, int pz, UUID owner) {
@@ -388,7 +388,7 @@ public class SqlManager {
                     }
                 }
             } catch (SQLException e) {
-                logSqlExc("[SEVERE] Error occurred while saving all parcel data", e);
+                logSqlExc("Error occurred while saving all parcel data", e);
             }
         });
     }
@@ -397,7 +397,7 @@ public class SqlManager {
 
         ParcelWorld world = WorldManager.getWorld(worldNameTo).orElse(null);
         if (world == null) {
-            errorPrinter.add(() -> ParcelsPlugin.log(String.format("  Couldn't find parcel world '%s' while preparing to convert plotme database", worldNameTo)));
+            errorPrinter.add(() -> ParcelsPlugin.getInstance().error(String.format("  Couldn't find parcel world '%s' while preparing to convert plotme database", worldNameTo)));
             return;
         }
 
@@ -410,7 +410,7 @@ public class SqlManager {
                 PlotMeTableSetup setup = PlotMeTableSetup.getSetup(plotMeConn);
 
                 if (setup == null) {
-                    ParcelsPlugin.log("[ERROR] Didn't find PlotMe's MySQL tables to import from");
+                    ParcelsPlugin.getInstance().error("Didn't find PlotMe's MySQL tables to import from");
                     loadFromDatabase(parcelsConn, worldNameTo, false);
                     return;
                 }
@@ -420,7 +420,7 @@ public class SqlManager {
                     ResultSet plotSet = setup.getPlots(plotMeConn, worldNameFrom);
 
                     if (!plotSet.isBeforeFirst()) {
-                        ParcelsPlugin.log(String.format("[ERROR] No PlotMe data found for world by name '%s' (but the table exists)", worldNameFrom));
+                        ParcelsPlugin.getInstance().error(String.format("No PlotMe data found for world by name '%s' (but the table exists)", worldNameFrom));
                         loadFromDatabase(parcelsConn, worldNameTo, false);
                         return;
                     }
@@ -470,7 +470,7 @@ public class SqlManager {
 
                 // Load imported world data
                 loadFromDatabase(parcelsConn, worldNameTo, true);
-                ParcelsPlugin.log("Finished PlotMe import for Parcels world " + worldNameTo);
+                ParcelsPlugin.getInstance().info("Finished PlotMe import for Parcels world " + worldNameTo);
 
             });
         });

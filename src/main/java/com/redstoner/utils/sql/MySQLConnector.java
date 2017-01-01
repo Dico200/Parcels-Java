@@ -1,30 +1,39 @@
 package com.redstoner.utils.sql;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import gnu.trove.set.TCharSet;
+import gnu.trove.set.hash.TCharHashSet;
+
+import java.sql.*;
 
 public class MySQLConnector extends SQLConnector {
 
+    private static final TCharSet allowedChars = new TCharHashSet("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_".toCharArray());
     private final String hostname, database, username, password;
 
     public MySQLConnector(String hostname, String database, String username, String password) {
         this.hostname = hostname;
-        this.database = database;
+        this.database = sanitise(database);
         this.username = username;
         this.password = password;
         super.openConn();
     }
 
+    private static String sanitise(String string) {
+        char[] chars = string.toCharArray();
+        for (int i = 0; i < chars.length; i++) {
+            if (!allowedChars.contains(chars[i])) {
+                chars[i] = '_';
+            }
+        }
+        return String.valueOf(chars);
+    }
+
     @Override
     public Connection createConnection() throws SQLException {
         Connection conn = DriverManager.getConnection("jdbc:mysql://" + hostname, username, password);
-        PreparedStatement pstm = conn.prepareStatement("CREATE DATABASE IF NOT EXISTS ?; USE ?;");
-        pstm.setString(1, database);
-        pstm.setString(2, database);
-        pstm.executeUpdate();
-        pstm.close();
+        try (Statement sm = conn.createStatement()) {
+            sm.execute("CREATE DATABASE IF NOT EXISTS " + database + "; USE " + database + ";");
+        }
         return conn;
     }
 
