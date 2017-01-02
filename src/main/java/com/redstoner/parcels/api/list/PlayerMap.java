@@ -7,9 +7,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerMap<T> {
-
     private Map<UUID, T> players;
-
     private T standard;
 
     public PlayerMap(T standard) {

@@ -226,7 +226,7 @@ public final class ParcelCommands {
             }
             Validate.isTrue(sender.hasPermission(Permissions.ADMIN_MANAGE) || p.isOwner(sender), "You must own this parcel to change its options");
             String word = enabled ? "enabled" : "disabled";
-            Validate.isTrue(scape.getParcel().getSettings().setAllowsInteractInventory(enabled), "That option was already " + word);
+            Validate.isTrue(p.getSettings().setAllowsInteractInventory(enabled), "That option was already " + word);
             return "That option is now " + word;
         }
 

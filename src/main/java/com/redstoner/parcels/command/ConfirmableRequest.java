@@ -68,6 +68,7 @@ public class ConfirmableRequest {
     }
 
     private void execute() {
+        requests.remove(player);
         type.execute(this);
     }
 
@@ -88,7 +89,7 @@ public class ConfirmableRequest {
         SWAP {
             @Override
             protected void executeRequest(ConfirmableRequest request) {
-                BlockOperations.swap(request.parcel, request.optionalParcel, request::sendFinishedMessage);
+                BlockOperations.newSwap(request.parcel, request.optionalParcel, request::sendFinishedMessage);
             }
         };
 

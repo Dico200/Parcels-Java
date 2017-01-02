@@ -2,10 +2,12 @@ package com.redstoner.parcels.api;
 
 import com.redstoner.parcels.api.list.PlayerMap;
 import com.redstoner.parcels.api.list.SqlPlayerMap;
+import com.redstoner.parcels.api.schematic.Schematic;
 import com.redstoner.parcels.api.storage.SqlManager;
 import com.redstoner.parcels.api.storage.StorageManager;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.UUIDUtil;
+import io.dico.dicore.util.BlockPos;
 import org.bukkit.OfflinePlayer;
 
 import java.util.*;
@@ -124,6 +126,14 @@ public class Parcel {
 
     public ParcelSettings getSettings() {
         return settings;
+    }
+
+    public Schematic initSchematic() {
+        Coord bottom = world.getBottomCoord(this);
+        BlockPos origin = new BlockPos(world.getWorld(), bottom.getX(), 0, bottom.getZ());
+        int parcelSize = world.getSettings().parcelSize;
+        BlockPos size = new BlockPos(world.getWorld(), parcelSize, 256, parcelSize);
+        return new Schematic(origin, size);
     }
 
     public PlayerMap<Boolean> getAdded() {
