@@ -1,7 +1,6 @@
 package com.redstoner.parcels.api;
 
 import com.redstoner.parcels.ParcelsPlugin;
-import com.redstoner.parcels.api.schematic.Schematic;
 import com.redstoner.parcels.generation.ParcelGenerator;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.UUIDUtil;
@@ -17,7 +16,7 @@ import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
 
-public class ParcelWorld {
+public final class ParcelWorld {
     private World world;
     private ParcelContainer parcels;
     private ParcelGenerator generator;
@@ -90,6 +89,14 @@ public class ParcelWorld {
         int modX = Values.posModulo(absX, sectionSize);
         int modZ = Values.posModulo(absZ, sectionSize);
         return isOriginParcel(modX, modZ);
+    }
+
+    public int toParcelSectionX(int x) {
+        return Values.posModulo(x - settings.offsetX - settings.pathOffset, settings.sectionSize);
+    }
+
+    public int toParcelSectionZ(int z) {
+        return Values.posModulo(z - settings.offsetZ - settings.pathOffset, settings.sectionSize);
     }
 
     public void teleport(Player user, Parcel parcel) {
@@ -219,7 +226,9 @@ public class ParcelWorld {
     public Collection<Entity> getEntities(Parcel parcel) {
         World world = getWorld();
         Coord NW = getBottomCoord(parcel);
-        return Schematic.getContainedEntities(world, NW.getX(), 0, NW.getZ(), NW.getX() + settings.parcelSize, 255, NW.getZ() + settings.parcelSize);
+        int parcelSize = settings.parcelSize;
+        Location center = new Location(world, (NW.getX() + parcelSize) / 2D, 128, (NW.getZ() + parcelSize) / 2D);
+        return world.getNearbyEntities(center, parcelSize / 2D + .2, 128, parcelSize / 2D + .2);
     }
 
     @SuppressWarnings("deprecation")

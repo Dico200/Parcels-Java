@@ -480,7 +480,7 @@ public final class ParcelListener {
      * Prevents players from editing inventories
      */
     private void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player) && !event.getWhoClicked().hasPermission(Permissions.ADMIN_BUILDANYWHERE)) {
+        if (!(event.getWhoClicked() instanceof Player) || event.getWhoClicked().hasPermission(Permissions.ADMIN_BUILDANYWHERE)) {
             return;
         }
 

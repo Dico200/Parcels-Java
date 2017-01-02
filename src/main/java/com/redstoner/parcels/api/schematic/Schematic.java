@@ -1,102 +1,214 @@
 package com.redstoner.parcels.api.schematic;
 
-import org.bukkit.Location;
+import com.redstoner.parcels.api.blockvisitor.BlockVisitor;
+import com.redstoner.parcels.api.schematic.block.BaseBlock;
+import io.dico.dicore.util.BlockPos;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.Stream.Builder;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
-public class Schematic {
-    private static int absolute(int i) {
-        return i < 0 ? -i : i;
+public final class Schematic {
+    public static final Set<Material> attachable;
+    private BlockPos origin, size;
+    private BaseBlock[] data;
+    private long[] attachables;
+    private transient int state;
+    private transient DataIterator dataIterator = new DataIterator();
+    private transient WorldIterator worldIterator = new WorldIterator();
+
+    public Schematic(BlockPos origin, BlockPos size) {
+        this.origin = origin.cloneIfMutable().makeImmutable();
+        this.size = size.cloneIfMutable().makeImmutable();
+        data = new BaseBlock[size.getX() * size.getY() * size.getZ()];
+        attachables = new long[(data.length + 63) / 64];
     }
 
-    private static double average(int x, int y) {
-        return (x + y) / 2.0;
+    public BlockPos getOrigin() {
+        return origin;
     }
 
-    private static int minimum(int x, int y) {
-        return y < x ? y : x;
+    public BlockPos getSize() {
+        return size;
     }
 
-    public static Collection<Entity> getContainedEntities(World w, int x1, int y1, int z1, int x2, int y2, int z2) {
-        return w.getNearbyEntities(new Location(w, average(x1, x2), average(y1, y2), average(z1, z2)),
-                absolute(x2 - x1) / 2.0, absolute(y2 - y1) / 2.0, absolute(z2 - z1) / 2.0);
+    private boolean isAttachable(int index) {
+        return attachables[index & 0x3F] >> (index >> 6) == 1;
     }
 
-    private static final Comparator<Block> ATTACHABLE;
-    public static final Set<Material> ATTACHABLE_MATERIALS;
+    private void setAttachable(int index) {
+        attachables[index & 0x3F] |= 1 << (index >> 6);
+    }
 
-    private final World world;
-    private final int x0, y0, z0;
-    private final SchematicBlock[] blocks;
-    private final List<Entity> entities;
+    public BaseBlock getBlockAt(BlockPos pos) {
+        return getBlockAt(pos.getX(), pos.getY(), pos.getZ());
+    }
 
-    public Schematic(World world, int x1, int y1, int z1, int x2, int y2, int z2) {
+    public BaseBlock getBlockAt(int x, int y, int z) {
+        return getRelativeBlock(x - origin.getX(), y - origin.getY(), z - origin.getZ());
+    }
 
-        this.world = world;
+    public BaseBlock getRelativeBlock(int x, int y, int z) {
+        return data[indexFor(x, y, z)];
+    }
 
-        this.x0 = minimum(x1, x2);
-        this.y0 = minimum(y1, y2);
-        this.z0 = minimum(z1, z2);
+    private int indexFor(Block block) {
+        return indexFor(block.getX() - origin.getX(), block.getY() - origin.getY(), block.getZ() - origin.getZ());
+    }
 
-        int xmax = x0 + absolute(x2 - x1);
-        int ymax = y0 + absolute(y2 - y1);
-        int zmax = z0 + absolute(z2 - z1);
+    private int indexFor(int x, int y, int z) {
+        return z + size.getX() * (x + size.getY() * y);
+    }
 
-        Builder<Block> blocks = Stream.builder();
+    private void requireState(int state) {
+        if (this.state != state) {
+            throw new IllegalStateException();
+        }
+    }
 
-        int x, z, y;
-        for (x = x0; x <= xmax; x++) {
-            for (z = z0; z <= zmax; z++) {
-                for (y = y0; y <= ymax; y++) {
-                    blocks.accept(world.getBlockAt(x, y, z));
+    public void load() {
+        requireState(0);
+        state = 2;
+        worldIterator.reset();
+        while (worldIterator.hasNext()) {
+            Block block = worldIterator.next();
+            int index = worldIterator.index;
+            data[index] = BaseBlock.copy(block);
+            if (attachable.contains(block.getType())) {
+                setAttachable(index);
+            }
+        }
+        state = 1;
+    }
+
+    public void load(Runnable onFinish) {
+        requireState(0);
+        state = 2;
+        worldIterator.reset();
+        new BlockVisitor<Block>(worldIterator) {
+            @Override
+            protected boolean process(Block block) {
+                int index = worldIterator.index;
+                data[index] = BaseBlock.copy(block);
+                if (attachable.contains(block.getType())) {
+                    setAttachable(index);
+                }
+                return true;
+            }
+
+            @Override
+            protected void onFinish(boolean early) {
+                state = 1;
+                onFinish.run();
+            }
+        }.start();
+    }
+
+    public void paste(BlockPos pos) {
+        requireState(1);
+        paste(pos, false);
+        paste(pos, true);
+    }
+
+    private void paste(BlockPos pos, boolean attachables) {
+        for (int y = 0; y < size.getY(); y++) {
+            for (int x = 0; x < size.getX(); x++) {
+                for (int z = 0; z < size.getZ(); z++) {
+                    int index = indexFor(x, y, z);
+                    if (isAttachable(index) == attachables) {
+                        data[index].paste(pos.add(x, y, z).getBlock());
+                    }
                 }
             }
         }
-
-        this.blocks = blocks.build().sorted(ATTACHABLE).map(SchematicBlock::new).toArray(SchematicBlock[]::new);
-        this.entities = getContainedEntities(world, x1, y1, z1, x2, y2, z2).stream().filter(e -> e.getType() != EntityType.PLAYER).collect(Collectors.toList());
     }
 
-    public int getX0() {
-        return x0;
+    public void paste(BlockPos pos, Runnable onFinish) {
+        pos.makeImmutable();
+        paste(pos, false, () -> paste(pos, true, onFinish));
     }
 
-    public int getY0() {
-        return y0;
+    private void paste(BlockPos pos, boolean attachables, Runnable onFinish) {
+        requireState(1);
+        state = 2;
+        dataIterator.reset();
+        new BlockVisitor<BaseBlock>(dataIterator) {
+            @Override
+            protected boolean process(BaseBlock block) {
+                int index = dataIterator.index;
+                if (isAttachable(index) == attachables) {
+                    int z = index % size.getZ();
+                    index /= size.getZ();
+                    int x = index % size.getX();
+                    index /= size.getX();
+                    int y = index;
+                    block.paste(pos.add(x, y, z).getBlock());
+                }
+                return true;
+            }
+
+            @Override
+            protected void onFinish(boolean early) {
+                state = 1;
+                onFinish.run();
+            }
+        }.start();
     }
 
-    public int getZ0() {
-        return z0;
-    }
+    private final class DataIterator implements Iterator<BaseBlock> {
+        int index = -1;
 
-    public void pasteAt(int x, int y, int z, boolean teleportEntities) {
-        int dx = x - x0;
-        int dy = y - y0;
-        int dz = z - z0;
-
-        for (SchematicBlock block : blocks) {
-            block.paste(world, dx, dy, dz);
+        void reset() {
+            index = -1;
         }
 
-        if (teleportEntities) {
-            entities.forEach(e -> {
-                Location loc = e.getLocation();
-                e.teleport(new Location(world, loc.getX() + dx, loc.getY() + dy, loc.getZ() + dz, loc.getYaw(), loc.getPitch()));
-            });
+        @Override
+        public boolean hasNext() {
+            return index < data.length - 1;
+        }
+
+        @Override
+        public BaseBlock next() {
+            try {
+                return data[++index];
+            } catch (ArrayIndexOutOfBoundsException ex) {
+                throw new NoSuchElementException();
+            }
+        }
+    }
+
+    private final class WorldIterator implements Iterator<Block> {
+        int index = -1;
+
+        void reset() {
+            index = -1;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < data.length - 1;
+        }
+
+        @Override
+        public Block next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            int index = ++this.index;
+            int z = origin.getZ() + index % size.getZ();
+            index /= size.getZ();
+            int x = origin.getX() + index % size.getX();
+            index /= size.getX();
+            int y = origin.getY() + index;
+            return origin.getWorld().getBlockAt(x, y, z);
         }
     }
 
     static {
-
-        ATTACHABLE_MATERIALS = EnumSet.of(
+        attachable = EnumSet.of(
                 Material.ACACIA_DOOR,
                 Material.ACTIVATOR_RAIL,
                 Material.BIRCH_DOOR,
@@ -126,10 +238,10 @@ public class Schematic {
                 Material.LONG_GRASS,
                 Material.MELON_STEM,
                 Material.NETHER_WARTS,
-                //Material.PISTON_BASE,
+                Material.PISTON_BASE,
                 //Material.PISTON_EXTENSION,
                 //Material.PISTON_MOVING_PIECE,
-                //Material.PISTON_STICKY_BASE,
+                Material.PISTON_STICKY_BASE,
                 Material.PORTAL,
                 Material.POTATO,
                 Material.POWERED_RAIL,
@@ -163,11 +275,6 @@ public class Schematic {
                 Material.WOOD_PLATE,
                 Material.YELLOW_FLOWER
         );
-
-        ATTACHABLE = (b1, b2) -> {
-            boolean c1 = ATTACHABLE_MATERIALS.contains(b1.getType());
-            return c1 == ATTACHABLE_MATERIALS.contains(b2.getType()) ? 0 : c1 ? 1 : -1;
-        };
     }
-}
 
+}

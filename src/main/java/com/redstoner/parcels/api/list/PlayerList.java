@@ -8,7 +8,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 public class PlayerList {
-
     private List<UUID> players;
     private boolean hasStar;
 

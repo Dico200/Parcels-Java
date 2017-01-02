@@ -1,8 +1,8 @@
 package com.redstoner.parcels;
 
-import com.redstoner.parcels.api.BlockVisitor;
 import com.redstoner.parcels.api.ParcelWorld;
 import com.redstoner.parcels.api.WorldManager;
+import com.redstoner.parcels.api.blockvisitor.BlockVisitor;
 import com.redstoner.parcels.api.storage.StorageManager;
 import com.redstoner.parcels.command.ConfirmableRequest;
 import com.redstoner.parcels.command.ParcelCommands;
