@@ -9,7 +9,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class MySQLConnector extends SQLConnector {
-
     private static final TCharSet allowedChars = new TCharHashSet("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_".toCharArray());
     private final String hostname, database, username, password;
 

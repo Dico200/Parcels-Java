@@ -22,6 +22,9 @@ public class Parcel {
     private final int x, z;
     private int blockVisitors = 0;
 
+    // called and used only by the SQL manager
+    private int uniqueId = -1;
+
     public Parcel(ParcelWorld world, int x, int z) {
         this.world = world;
         this.owner = Optional.empty();
@@ -34,17 +37,17 @@ public class Parcel {
 
             @Override
             public void addToSQL(UUID toAdd, Boolean value) {
-                SqlManager.addPlayer(worldName, x, z, toAdd, value);
+                SqlManager.addPlayer(Parcel.this, toAdd, value);
             }
 
             @Override
             public void removeFromSQL(UUID toRemove) {
-                SqlManager.removePlayer(worldName, x, z, toRemove);
+                SqlManager.removePlayer(Parcel.this, toRemove);
             }
 
             @Override
             protected void clearSQL() {
-                SqlManager.removeAllPlayers(worldName, x, z);
+                SqlManager.removeAllPlayers(Parcel.this);
             }
 
         };
@@ -84,7 +87,7 @@ public class Parcel {
     public boolean setOwner(UUID owner) {
         if (setOwnerIgnoreSQL(owner)) {
             if (StorageManager.useMySQL) {
-                SqlManager.setOwner(world.getName(), x, z, owner);
+                SqlManager.setOwner(this, owner);
             }
             world.setOwnerSign(this);
             return true;
@@ -153,6 +156,14 @@ public class Parcel {
 
     public String getId() {
         return String.format("%d:%d", x, z);
+    }
+
+    public int getUniqueId() {
+        return uniqueId;
+    }
+
+    public void setUniqueId(int uniqueId) {
+        this.uniqueId = uniqueId;
     }
 
     @Override

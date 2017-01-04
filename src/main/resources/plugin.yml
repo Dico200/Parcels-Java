@@ -1,5 +1,5 @@
 load: POSTWORLD
 name: Parcels
 author: Dico
-version: 0.2
+version: 0.5
 main: com.redstoner.parcels.ParcelsPlugin

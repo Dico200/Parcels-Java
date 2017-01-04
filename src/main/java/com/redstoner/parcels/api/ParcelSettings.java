@@ -23,7 +23,7 @@ public class ParcelSettings {
     public boolean setAllowsInteractInputs(boolean enabled) {
         if (enabled != this.allowsInteractInputs) {
             this.allowsInteractInputs = enabled;
-            SqlManager.setAllowInteractInputs(parcel.getWorld().getName(), parcel.getX(), parcel.getZ(), enabled);
+            SqlManager.setAllowInteractInputs(parcel, enabled);
             return true;
         }
         return false;
@@ -32,7 +32,7 @@ public class ParcelSettings {
     public boolean setAllowsInteractInventory(boolean enabled) {
         if (enabled != this.allowsInteractInventory) {
             this.allowsInteractInventory = enabled;
-            SqlManager.setAllowInteractInventory(parcel.getWorld().getName(), parcel.getX(), parcel.getZ(), enabled);
+            SqlManager.setAllowInteractInventory(parcel, enabled);
             return true;
         }
         return false;

@@ -23,13 +23,6 @@ public class Maps {
         return map;
     }
 
-    @SuppressWarnings("unchecked")
-    public static <K, V> DuoObject<K[], V[]> strip(Map<K, V> map) {
-        K[] karray = (K[]) map.keySet().toArray();
-        V[] varray = (V[]) map.values().toArray();
-        return new DuoObject<>(karray, varray);
-    }
-
     public static class CastingMap<K, V> extends HashMap<K, V> {
         private static final long serialVersionUID = -2142136718375689729L;
 

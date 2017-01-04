@@ -1,25 +1,26 @@
 package com.redstoner.utils.sql;
 
+import com.redstoner.utils.sql.control.UnsafeConsumer;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public abstract class SQLConnector {
-
-    public abstract Connection createConnection() throws SQLException;
-
-    public abstract SQLType getType();
-
     private static final List<SQLConnector> connectors = new ArrayList<>();
+    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    public static ExecutorService getExecutor() {
+        return executor;
+    }
 
     public static void closeAllConnections() {
         connectors.forEach(SQLConnector::closeConn);
     }
-
-    private static final ThreadGroup threadGroup = new ThreadGroup("SqlConnector");
 
     private Connection conn = null;
     private boolean connected = false;
@@ -27,6 +28,10 @@ public abstract class SQLConnector {
     public SQLConnector() {
         connectors.add(this);
     }
+
+    public abstract SQLType getType();
+
+    protected abstract Connection createConnection() throws SQLException;
 
     public boolean isConnected() {
         return connected;
@@ -36,32 +41,23 @@ public abstract class SQLConnector {
         try {
             this.conn = createConnection();
             this.connected = true;
-        } catch (SQLException e) {
-            if (e instanceof SQLTimeoutException) {
-                System.out.println("[ERROR] No response from the MySQL server");
-            } else {
-                System.out.println("[ERROR] While connecting to the MySQL server:");
-                e.printStackTrace();
-            }
+        } catch (SQLTimeoutException ex) {
+            System.out.println("[ERROR] No response from the MySQL server");
+        } catch (SQLException ex) {
+            System.out.println("[ERROR] While connecting to the MySQL server:");
+            ex.printStackTrace();
         }
     }
 
-    private void runAsync(Runnable toRun) {
-        Thread thread = new Thread(threadGroup, toRun);
-        thread.setDaemon(false);
-        thread.start();
+    public void asyncConn(UnsafeConsumer<Connection> toRun) {
+        executor.submit(() -> syncConn(toRun));
     }
 
-    public void asyncConn(Consumer<Connection> toRun) {
-        runAsync(() -> {
-            syncConn(toRun);
-        });
-    }
-
-    public void syncConn(Consumer<Connection> toRun) {
-        if (conn != null) {
-            toRun.accept(conn);
+    public void syncConn(UnsafeConsumer<Connection> toRun) {
+        if (conn == null) {
+            openConn();
         }
+        toRun.accept(conn);
     }
 
     public void closeConn() {
@@ -74,10 +70,6 @@ public abstract class SQLConnector {
         } catch (SQLException e) {
             System.out.println("Failed to close database connection.");
         }
-    }
-
-    static {
-        threadGroup.setDaemon(false);
     }
 
 }

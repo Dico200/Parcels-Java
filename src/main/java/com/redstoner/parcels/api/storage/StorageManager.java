@@ -18,27 +18,27 @@ public class StorageManager {
     public static boolean connected = false;
 
     public static void initialise() {
+        SQLConnector.getExecutor().submit(() -> {
+            SQLConnector parcelsConnector = getParcelsConnector();
+            if (parcelsConnector == null || !parcelsConnector.isConnected()) {
+                ParcelsPlugin.getInstance().error("Failed to connect to parcels database. Aborting connection.");
+                return;
+            }
+            connected = true;
 
-        SQLConnector parcelsConnector = getParcelsConnector();
-        if (parcelsConnector == null || !parcelsConnector.isConnected()) {
-            ParcelsPlugin.getInstance().error("Failed to connect to parcels database. Aborting connection.");
-            return;
-        }
-        connected = true;
+            SqlManager.initialise(parcelsConnector, true);
 
-        SqlManager.initialise(parcelsConnector, true, true);
-
-        FileConfiguration config = ParcelsPlugin.getInstance().getConfig();
-        if (config.getBoolean("import-plotme-settings.enabled")) {
-            config.set("import-plotme-settings.enabled", false);
-            ParcelsPlugin.getInstance().saveConfig();
-            importPlotMeSettings(parcelsConnector);
-        }
+            FileConfiguration config = ParcelsPlugin.getInstance().getConfig();
+            if (config.getBoolean("import-plotme-settings.enabled")) {
+                config.set("import-plotme-settings.enabled", false);
+                ParcelsPlugin.getInstance().saveConfig();
+                importPlotMeSettings(parcelsConnector);
+            }
+        });
 
     }
 
     private static boolean importPlotMeSettings(SQLConnector parcelsConnector) {
-
         ErrorPrinter errorPrinter = new ErrorPrinter(ParcelsPlugin.getInstance()::error,
                 "Error occurred while attempting to import plotme settings:",
                 "Next time you try to import plotme settings, make sure to set enabled to true again.");
@@ -80,8 +80,9 @@ public class StorageManager {
 
     private static SQLConnector getParcelsConnector() {
         ConfigurationSection conf = ParcelsPlugin.getInstance().getConfig().getConfigurationSection("storage");
-        if (conf == null)
+        if (conf == null) {
             return null;
+        }
 
         String hostname = (hostname = conf.getString("hostname")) == null ? "localhost:3306" : hostname;
         String database = (database = conf.getString("database")) == null ? "parcels" : database;
@@ -91,7 +92,6 @@ public class StorageManager {
     }
 
     private static SQLConnector getPlotMeConnector() {
-
         File plotMeFolder = new File(String.join(File.separator, ParcelsPlugin.getInstance().getDataFolder().getAbsolutePath(), "..", "PlotMe"));
 
         File configFile = new File(plotMeFolder, "config.yml");

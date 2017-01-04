@@ -7,7 +7,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class SQLiteConnector extends SQLConnector {
-
     private final File sqlFile;
 
     public SQLiteConnector(File sqlFile) {

@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.UUID;
 
 public final class GlobalTrusted {
-
     private static final Map<UUID, PlayerMap<Boolean>> trusted = new HashMap<>();
     private static final PlayerMap<Boolean> empty = new PlayerMap<Boolean>(true);
 
@@ -47,6 +46,11 @@ public final class GlobalTrusted {
     public static void addPlayerIgnoreSQL(String playerId, String addedId, boolean allowed) {
         UUID player = UUID.fromString(playerId);
         UUID added = UUID.fromString(addedId);
+        ensureKey(player);
+        getAdded(player).getMap().put(added, allowed);
+    }
+
+    public static void addPlayerIgnoreSQL(UUID player, UUID added, boolean allowed) {
         ensureKey(player);
         getAdded(player).getMap().put(added, allowed);
     }
