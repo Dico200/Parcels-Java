@@ -12,6 +12,12 @@ import java.util.List;
 import java.util.Random;
 
 public class ParcelGenerator extends ChunkGenerator {
+    private final short floorId, wallId, pathMainId, pathEdgeId, fillId;
+    private final byte floorData, wallData, pathMainData, pathEdgeData, fillData;
+    private final int parcelSize, floorHeight, xOffset, zOffset, sectionSize, pathOffset;
+    private final boolean makePathMain, makePathEdge;
+    private final Biome defaultBiome;
+    private final Server server = Bukkit.getServer();
 
     public ParcelGenerator(ParcelWorldSettings pws) {
         this.floorId = pws.floorType.getId();
@@ -39,13 +45,6 @@ public class ParcelGenerator extends ChunkGenerator {
 
         this.defaultBiome = pws.defaultBiome;
     }
-
-    private final short floorId, wallId, pathMainId, pathEdgeId, fillId;
-    private final byte floorData, wallData, pathMainData, pathEdgeData, fillData;
-    private final int parcelSize, floorHeight, xOffset, zOffset, sectionSize, pathOffset;
-    private final boolean makePathMain, makePathEdge;
-    private final Biome defaultBiome;
-    private final Server server = Bukkit.getServer();
 
     @Override
     public Location getFixedSpawnLocation(World world, Random random) {

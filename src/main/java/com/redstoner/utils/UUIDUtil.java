@@ -14,11 +14,11 @@ public class UUIDUtil {
         return uuid.toString().replaceAll("-", "");
     }
 
-    public static UUID UUIDFromString(String string) {
-        if (string == null) return null;
-        if (string.length() != 32)
-            throw new IllegalArgumentException("Invalid hex string length for UUID (must be 32): " + string.length() + " - " + string);
+    public static String addUUIDDashes(String string) {
         char[] orig = string.toLowerCase().toCharArray();
+        if (orig.length != 32) {
+            throw new IllegalArgumentException();
+        }
         char[] ret = new char[36];
         int dashCount = 0;
         for (int i = 0; i < orig.length; i++) {
@@ -28,7 +28,14 @@ public class UUIDUtil {
             }
             ret[i + dashCount] = orig[i];
         }
-        return UUID.fromString(new String(ret));
+        return String.valueOf(ret);
+    }
+
+    public static UUID UUIDFromString(String string) {
+        if (string == null) return null;
+        if (string.length() != 32)
+            throw new IllegalArgumentException("Invalid hex string length for UUID (must be 32): " + string.length() + " - " + string);
+        return UUID.fromString(addUUIDDashes(string));
     }
 
     public static byte[] UUIDToBytes(UUID uuid) {

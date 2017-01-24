@@ -12,7 +12,7 @@ import java.util.concurrent.Executors;
 
 public abstract class SQLConnector {
     private static final List<SQLConnector> connectors = new ArrayList<>();
-    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     public static ExecutorService getExecutor() {
         return executor;

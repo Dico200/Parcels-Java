@@ -2,7 +2,7 @@ package com.redstoner.parcels.api.blockvisitor;
 
 import com.redstoner.parcels.api.Parcel;
 import com.redstoner.utils.DuoObject;
-import io.dico.dicore.util.BlockPos;
+import io.dico.dicore.util.block.BlockPos;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

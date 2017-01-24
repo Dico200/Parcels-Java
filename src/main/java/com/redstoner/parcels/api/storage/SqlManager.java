@@ -10,11 +10,13 @@ import com.redstoner.utils.UUIDUtil;
 import com.redstoner.utils.sql.SQLConnector;
 import com.redstoner.utils.sql.control.ExceptionHandler;
 
+import java.nio.ByteBuffer;
 import java.sql.*;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.redstoner.utils.UUIDUtil.*;
+import static com.redstoner.utils.UUIDUtil.UUIDFromString;
+import static com.redstoner.utils.UUIDUtil.UUIDToString;
 
 public class SqlManager {
     private static final String GET_PARCELS;
@@ -148,7 +150,9 @@ public class SqlManager {
                         addedQuery.setInt(1, id);
                         try (ResultSet added = addedQuery.executeQuery()) {
                             while (added.next()) try {
-                                addedPlayers.put(UUIDFromString(added.getString(1)), added.getInt(2) != 0);
+                                ByteBuffer buf = ByteBuffer.wrap(added.getBytes(1));
+                                UUID uuid = new UUID(buf.getLong(), buf.getLong());
+                                addedPlayers.put(uuid, added.getInt(2) != 0);
                             } catch (Exception ex) {
                                 handleException("loading an adder player for a parcel in " + worldName + " from database", ex);
                             }
@@ -396,55 +400,23 @@ public class SqlManager {
                     return;
                 }
 
-                ParcelsPlugin.getInstance().info("Plotme Table setup found: " + setup.name());
+                ParcelsPlugin.getInstance().debug("Plotme Table setup found: " + setup.name());
 
-                try (ResultSet plotSet = setup.getPlots(plotMeConn, worldNameFrom)) {
-                    if (!plotSet.isBeforeFirst()) {
-                        ParcelsPlugin.getInstance().error(String.format("No PlotMe data found for world by name '%s' (but the table exists)", worldNameFrom));
-                        loadFromDatabase(parcelsConn, worldNameTo);
-                        return;
+                boolean[] states = new boolean[]{true, false};
+                for (PlotMeTableSetup.Plot plot : setup.getPlots(plotMeConn, worldNameFrom)) {
+                    Parcel parcel = world.getParcelByID(plot.idX - 1, plot.idZ - 1);
+                    if (parcel == null) {
+                        continue;
                     }
+                    parcel.setOwner(plot.owner);
 
-                    while (plotSet.next()) try {
-                        int px = plotSet.getInt(1) - 1;
-                        int pz = plotSet.getInt(2) - 1;
-                        Parcel parcel = world.getParcelByID(px, pz);
-                        if (parcel == null) {
-                            continue;
+                    for (boolean allowed : states) {
+                        for (UUID uuid : setup.getAdded(plotMeConn, plot, allowed)) {
+                            parcel.getAdded().add(uuid, allowed);
                         }
-
-                        UUID owner = UUIDFromBytes(setup.getBytesFromIndex(plotSet, 3));
-                        parcel.setOwner(owner);
-
-                        // Import allowed players
-                        try (ResultSet allowedSet = setup.getAllowed(plotMeConn, plotSet)) {
-                            UUID player;
-                            while (allowedSet.next()) try {
-                                player = UUIDFromBytes(setup.getBytesFromIndex(allowedSet, 1));
-                                parcel.getAdded().add(player, true);
-                            } catch (Exception ex) {
-                                ExceptionHandler.log(errorPrinter::add, "reading an added player from plotme").handle(ex);
-                            }
-                        }
-
-                        try (ResultSet bannedSet = setup.getAllowed(plotMeConn, plotSet)) {
-                            UUID player;
-                            while (bannedSet.next()) try {
-                                player = UUIDFromBytes(setup.getBytesFromIndex(bannedSet, 1));
-                                parcel.getAdded().add(player, false);
-                            } catch (Exception ex) {
-                                ExceptionHandler.log(errorPrinter::add, "reading a banned player from plotme").handle(ex);
-                            }
-                        }
-                    } catch (Exception ex) {
-                        ExceptionHandler.log(errorPrinter::add, "reading a plot from plotme");
                     }
-
-                } catch (Exception ex) {
-                    ExceptionHandler.log(errorPrinter::add, "importing from PlotMe database").handle(ex);
                 }
 
-                // Load imported world data
                 ParcelsPlugin.getInstance().info("Finished PlotMe import for Parcels world " + worldNameTo);
             });
         });

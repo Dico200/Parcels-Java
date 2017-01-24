@@ -7,7 +7,7 @@ import com.redstoner.parcels.api.storage.SqlManager;
 import com.redstoner.parcels.api.storage.StorageManager;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.UUIDUtil;
-import io.dico.dicore.util.BlockPos;
+import io.dico.dicore.util.block.BlockPos;
 import org.bukkit.OfflinePlayer;
 
 import java.util.*;

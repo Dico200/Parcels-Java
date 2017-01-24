@@ -2,7 +2,7 @@ package com.redstoner.parcels.api.schematic;
 
 import com.redstoner.parcels.api.blockvisitor.BlockVisitor;
 import com.redstoner.parcels.api.schematic.block.BaseBlock;
-import io.dico.dicore.util.BlockPos;
+import io.dico.dicore.util.block.BlockPos;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 

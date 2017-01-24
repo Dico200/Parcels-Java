@@ -4,7 +4,7 @@ import com.redstoner.parcels.ParcelsPlugin;
 import com.redstoner.parcels.api.blockvisitor.VerticalRangeVisitor;
 import com.redstoner.parcels.api.list.PlayerMap;
 import com.redstoner.parcels.api.schematic.Schematic;
-import io.dico.dicore.util.BlockPos;
+import io.dico.dicore.util.block.BlockPos;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
