@@ -47,7 +47,8 @@ public class BaseBlock {
     }
 
     public static BaseBlock copy(Block block) {
-        switch (block.getType()) {
+        Material type = block.getType();
+        switch (type) {
             case BANNER:
                 return new BannerBlock((Banner) block.getState());
             case BEACON:
@@ -80,10 +81,10 @@ public class BaseBlock {
             case SKULL:
                 return new SkullBlock((Skull) block.getState());
             default: {
-                int typeId = (block.getTypeId() << 8) | block.getData();
+                int typeId = (type.getId() << 8) | block.getData();
                 BaseBlock result = cache.get(typeId);
                 if (result == null) {
-                    result = new BaseBlock(block);
+                    result = new BaseBlock(typeId);
                     cache.put(typeId, result);
                 }
                 return result;

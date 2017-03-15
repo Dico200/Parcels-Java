@@ -47,7 +47,7 @@ public class ParcelsPlugin extends DicoPlugin {
             WorldEditListener.register(worldEdit);
         }
 
-        startTicking(25, 5);
+        getTickTask().start(25, 5);
     }
 
     @Override
