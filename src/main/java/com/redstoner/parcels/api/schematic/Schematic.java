@@ -36,7 +36,7 @@ public final class Schematic {
     }
 
     private boolean isAttachable(int index) {
-        return attachables[index & 0x3F] >> (index >> 6) == 1;
+        return attachables[index & 0x3F] >> (index >> 6) != 0;
     }
 
     private void setAttachable(int index) {
@@ -102,6 +102,8 @@ public final class Schematic {
             @Override
             protected void onFinish(boolean early) {
                 state = 1;
+                // we don't want to keep like 4096 instances of BaseBlock (in worst case).
+                BaseBlock.clearCache();
                 onFinish.run();
             }
         }.start();
