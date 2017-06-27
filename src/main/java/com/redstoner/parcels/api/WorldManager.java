@@ -52,7 +52,7 @@ public final class WorldManager {
 
     public static boolean isInOtherWorldOrInParcel(Location loc, Predicate<Parcel> parcelTest) {
         Optional<ParcelWorld> world = getWorld(loc.getWorld());
-        return !world.filter(w -> w.getParcelAt(loc.getBlockX(), loc.getBlockZ()).filter(parcelTest).isPresent()).isPresent();
+        return world.filter(w -> w.getParcelAt(loc.getBlockX(), loc.getBlockZ()).filter(parcelTest).isPresent()).isPresent();
     }
 
     public static boolean isInOtherWorldOrInParcel(Block b, Predicate<Parcel> parcelTest) {

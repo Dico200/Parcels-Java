@@ -43,6 +43,7 @@ public class BaseBlock {
     }
 
     public static void clearCache() {
+        // hmm this doesn't wipe large arrays, instead it just fills them empty?
         cache.clear();
     }
 

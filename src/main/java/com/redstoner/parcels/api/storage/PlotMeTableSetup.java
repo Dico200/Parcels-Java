@@ -101,7 +101,11 @@ enum PlotMeTableSetup {
     public abstract String getBannedQuery();
 
     public UUID getUUIDFromIndex(ResultSet set, int index) throws Exception {
-        ByteBuffer buf = ByteBuffer.wrap(set.getBytes(index));
+        byte[] bytes = set.getBytes(index);
+        if (bytes == null) {
+            return null;
+        }
+        ByteBuffer buf = ByteBuffer.wrap(bytes);
         return new UUID(buf.getLong(), buf.getLong());
     }
 
@@ -113,6 +117,9 @@ enum PlotMeTableSetup {
                 List<Plot> result = new LinkedList<>();
                 while (set.next()) try {
                     UUID owner = getUUIDFromIndex(set, 3);
+                    if (owner == null) {
+                        continue;
+                    }
                     int idX = set.getInt(1);
                     int idZ = set.getInt(2);
                     int plotId = usesPlotId() ? set.getInt(4) : -1;
@@ -165,11 +172,11 @@ enum PlotMeTableSetup {
         return null;
     }
 
-    public static class Plot {
-        public final int plotId;
-        public final int idX, idZ;
-        public final String worldName;
-        public final UUID owner;
+    static class Plot {
+        final int plotId;
+        final int idX, idZ;
+        final String worldName;
+        final UUID owner;
 
         public Plot(int plotId, int idX, int idZ, String worldName, UUID owner) {
             this.plotId = plotId;
