@@ -117,7 +117,7 @@ public final class ParcelCommands {
         @Override
         protected String execute(Player sender, ParcelScape scape) {
             Parcel parcel = scape.getParcel();
-            Validate.isTrue(parcel.getOwner().isPresent(), String.format("This parcel with ID (%s) is unowned", parcel.getId()));
+            Validate.isTrue(parcel.getOwner().isPresent(), String.format("This parcel with ID (%s) is unowned", parcel.getTextId()));
             return parcel.getInfo();
         }
 
@@ -243,7 +243,7 @@ public final class ParcelCommands {
         @Override
         protected String execute(Player sender, ParcelScape scape) {
             Parcel parcel = scape.getParcel();
-            Validate.isTrue(parcel.getOwner().isPresent(), String.format("This parcel with ID (%s) is unowned", parcel.getId()));
+            Validate.isTrue(parcel.getOwner().isPresent(), String.format("This parcel with ID (%s) is unowned", parcel.getTextId()));
             OfflinePlayer allowed = scape.get("player");
             Validate.isTrue(!parcel.getOwner().filter(owner -> owner.equals(allowed.getUniqueId())).isPresent()
                             && parcel.getAdded().add(allowed.getUniqueId(), true),
@@ -282,7 +282,7 @@ public final class ParcelCommands {
         @Override
         protected String execute(Player sender, ParcelScape scape) {
             Parcel parcel = scape.getParcel();
-            Validate.isTrue(parcel.getOwner().isPresent(), String.format("This parcel with ID (%s) is unowned", parcel.getId()));
+            Validate.isTrue(parcel.getOwner().isPresent(), String.format("This parcel with ID (%s) is unowned", parcel.getTextId()));
             OfflinePlayer banned = scape.get("player");
             Validate.isTrue(!parcel.getOwner().filter(owner -> owner.equals(banned.getUniqueId())).isPresent(),
                     "The owner of this parcel cannot be banned from it");

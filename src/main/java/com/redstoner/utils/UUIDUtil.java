@@ -1,6 +1,7 @@
 package com.redstoner.utils;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -50,8 +51,8 @@ public class UUIDUtil {
     }
 
     public static String getName(UUID player) {
-        String result = Bukkit.getOfflinePlayer(player).getName();
-        return result == null ? ":unknownName:" : result;
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(player);
+        return offlinePlayer.hasPlayedBefore() ? ":unknownName:" : offlinePlayer.getName();
     }
 
     public static byte[] toByteArray(UUID uuid) {

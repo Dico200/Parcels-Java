@@ -39,7 +39,7 @@ public class SqlManager {
     private static final String DELETE_PARCEL;
 
     static {
-        GET_PARCELS = "SELECT `id`, `px`, `pz`, hex(`owner`), `allow_interact_inputs`, `allow_interact_inventory` FROM `parcels` WHERE `world` = ?;";
+        GET_PARCELS = "SELECT `id`, `px`, `pz`, hex(`owner`), `allow_interact_inputs`, `allow_interact_inventory`, `ownerName` FROM `parcels` WHERE `world` = ?;";
         GET_PARCELS_ADDED = "SELECT hex(`player`), `allowed` FROM `parcels_added` WHERE `id` = ?;";
         GET_PARCEL_ID = "SELECT `id` FROM `parcels` WHERE `world` = ? AND `px` = ? AND `pz` = ?;";
         GET_GLOBAL_ADDED = "SELECT hex(`player`), hex(`added`), `allowed` FROM `global_added`;";
@@ -49,6 +49,7 @@ public class SqlManager {
                 + "`px` INTEGER NOT NULL,"
                 + "`pz` INTEGER NOT NULL,"
                 + "`owner` CHAR(16),"
+                + "`ownerName` VARCHAR(16),"
                 + "`allow_interact_inputs` TINYINT(1) NOT NULL DEFAULT 0,"
                 + "`allow_interact_inventory` TINYINT(1) NOT NULL DEFAULT 0,"
                 + "UNIQUE KEY location(`world`, `px`, `pz`)"
@@ -68,7 +69,7 @@ public class SqlManager {
                 + ");";
         SET_ALLOWINTERACT_INPUTS = "UPDATE `parcels` SET `allow_interact_inputs` = ? WHERE `id` = ?;";
         SET_ALLOWINTERACT_INVENTORY = "UPDATE `parcels` SET `allow_interact_inventory` = ? WHERE `id` = ?;";
-        SET_OWNER = "UPDATE `parcels` SET `owner` = unhex(?) WHERE `id` = ?;";
+        SET_OWNER = "UPDATE `parcels` SET `owner` = unhex(?), `ownerName` = ? WHERE `id` = ?;";
         ADD_PLAYER = "REPLACE `parcels_added` (`id`, `player`, `allowed`) VALUES (?, unhex(?), ?);";
         REMOVE_PLAYER = "DELETE FROM `parcels_added` WHERE `id` = ? AND `player` = unhex(?);";
         CLEAR_PLAYERS = "DELETE FROM `parcels_added` WHERE `id` = ?;";
@@ -80,6 +81,7 @@ public class SqlManager {
     }
 
     public static SQLConnector CONNECTOR = null;
+
 
     private static void handleException(String header, Exception ex) {
         ExceptionHandler.log(ParcelsPlugin.getInstance()::error, header).handle(ex);
@@ -137,8 +139,9 @@ public class SqlManager {
                     parcel.setUniqueId(id);
 
                     String owner = row.getString(4);
+                    
                     if (owner != null) try {
-                        parcel.setOwnerIgnoreSQL(UUIDFromString(owner));
+                        parcel.getOwner().setUniqueIdIgnoreSQL(UUIDFromString(owner));
                     } catch (IllegalArgumentException ignored) {
                     }
 
@@ -196,11 +199,11 @@ public class SqlManager {
         }
     }
 
-    public static void setOwner(Parcel parcel, UUID owner) {
-        CONNECTOR.asyncConn(conn -> setOwner(conn, getId(conn, parcel), owner));
+    public static void setOwner(Parcel parcel, UUID owner, String ownerName) {
+        CONNECTOR.asyncConn(conn -> setOwner(conn, getId(conn, parcel), owner, ownerName));
     }
 
-    private static void setOwner(Connection conn, int id, UUID owner) {
+    private static void setOwner(Connection conn, int id, UUID owner, String ownerName) {
         /*
         try (PreparedStatement psm = conn.prepareStatement()) {
 
@@ -211,10 +214,11 @@ public class SqlManager {
         */
         try (PreparedStatement psm = conn.prepareStatement(SET_OWNER)) {
             psm.setString(1, UUIDToString(owner));
-            psm.setInt(2, id);
+            psm.setString(2, ownerName);
+            psm.setInt(3, id);
             psm.executeUpdate();
         } catch (SQLException ex) {
-            handleException("", ex);
+            handleException("setting owner", ex);
         }
     }
 
@@ -222,7 +226,7 @@ public class SqlManager {
     public static void setAllowInteract(String world, int px, int pz, boolean enabled) {
 		CONNECTOR.asyncConn(conn -> {
 			try {
-				setBooleanParcelSetting(conn, world, px, pz, SET_ALLOW_INTERACT_, enabled);
+				setBooleanParcelSetting(conn, world, px, pz, SET_ALLOWINTERACT_, enabled);
 			} catch (SQLException e) {
 				logSqlExc("[SEVERE] Error occurred while setting setAllowInteract for a parcel", e);
 			}
@@ -372,7 +376,7 @@ public class SqlManager {
         for (ParcelWorld world : WorldManager.getWorlds().values()) {
             Parcel[] parcels = world.getParcels().getAll();
             for (Parcel parcel : parcels) {
-                setOwner(parcel, parcel.getOwner().orElse(null));
+                parcel.getOwner().updateSQLIf(true);
                 removeAllPlayers(parcel);
                 for (Map.Entry<UUID, Boolean> added : parcel.getAdded().getMap().entrySet()) {
                     addPlayer(parcel, added.getKey(), added.getValue());
@@ -408,7 +412,12 @@ public class SqlManager {
                     if (parcel == null) {
                         continue;
                     }
-                    parcel.setOwner(plot.owner);
+                    
+                    if (plot.owner instanceof UUID) {
+                        parcel.getOwner().setUniqueId((UUID) plot.owner);
+                    } else if (plot.owner instanceof String) {
+                        parcel.getOwner().setName((String) plot.owner);
+                    }
 
                     for (boolean allowed : states) {
                         for (UUID uuid : setup.getAdded(plotMeConn, plot, allowed)) {

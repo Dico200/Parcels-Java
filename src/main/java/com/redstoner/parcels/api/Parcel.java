@@ -4,7 +4,6 @@ import com.redstoner.parcels.api.list.PlayerMap;
 import com.redstoner.parcels.api.list.SqlPlayerMap;
 import com.redstoner.parcels.api.schematic.Schematic;
 import com.redstoner.parcels.api.storage.SqlManager;
-import com.redstoner.parcels.api.storage.StorageManager;
 import com.redstoner.utils.DuoObject.Coord;
 import com.redstoner.utils.UUIDUtil;
 import io.dico.dicore.util.block.BlockPos;
@@ -14,25 +13,22 @@ import java.util.*;
 
 public class Parcel {
     private final ParcelWorld world;
-    private Optional<UUID> owner;
-
-    //Players added to the parcel. If true: they can build. If false: They are banned.
+    private final int x, z;
+    private final ParcelOwnerData owner;
     private final PlayerMap<Boolean> added;
     private final ParcelSettings settings;
-    private final int x, z;
-    private int blockVisitors = 0;
-
+    
     // called and used only by the SQL manager
-    private int uniqueId = -1;
+    private transient int uniqueId = -1;
+    // if the parcel is being cleared or swapped, this number is non-zero
+    private transient int blockVisitors = 0;
 
     public Parcel(ParcelWorld world, int x, int z) {
         this.world = world;
-        this.owner = Optional.empty();
         this.x = x;
         this.z = z;
+        this.owner = new ParcelOwnerData(this);
         this.settings = new ParcelSettings(this);
-
-        String worldName = world.getName();
         this.added = new SqlPlayerMap<Boolean>(true) {
 
             @Override
@@ -73,14 +69,18 @@ public class Parcel {
         return world;
     }
 
-    public Optional<UUID> getOwner() {
+    public ParcelOwnerData getOwner() {
         return owner;
     }
 
+    /*
     public boolean setOwnerIgnoreSQL(UUID owner) {
-        if (this.owner.filter(x -> x.equals(owner)).isPresent())
+        if (Objects.equals(this.owner, owner)) {
             return false;
-        this.owner = Optional.ofNullable(owner);
+        }
+        
+        this.owner = owner;
+        this.ownerName = UUIDUtil.getName(owner);
         return true;
     }
 
@@ -94,13 +94,16 @@ public class Parcel {
         }
         return false;
     }
+    */
 
+    /*
     public boolean isOwner(OfflinePlayer toCheck) {
-        return owner.filter(owner -> owner.equals(toCheck.getUniqueId())).isPresent();
+        return owner != null && owner.equals(toCheck.getUniqueId());
     }
+    */
 
     public boolean canBuild(OfflinePlayer user) {
-        return blockVisitors == 0 && (isOwner(user) || isAllowed(user));
+        return !hasBlockVisitors() && (owner.matches(user) || isAllowed(user));
     }
 
     public int getX() {
@@ -144,17 +147,17 @@ public class Parcel {
     }
 
     public Optional<PlayerMap<Boolean>> getGloballyAdded() {
-        return owner.map(GlobalTrusted::getAdded);
+        return !owner.hasUniqueId() ? Optional.empty() : Optional.ofNullable(GlobalTrusted.getAdded(owner.getUniqueId()));
     }
 
     public void dispose() {
-        setOwner(null);
+        owner.setUniqueId(null);
         added.clear();
         settings.setAllowsInteractInputs(false);
         settings.setAllowsInteractInventory(false);
     }
 
-    public String getId() {
+    public String getTextId() {
         return String.format("%d:%d", x, z);
     }
 
@@ -168,7 +171,7 @@ public class Parcel {
 
     @Override
     public String toString() {
-        return String.format("parcel at (%s)", getId());
+        return String.format("parcel at (%s)", getTextId());
     }
 
     public String getInfo() {
@@ -200,7 +203,7 @@ public class Parcel {
         }
 
         return String.format("&bID: (&e%s&b) Owner: &e%s%s%s",
-                getId(), owner.map(UUIDUtil::getName).orElse(""), allowedList, bannedList);
+                getTextId(), owner.getNameOr(""), allowedList, bannedList);
     }
 
 }

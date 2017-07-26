@@ -253,7 +253,7 @@ public final class ParcelWorld {
                 signBlock.setType(Material.WALL_SIGN);
                 signBlock.setData((byte) 4);
                 Sign sign = (Sign) signBlock.getState();
-                sign.setLine(0, "ID: " + parcel.getId());
+                sign.setLine(0, "ID: " + parcel.getTextId());
                 sign.setLine(2, "Owner:");
                 sign.setLine(3, ownerName);
                 sign.update();

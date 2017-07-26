@@ -19,7 +19,7 @@ enum PlotMeTableSetup {
 
         @Override
         public String getPlotQuery() {
-            return "SELECT `plotX`, `plotZ`, `ownerID`, `plot_id` FROM `plotmecore_plots` WHERE `world` = ?;";
+            return "SELECT `plotX`, `plotZ`, `ownerID`, `owner`, `plot_id` FROM `plotmecore_plots` WHERE `world` = ?;";
         }
 
         @Override
@@ -52,7 +52,7 @@ enum PlotMeTableSetup {
 
         @Override
         public String getPlotQuery() {
-            return "SELECT `idX`, `idZ`, `ownerId` FROM `plotmeplots` WHERE `world` = ?;";
+            return "SELECT `idX`, `idZ`, `ownerId`, `owner` FROM `plotmeplots` WHERE `world` = ?;";
         }
 
         @Override
@@ -74,7 +74,7 @@ enum PlotMeTableSetup {
 
         @Override
         public String getPlotQuery() {
-            return "SELECT `idX`, `idZ`, `ownerid` FROM `plotmePlots` WHERE `world` = ?;";
+            return "SELECT `idX`, `idZ`, `ownerid`, `owner` FROM `plotmePlots` WHERE `world` = ?;";
         }
 
         @Override
@@ -116,13 +116,13 @@ enum PlotMeTableSetup {
             try (ResultSet set = psm.executeQuery()) {
                 List<Plot> result = new LinkedList<>();
                 while (set.next()) try {
-                    UUID owner = getUUIDFromIndex(set, 3);
+                    Object owner = getUUIDFromIndex(set, 3);
                     if (owner == null) {
-                        continue;
+                        owner = set.getString(4);
                     }
                     int idX = set.getInt(1);
                     int idZ = set.getInt(2);
-                    int plotId = usesPlotId() ? set.getInt(4) : -1;
+                    int plotId = usesPlotId() ? set.getInt(5) : -1;
                     result.add(new Plot(plotId, idX, idZ, worldName, owner));
                 } catch (Exception ex) {
                     ExceptionHandler.log(ParcelsPlugin.getInstance()::error, "reading a plot from plotme database").handle(ex);
@@ -176,9 +176,9 @@ enum PlotMeTableSetup {
         final int plotId;
         final int idX, idZ;
         final String worldName;
-        final UUID owner;
+        final Object owner;
 
-        public Plot(int plotId, int idX, int idZ, String worldName, UUID owner) {
+        public Plot(int plotId, int idX, int idZ, String worldName, Object owner) {
             this.plotId = plotId;
             this.idX = idX;
             this.idZ = idZ;
