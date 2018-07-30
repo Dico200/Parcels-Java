@@ -4,10 +4,8 @@ Plot management and world generator plugin inspired by [PlotMe](https://github.c
 
 ![world screenshot](https://i.imgur.com/tpbKrQI.png)
 
-This project is currently a WIP. Feel free to make your own contributions (if you know what you're doing) with a PR.
-
 ## Build
 
 ```
-gradle releaseJar
+gradle jar
 ```
